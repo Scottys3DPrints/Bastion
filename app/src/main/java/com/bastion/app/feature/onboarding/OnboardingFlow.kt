@@ -159,13 +159,17 @@ fun OnboardingFlow(onComplete: () -> Unit) {
                 },
                 enabled = when (step) {
                     2 -> name.isNotBlank()
-                    4 -> strokes.isNotEmpty()
+                    // Not merely "a stroke exists" — a stray tap used to sign a
+                    // covenant with a blank image.
+                    4 -> hasRealSignature(strokes.map { it.toList() })
                     else -> true
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            if (step in 1..4) {
+            // Includes the final step: an over-tap on "Continue" should never be
+            // a one-way door.
+            if (step in 1..5) {
                 Spacer(Modifier.height(8.dp))
                 QuietButton("Back", { step-- }, Modifier.fillMaxWidth())
             }
@@ -188,7 +192,10 @@ private fun StepIndicator(step: Int, total: Int) {
                     .weight(1f)
                     .height(3.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(if (index <= step) BastionColors.Bronze else BastionColors.SurfaceHigh)
+                    // `index < step`, not `<=`: the welcome screen used to show
+                    // its first segment already filled, as if a step had been
+                    // completed before anything was done.
+                    .background(if (index < step) BastionColors.Bronze else BastionColors.SurfaceHigh)
             )
         }
     }

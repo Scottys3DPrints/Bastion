@@ -13,6 +13,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +59,7 @@ import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.QuietButton
 import com.bastion.app.core.design.ScriptureStyle
 import com.bastion.app.core.design.SectionLabel
+import com.bastion.app.MainActivity
 import com.bastion.app.data.BastionGraph
 import com.bastion.app.data.db.CovenantEntity
 import com.bastion.app.guard.accessibility.BastionAccessibilityService
@@ -79,7 +87,7 @@ class PanicActivity : ComponentActivity() {
     }
 }
 
-private enum class PanicStep { BREATHE, WHY, ANCHOR, MOVE, OUTCOME }
+private enum class PanicStep { BREATHE, WHY, ANCHOR, MOVE, OUTCOME, SLIP }
 
 @Composable
 private fun PanicFlow(onClose: () -> Unit) {
@@ -133,8 +141,19 @@ private fun PanicFlow(onClose: () -> Unit) {
                             )
                             onClose()
                         },
-                        onSlip = { onClose() },
-                        onMentor = { onClose() },
+                        // A relapse is the single most important event this app
+                        // records — analytics, the streak and the whole
+                        // "recovery, not relapse" model depend on it existing.
+                        // It used to be dropped on the floor here.
+                        onSlip = { step = PanicStep.SLIP },
+                        onMentor = {
+                            context.startActivity(
+                                Intent(context, MainActivity::class.java)
+                                    .putExtra(MainActivity.EXTRA_OPEN, MainActivity.OPEN_MENTOR)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            )
+                            onClose()
+                        },
                         onPartner = { contact ->
                             context.startActivity(
                                 Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$contact")).putExtra(
@@ -145,10 +164,26 @@ private fun PanicFlow(onClose: () -> Unit) {
                         },
                         graph = graph,
                     )
+
+                    PanicStep.SLIP -> SlipCaptureStep(
+                        faithMode = settings.faithMode,
+                        onDone = { trigger, note ->
+                            graph.journey.logUrge(
+                                resisted = false,
+                                intensity = 5,
+                                mood = null,
+                                trigger = trigger,
+                                contextApp = BastionAccessibilityService.foregroundApp.value,
+                                place = null,
+                                note = note,
+                            )
+                            onClose()
+                        },
+                    )
                 }
             }
 
-            if (step != PanicStep.OUTCOME) {
+            if (step != PanicStep.OUTCOME && step != PanicStep.SLIP) {
                 Spacer(Modifier.height(12.dp))
                 QuietButton(
                     text = "I'm okay — close this",
@@ -374,6 +409,109 @@ private fun OutcomeStep(
             onClick = onSlip,
             modifier = Modifier.fillMaxWidth(),
             accent = BastionColors.Amber,
+        )
+    }
+}
+
+private val SLIP_TRIGGERS = listOf(
+    "Late night", "Boredom", "Stress", "Loneliness", "Tiredness",
+    "Social media", "Anger", "Home alone", "Anxiety", "Alcohol",
+)
+
+/**
+ * What happens when a man taps "it went the other way".
+ *
+ * Deliberately two taps and out. He has just relapsed and is unlikely to fill in
+ * a form, so the trigger chips are optional and "Done" works with nothing
+ * selected — an unlabelled slip in the data beats no slip at all.
+ *
+ * Tone matters more here than anywhere: no red, no scolding, no interrogation.
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun SlipCaptureStep(
+    faithMode: Boolean,
+    onDone: suspend (trigger: String?, note: String?) -> Unit,
+) {
+    var trigger by remember { mutableStateOf<String?>(null) }
+    var note by remember { mutableStateOf("") }
+    var saving by remember { mutableStateOf(false) }
+
+    LaunchedEffect(saving) {
+        if (saving) onDone(trigger, note.takeIf { it.isNotBlank() })
+    }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(
+            "You're human.",
+            style = MaterialTheme.typography.headlineMedium,
+            color = BastionColors.TextPrimary,
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            if (faithMode) "No condemnation. Your rank is untouched."
+            else "Not a verdict. Your rank is untouched.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = BastionColors.TextSecondary,
+        )
+
+        Spacer(Modifier.height(26.dp))
+        SectionLabel("What was happening? (optional)")
+        Spacer(Modifier.height(12.dp))
+        androidx.compose.foundation.layout.FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            SLIP_TRIGGERS.forEach { option ->
+                val selected = trigger == option
+                Box(
+                    Modifier
+                        .padding(bottom = 8.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (selected) BastionColors.BronzeDeep else BastionColors.SurfaceRaised)
+                        .border(
+                            1.dp,
+                            if (selected) BastionColors.Bronze else BastionColors.Outline,
+                            RoundedCornerShape(20.dp),
+                        )
+                        .clickable { trigger = if (selected) null else option }
+                        .padding(horizontal = 13.dp, vertical = 8.dp)
+                ) {
+                    Text(
+                        option,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (selected) BastionColors.BronzeBright else BastionColors.TextSecondary,
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+        androidx.compose.material3.OutlinedTextField(
+            value = note,
+            onValueChange = { note = it },
+            placeholder = { Text("Anything worth remembering?") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = BastionColors.Bronze,
+                unfocusedBorderColor = BastionColors.Outline,
+                focusedTextColor = BastionColors.TextPrimary,
+                unfocusedTextColor = BastionColors.TextPrimary,
+                cursorColor = BastionColors.Bronze,
+            ),
+        )
+
+        Spacer(Modifier.height(22.dp))
+        PrimaryButton(
+            text = "Keep walking",
+            onClick = { saving = true },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !saving,
         )
     }
 }

@@ -43,6 +43,16 @@ data class Settings(
     val updateManifestUrl: String = com.bastion.app.BuildConfig.DEFAULT_UPDATE_URL,
     val autoCheckUpdates: Boolean = false,
     val lastUpdateCheck: Long = 0L,
+    /**
+     * Whether the Mentor has already greeted this user.
+     *
+     * Must be persisted rather than inferred from the message list: that list
+     * is empty for the first frames of every launch, so greeting on "history is
+     * empty" posted a fresh opener over real history each time.
+     */
+    val mentorOpenerSent: Boolean = false,
+    /** Guards seed data from returning after a deliberate clear-out. */
+    val guardSeeded: Boolean = false,
 )
 
 /**
@@ -73,6 +83,8 @@ class SettingsStore(private val context: Context) {
         val UPDATE_URL = stringPreferencesKey("update_url")
         val AUTO_CHECK = booleanPreferencesKey("auto_check_updates")
         val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
+        val MENTOR_OPENER_SENT = booleanPreferencesKey("mentor_opener_sent")
+        val GUARD_SEEDED = booleanPreferencesKey("guard_seeded")
     }
 
     val settings: Flow<Settings> = context.dataStore.data.map { p ->
@@ -97,6 +109,8 @@ class SettingsStore(private val context: Context) {
             updateManifestUrl = p[Keys.UPDATE_URL] ?: com.bastion.app.BuildConfig.DEFAULT_UPDATE_URL,
             autoCheckUpdates = p[Keys.AUTO_CHECK] ?: false,
             lastUpdateCheck = p[Keys.LAST_UPDATE_CHECK] ?: 0L,
+            mentorOpenerSent = p[Keys.MENTOR_OPENER_SENT] ?: false,
+            guardSeeded = p[Keys.GUARD_SEEDED] ?: false,
         )
     }
 
@@ -122,6 +136,8 @@ class SettingsStore(private val context: Context) {
     suspend fun setUpdateUrl(value: String) = edit { it[Keys.UPDATE_URL] = value.trim() }
     suspend fun setAutoCheckUpdates(value: Boolean) = edit { it[Keys.AUTO_CHECK] = value }
     suspend fun markUpdateChecked() = edit { it[Keys.LAST_UPDATE_CHECK] = System.currentTimeMillis() }
+    suspend fun setMentorOpenerSent(value: Boolean) = edit { it[Keys.MENTOR_OPENER_SENT] = value }
+    suspend fun setGuardSeeded(value: Boolean) = edit { it[Keys.GUARD_SEEDED] = value }
 
     suspend fun recordPanic() = edit {
         it[Keys.LAST_PANIC] = System.currentTimeMillis()

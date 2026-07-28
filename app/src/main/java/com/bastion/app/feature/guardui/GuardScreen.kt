@@ -32,6 +32,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -74,12 +75,19 @@ fun GuardScreen() {
 
     var showAppPicker by remember { mutableStateOf(false) }
     var showLearnMode by remember { mutableStateOf(false) }
-    var accessibilityEnabled by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        graph.guard.seedIfEmpty()
-        accessibilityEnabled = BastionAccessibilityService.isEnabled(context)
+    // A cooling-off timer that visibly never moves reads as broken, and this one
+    // is the app's proof that the lock is real. Computed once at composition, it
+    // sat frozen until some unrelated state happened to recompose.
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(pendingChanges.isNotEmpty()) {
+        while (pendingChanges.isNotEmpty()) {
+            now = System.currentTimeMillis()
+            kotlinx.coroutines.delay(1_000)
+        }
     }
+
+    LaunchedEffect(Unit) { graph.guard.seedIfEmpty() }
 
     val vpnConsent = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -337,8 +345,7 @@ fun GuardScreen() {
                     SectionLabel("Waiting", color = BastionColors.Amber)
                     Spacer(Modifier.height(8.dp))
                     pendingChanges.forEach { change ->
-                        val remaining = ((change.effectiveAt - System.currentTimeMillis()) / 60_000L)
-                            .coerceAtLeast(0)
+                        val remaining = ((change.effectiveAt - now) / 60_000L).coerceAtLeast(0)
                         Row(
                             Modifier
                                 .fillMaxWidth()

@@ -1,5 +1,6 @@
 package com.bastion.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -51,7 +52,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { BastionRoot() }
+        setContent { BastionRoot(openTarget = intent?.getStringExtra(EXTRA_OPEN)) }
+    }
+
+    /** Re-delivered when the Panic screen routes here while this is already open. */
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        setContent { BastionRoot(openTarget = intent.getStringExtra(EXTRA_OPEN)) }
+    }
+
+    companion object {
+        const val EXTRA_OPEN = "com.bastion.app.OPEN"
+        const val OPEN_MENTOR = "mentor"
     }
 }
 
@@ -75,7 +88,7 @@ private enum class Destination(
 }
 
 @Composable
-private fun BastionRoot() {
+private fun BastionRoot(openTarget: String? = null) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val graph = androidx.compose.runtime.remember { BastionGraph.from(context) }
 
@@ -110,16 +123,22 @@ private fun BastionRoot() {
                 // and a navigation bar underneath it would cheapen the moment.
                 OnboardingFlow(onComplete = { })
             }
-            else -> MainScaffold(faithMode = loaded.faithMode)
+            else -> MainScaffold(faithMode = loaded.faithMode, openTarget = openTarget)
         }
     }
 }
 
 @Composable
-private fun MainScaffold(faithMode: Boolean) {
+private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+
+    // Arriving from the Panic screen's "Talk it through", which used to be a
+    // dead button on the one screen where a dead button is least forgivable.
+    androidx.compose.runtime.LaunchedEffect(openTarget) {
+        if (openTarget == MainActivity.OPEN_MENTOR) navController.navigate("mentor")
+    }
 
     Scaffold(
         containerColor = BastionColors.Midnight,

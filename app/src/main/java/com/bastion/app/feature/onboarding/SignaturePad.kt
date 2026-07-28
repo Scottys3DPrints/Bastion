@@ -19,9 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.unit.dp
 import com.bastion.app.core.design.BastionColors
 import java.io.File
@@ -91,19 +91,49 @@ fun SignaturePad(
 }
 
 /**
+ * True once there is enough ink to be a signature rather than a stray tap.
+ *
+ * A single tap produced one stroke of one point: `isNotEmpty()` was satisfied,
+ * the draw loop (`1 until size`) rendered nothing, and a man could sign his
+ * covenant with a blank image.
+ */
+fun hasRealSignature(strokes: List<List<Offset>>): Boolean {
+    val points = strokes.sumOf { it.size }
+    val drawnLength = strokes.sumOf { stroke ->
+        (1 until stroke.size).sumOf { i ->
+            val dx = stroke[i].x - stroke[i - 1].x
+            val dy = stroke[i].y - stroke[i - 1].y
+            kotlin.math.sqrt(dx * dx + dy * dy).toDouble()
+        }
+    }
+    return points >= MIN_SIGNATURE_POINTS && drawnLength >= MIN_SIGNATURE_LENGTH_PX
+}
+
+private const val MIN_SIGNATURE_POINTS = 8
+private const val MIN_SIGNATURE_LENGTH_PX = 120.0
+
+/**
  * Rasterises the signature to a PNG in app-private storage. Never leaves the
  * device; it exists so a man can look at his own signature on a hard night.
+ *
+ * Suspends on the IO dispatcher: encoding a PNG on the main thread janked the
+ * final transition of onboarding, which is the one moment meant to feel weighty.
  */
-fun saveSignature(
+suspend fun saveSignature(
     context: Context,
     strokes: List<List<Offset>>,
-    width: Int = 1000,
-    height: Int = 400,
     sourceWidth: Float,
     sourceHeight: Float,
-): String? {
-    if (strokes.isEmpty() || sourceWidth <= 0f || sourceHeight <= 0f) return null
+    width: Int = 1000,
+): String? = withContext(Dispatchers.IO) {
+    if (!hasRealSignature(strokes) || sourceWidth <= 0f || sourceHeight <= 0f) {
+        return@withContext null
+    }
 
+    // Height derived from the pad's own aspect ratio. A fixed 1000x400 against a
+    // roughly 2:1 pad stretched every signature horizontally, so what was saved
+    // was not what the man drew.
+    val height = (width * (sourceHeight / sourceWidth)).toInt().coerceAtLeast(1)
     val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     val canvas = android.graphics.Canvas(bitmap)
     val paint = android.graphics.Paint().apply {
@@ -115,25 +145,22 @@ fun saveSignature(
         isAntiAlias = true
     }
 
-    val scaleX = width / sourceWidth
-    val scaleY = height / sourceHeight
+    // One uniform scale, so the drawing keeps its proportions.
+    val scale = width / sourceWidth
 
     strokes.forEach { stroke ->
         val path = android.graphics.Path()
         stroke.forEachIndexed { index, point ->
-            val x = point.x * scaleX
-            val y = point.y * scaleY
+            val x = point.x * scale
+            val y = point.y * scale
             if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
         }
         canvas.drawPath(path, paint)
     }
 
     val file = File(context.filesDir, "covenant_signature.png")
-    return runCatching {
+    runCatching {
         FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         file.absolutePath
     }.getOrNull()
 }
-
-@Suppress("unused")
-private val strokeStyleReference = Stroke(width = 4f, join = StrokeJoin.Round)

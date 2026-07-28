@@ -32,7 +32,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -80,10 +83,15 @@ class FilteredBrowserActivity : ComponentActivity() {
 private fun FilteredBrowser(onExit: () -> Unit) {
     val context = LocalContext.current
     val graph = remember { BastionGraph.from(context) }
-    var filter by remember { mutableStateOf(DomainFilter.PERMISSIVE) }
     var address by remember { mutableStateOf("") }
     var blockedHost by remember { mutableStateOf<String?>(null) }
     var webView by remember { mutableStateOf<WebView?>(null) }
+
+    // Null until the real lists are loaded. The browser is the one place Bastion
+    // can promise clean browsing outright, so it must not render — let alone
+    // navigate — while the filter would still permit everything. Previously it
+    // started PERMISSIVE and loaded the home page during the gap.
+    var filter by remember { mutableStateOf<DomainFilter?>(null) }
 
     LaunchedEffect(Unit) {
         graph.guard.seedIfEmpty()
@@ -91,9 +99,30 @@ private fun FilteredBrowser(onExit: () -> Unit) {
         filter = DomainFilter(data.blocked, data.allowed, data.keywords)
     }
 
+    // A WebView is not a Compose node: letting it leave composition destroyed the
+    // back stack, so every block dumped the user on the home page. It is created
+    // once, kept alive across blocks, and released with the screen.
+    DisposableEffect(Unit) {
+        onDispose {
+            webView?.apply {
+                stopLoading()
+                loadUrl("about:blank")
+                destroy()
+            }
+            webView = null
+        }
+    }
+
     BackHandler {
         val view = webView
-        if (view != null && view.canGoBack()) view.goBack() else onExit()
+        when {
+            blockedHost != null -> {
+                blockedHost = null
+                if (view?.canGoBack() == true) view.goBack()
+            }
+            view?.canGoBack() == true -> view.goBack()
+            else -> onExit()
+        }
     }
 
     Column(
@@ -134,67 +163,98 @@ private fun FilteredBrowser(onExit: () -> Unit) {
             }
         }
 
-        val blocked = blockedHost
-        if (blocked != null) {
-            BlockedNotice(host = blocked, onBack = {
-                blockedHost = null
-                webView?.let { if (it.canGoBack()) it.goBack() else it.loadUrl(HOME_PAGE) }
-            })
-        } else {
-            AndroidView(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .weight(1f),
-                factory = { ctx ->
-                    WebView(ctx).apply {
-                        settings.javaScriptEnabled = true
-                        settings.domStorageEnabled = true
-                        settings.safeBrowsingEnabled = true
-                        webViewClient = object : WebViewClient() {
-                            override fun shouldOverrideUrlLoading(
-                                view: WebView?,
-                                request: WebResourceRequest?,
-                            ): Boolean {
-                                val host = request?.url?.host ?: return false
-                                return if (filter.isBlocked(host)) {
-                                    blockedHost = host
-                                    true
-                                } else false
-                            }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .weight(1f)
+        ) {
+            if (filter == null) {
+                // Deliberately blank until the lists are in memory.
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(
+                        "◇",
+                        style = MaterialTheme.typography.displaySmall,
+                        color = BastionColors.BronzeDeep,
+                    )
+                }
+            } else {
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { ctx ->
+                        WebView(ctx).apply {
+                            settings.javaScriptEnabled = true
+                            settings.domStorageEnabled = true
+                            settings.safeBrowsingEnabled = true
+                            webViewClient = object : WebViewClient() {
+                                override fun shouldOverrideUrlLoading(
+                                    view: WebView?,
+                                    request: WebResourceRequest?,
+                                ): Boolean {
+                                    val host = request?.url?.host ?: return false
+                                    return if (filter?.isBlocked(host) == true) {
+                                        blockedHost = host
+                                        true
+                                    } else false
+                                }
 
-                            override fun shouldInterceptRequest(
-                                view: WebView?,
-                                request: WebResourceRequest?,
-                            ): WebResourceResponse? {
-                                val host = request?.url?.host ?: return null
-                                // Catches sub-resources too: an image or iframe
-                                // pulled from a blocked host never loads.
-                                return if (filter.isBlocked(host)) {
-                                    WebResourceResponse(
-                                        "text/plain",
-                                        "utf-8",
-                                        ByteArrayInputStream(ByteArray(0)),
-                                    )
-                                } else null
-                            }
+                                override fun shouldInterceptRequest(
+                                    view: WebView?,
+                                    request: WebResourceRequest?,
+                                ): WebResourceResponse? {
+                                    val host = request?.url?.host ?: return null
+                                    // Catches sub-resources too: an image or iframe
+                                    // pulled from a blocked host never loads.
+                                    return if (filter?.isBlocked(host) == true) {
+                                        WebResourceResponse(
+                                            "text/plain",
+                                            "utf-8",
+                                            ByteArrayInputStream(ByteArray(0)),
+                                        )
+                                    } else null
+                                }
 
-                            override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-                                url?.let { address = it }
-                                super.onPageStarted(view, url, favicon)
+                                override fun onPageStarted(
+                                    view: WebView?,
+                                    url: String?,
+                                    favicon: android.graphics.Bitmap?,
+                                ) {
+                                    url?.let { address = it }
+                                    super.onPageStarted(view, url, favicon)
+                                }
                             }
+                            loadUrl(HOME_PAGE)
+                            webView = this
                         }
-                        loadUrl(HOME_PAGE)
-                        webView = this
-                    }
-                },
-            )
+                    },
+                )
+
+                // Drawn over the live WebView rather than replacing it, so the
+                // history behind it survives and "Go back" has somewhere to go.
+                blockedHost?.let { host ->
+                    BlockedNotice(
+                        host = host,
+                        onBack = {
+                            blockedHost = null
+                            webView?.let { if (it.canGoBack()) it.goBack() }
+                        },
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
 private fun BlockedNotice(host: String, onBack: () -> Unit) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            // Opaque and clickable so the page underneath is neither visible
+            // nor reachable while this is up.
+            .background(BastionColors.Midnight)
+            .clickable(enabled = false) {},
+        contentAlignment = Alignment.Center,
+    ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,

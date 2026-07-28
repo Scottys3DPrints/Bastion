@@ -106,9 +106,15 @@ class SocialRepository(
         )
     }
 
-    /** Deterministic per input, so re-reading the thread never rewrites history. */
+    /**
+     * Deterministic per input, so re-reading the thread never rewrites history.
+     *
+     * floorMod rather than absoluteValue: `Int.MIN_VALUE.absoluteValue` is still
+     * negative, which made a rare but real IndexOutOfBounds on the Mentor path —
+     * the last place in the app that should ever crash.
+     */
     private fun List<String>.pickStable(seed: String): String? =
-        if (isEmpty()) null else this[(seed.hashCode().absoluteValue) % size]
+        if (isEmpty()) null else this[Math.floorMod(seed.hashCode(), size)]
 
     private data class ScoredIntent(val intent: MentorIntent, val hits: Int)
 

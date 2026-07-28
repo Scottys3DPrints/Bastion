@@ -14,8 +14,14 @@ import com.bastion.app.domain.RankPoints
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
+import java.time.Duration
 import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZonedDateTime
 import java.util.UUID
+import java.util.concurrent.TimeUnit
 
 data class JourneyState(
     val currentStreak: Int = 0,
@@ -45,6 +51,26 @@ class JourneyRepository(
     private val settings: SettingsStore,
 ) {
 
+    /**
+     * Re-emits when the calendar day rolls over.
+     *
+     * Without it, `LocalDate.now()` was sampled once when the flow last emitted:
+     * an app left open across midnight showed yesterday's streak until something
+     * unrelated happened to change. A man who checks his phone at 12:01 should
+     * see the day he just earned.
+     */
+    private val dayTicks: Flow<Long> = flow {
+        while (true) {
+            val today = LocalDate.now()
+            emit(today.toEpochDay())
+            val nextMidnight = today.plusDays(1).atStartOfDay(ZoneId.systemDefault())
+            val waitMillis = Duration.between(ZonedDateTime.now(ZoneId.systemDefault()), nextMidnight)
+                .toMillis()
+                .coerceIn(1_000L, TimeUnit.HOURS.toMillis(24))
+            delay(waitMillis)
+        }
+    }
+
     val state: Flow<JourneyState> = combine(
         journeyDao.allDays(),
         habitDao.totalCompletions(),
@@ -54,18 +80,25 @@ class JourneyRepository(
             progressDao.lessonsRead().map { it.size },
             progressDao.badgeCount(),
             settings.settings,
-        ) { lessons, badges, s -> Triple(lessons, badges, s) },
-    ) { days, habitCompletions, checkIns, resisted, (lessons, badges, s) ->
+            dayTicks,
+        ) { lessons, badges, s, today -> Aux(lessons, badges, s, today) },
+    ) { days, habitCompletions, checkIns, resisted, aux ->
 
-        val today = LocalDate.now().toEpochDay()
+        val (lessons, badges, s, today) = aux
         val start = if (s.journeyStartEpochDay > 0) s.journeyStartEpochDay else today
-        val slipDays = days.filter { it.status == DayStatus.SLIP }.map { it.epochDay }.sorted()
+
+        // Clamped to today: a slip dated in the future would otherwise inflate
+        // the count and skew points, and no one can relapse tomorrow.
+        val slipDays = days
+            .filter { it.status == DayStatus.SLIP && it.epochDay <= today }
+            .map { it.epochDay }
+            .sorted()
 
         val totalDays = ((today - start).toInt() + 1).coerceAtLeast(1)
         val slipCount = slipDays.count { it >= start }
         val totalCleanDays = (totalDays - slipCount).coerceAtLeast(0)
 
-        val lastSlip = slipDays.lastOrNull { it <= today }
+        val lastSlip = slipDays.lastOrNull()
         val currentStreak = if (lastSlip == null) totalDays else (today - lastSlip).toInt()
 
         val points = totalCleanDays * RankPoints.CLEAN_DAY +
@@ -91,6 +124,14 @@ class JourneyRepository(
         )
     }
 
+    /** The tail of the combine, bundled so the day tick fits within arity limits. */
+    private data class Aux(
+        val lessons: Int,
+        val badges: Int,
+        val settings: com.bastion.app.data.prefs.Settings,
+        val today: Long,
+    )
+
     /** Longest run of consecutive days that contained no slip. */
     private fun longestStreak(start: Long, today: Long, slipDays: List<Long>): Int {
         val relevant = slipDays.filter { it in start..today }.sorted()
@@ -104,7 +145,9 @@ class JourneyRepository(
     }
 
     suspend fun logSlip(epochDay: Long = LocalDate.now().toEpochDay(), note: String? = null) {
-        journeyDao.upsertDay(DayLogEntity(epochDay = epochDay, status = DayStatus.SLIP, note = note))
+        // Never in the future, whatever the caller passes.
+        val day = epochDay.coerceAtMost(LocalDate.now().toEpochDay())
+        journeyDao.upsertDay(DayLogEntity(epochDay = day, status = DayStatus.SLIP, note = note))
     }
 
     /** Undo, for the man who tapped the wrong thing. No interrogation. */
@@ -122,21 +165,25 @@ class JourneyRepository(
         note: String?,
     ) {
         val now = System.currentTimeMillis()
-        journeyDao.upsertUrge(
-            UrgeLogEntity(
-                id = UUID.randomUUID().toString(),
-                timestamp = now,
-                epochDay = LocalDate.now().toEpochDay(),
-                resisted = resisted,
-                intensity = intensity,
-                mood = mood,
-                trigger = trigger,
-                contextApp = contextApp,
-                place = place,
-                note = note,
-            )
+        val today = LocalDate.now().toEpochDay()
+        val urge = UrgeLogEntity(
+            id = UUID.randomUUID().toString(),
+            timestamp = now,
+            epochDay = today,
+            resisted = resisted,
+            intensity = intensity,
+            mood = mood,
+            trigger = trigger,
+            contextApp = contextApp,
+            place = place,
+            note = note,
         )
-        if (!resisted) logSlip(note = trigger)
+        // The urge and the slip it became are a single fact; they are written
+        // together or not at all.
+        val day = if (resisted) null
+        else DayLogEntity(epochDay = today, status = DayStatus.SLIP, note = trigger)
+
+        journeyDao.upsertUrgeAndDay(urge, day)
     }
 
     suspend fun checkIn(mood: Int, note: String?) {

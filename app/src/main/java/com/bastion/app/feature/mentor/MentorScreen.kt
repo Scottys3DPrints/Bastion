@@ -1,5 +1,7 @@
 package com.bastion.app.feature.mentor
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -72,8 +74,16 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
 
     LaunchedEffect(faithMode) {
         prompts = graph.social.quickPrompts(faithMode)
-        if (history.isEmpty()) {
+    }
+
+    // Greet once, ever — decided by a persisted flag rather than by whether the
+    // message list happens to be empty. It is empty for the first frames of
+    // every launch, so the old check posted a new opener over real history each
+    // time the screen opened, and again on every mode toggle.
+    LaunchedEffect(Unit) {
+        if (!graph.settings.current().mentorOpenerSent) {
             graph.social.say(graph.social.opener(faithMode), fromUser = false)
+            graph.settings.setMentorOpenerSent(true)
         }
     }
 
@@ -185,6 +195,64 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
     }
 }
 
+/**
+ * Real, tappable routes to a human.
+ *
+ * The crisis path used to be styling only — an amber border and a heading. On
+ * the one path where the app is explicitly out of its depth, reaching help must
+ * cost one tap, not a copied phone number.
+ *
+ * Uses ACTION_DIAL rather than ACTION_CALL on purpose: it opens the dialler
+ * pre-filled and lets the person press call themselves, and it needs no
+ * permission. The region-specific numbers are labelled as such, because guessing
+ * someone's country and dialling it for them would be worse than useless.
+ */
+@Composable
+private fun CrisisActions() {
+    val context = LocalContext.current
+
+    fun dial(number: String) {
+        runCatching {
+            context.startActivity(
+                Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number"))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
+    }
+
+    Column {
+        CrisisButton("Find a helpline near you") {
+            runCatching {
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse("https://findahelpline.com"))
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                )
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        CrisisButton("Call 988 · US & Canada") { dial("988") }
+        Spacer(Modifier.height(8.dp))
+        CrisisButton("Call 116 123 · UK & Ireland") { dial("116123") }
+    }
+}
+
+@Composable
+private fun CrisisButton(label: String, onClick: () -> Unit) {
+    androidx.compose.material3.OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp),
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, BastionColors.Amber),
+        colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
+            contentColor = BastionColors.BronzeBright,
+        ),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
 @Composable
 private fun MessageBubble(message: MentorMessageEntity) {
     val fromUser = message.fromUser
@@ -231,6 +299,10 @@ private fun MessageBubble(message: MentorMessageEntity) {
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (fromUser) BastionColors.TextPrimary else BastionColors.TextSecondary,
                 )
+                if (isCrisis) {
+                    Spacer(Modifier.height(16.dp))
+                    CrisisActions()
+                }
             }
         }
     }

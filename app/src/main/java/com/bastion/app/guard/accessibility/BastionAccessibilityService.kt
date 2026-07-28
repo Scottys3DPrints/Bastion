@@ -205,27 +205,44 @@ class BastionAccessibilityService : AccessibilityService() {
     private fun findMatch(root: AccessibilityNodeInfo, rules: List<FeedRuleEntity>): FeedRuleEntity? {
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
+        // Every node fetched via getChild() is owned by us. This runs on the
+        // content-changed path many times a second, so leaking them is a real
+        // battery and memory cost on the versions where recycling still matters.
+        val borrowed = mutableListOf<AccessibilityNodeInfo>()
         var visited = 0
 
-        while (queue.isNotEmpty() && visited < MAX_NODES) {
-            val node = queue.removeFirst()
-            visited++
+        try {
+            while (queue.isNotEmpty() && visited < MAX_NODES) {
+                val node = queue.removeFirst()
+                visited++
 
-            val viewId = node.viewIdResourceName
-            for (rule in rules) {
-                val hit = when (rule.matchType) {
-                    MatchType.VIEW_ID -> viewId != null && viewId.contains(rule.matchValue, ignoreCase = true)
-                    MatchType.CONTENT_DESC -> node.contentDescription.equalsIgnoreCase(rule.matchValue)
-                    MatchType.TEXT -> node.text.equalsIgnoreCase(rule.matchValue)
+                val viewId = node.viewIdResourceName
+                for (rule in rules) {
+                    val hit = when (rule.matchType) {
+                        MatchType.VIEW_ID -> viewId != null && viewId.contains(rule.matchValue, ignoreCase = true)
+                        MatchType.CONTENT_DESC -> node.contentDescription.equalsIgnoreCase(rule.matchValue)
+                        MatchType.TEXT -> node.text.equalsIgnoreCase(rule.matchValue)
+                    }
+                    if (hit) return rule
                 }
-                if (hit) return rule
-            }
 
-            for (i in 0 until node.childCount) {
-                node.getChild(i)?.let { queue.add(it) }
+                for (i in 0 until node.childCount) {
+                    node.getChild(i)?.let {
+                        queue.add(it)
+                        borrowed.add(it)
+                    }
+                }
             }
+            return null
+        } finally {
+            recycleAll(borrowed)
         }
-        return null
+    }
+
+    /** No-op from API 33, where the platform stopped pooling these. */
+    private fun recycleAll(nodes: List<AccessibilityNodeInfo>) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) return
+        nodes.forEach { runCatching { @Suppress("DEPRECATION") it.recycle() } }
     }
 
     /**
@@ -240,6 +257,7 @@ class BastionAccessibilityService : AccessibilityService() {
         val found = LinkedHashSet<String>()
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
+        val borrowed = mutableListOf<AccessibilityNodeInfo>()
         var visited = 0
 
         while (queue.isNotEmpty() && visited < MAX_NODES) {
@@ -249,8 +267,14 @@ class BastionAccessibilityService : AccessibilityService() {
                 ?.substringAfterLast('/')
                 ?.takeIf { it.isNotBlank() }
                 ?.let { found.add(it) }
-            for (i in 0 until node.childCount) node.getChild(i)?.let { queue.add(it) }
+            for (i in 0 until node.childCount) {
+                node.getChild(i)?.let {
+                    queue.add(it)
+                    borrowed.add(it)
+                }
+            }
         }
+        recycleAll(borrowed)
         learnedIds.value = LearnCapture(
             packageName = root.packageName?.toString().orEmpty(),
             viewIds = found.toList(),

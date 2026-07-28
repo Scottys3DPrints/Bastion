@@ -107,11 +107,25 @@ class BastionVpnService : VpnService() {
         val input = FileInputStream(descriptor.fileDescriptor)
         val buffer = ByteArray(32_767)
 
+        // A persistent read failure used to spin this loop at 100% CPU, because
+        // `continue` retried immediately forever. Back off, then give up rather
+        // than cook the battery behind a filter that is no longer working.
+        var consecutiveFailures = 0
+
         while (shouldRun) {
             val length = runCatching { input.read(buffer) }.getOrElse { -1 }
             if (length <= 0) {
-                if (!shouldRun) break else continue
+                if (!shouldRun) break
+                consecutiveFailures++
+                if (consecutiveFailures >= MAX_READ_FAILURES) {
+                    Log.w(TAG, "Tunnel read failed $consecutiveFailures times; shutting the filter down")
+                    teardown()
+                    break
+                }
+                runCatching { Thread.sleep(READ_BACKOFF_MS * consecutiveFailures) }
+                continue
             }
+            consecutiveFailures = 0
             val packet = buffer.copyOf(length)
             val parsed = DnsPacket.parse(packet, length) ?: continue
             handleQuery(packet, parsed)
@@ -210,6 +224,8 @@ class BastionVpnService : VpnService() {
         private const val TAG = "BastionVpn"
         private const val NOTIFICATION_ID = 4201
         private const val UPSTREAM_TIMEOUT_MS = 4_000
+        private const val MAX_READ_FAILURES = 12
+        private const val READ_BACKOFF_MS = 50L
 
         /** Addresses inside a reserved range, chosen not to collide with a real LAN. */
         private const val TUN_ADDRESS = "10.111.222.2"

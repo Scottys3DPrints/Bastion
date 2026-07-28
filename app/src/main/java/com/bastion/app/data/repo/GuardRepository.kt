@@ -57,6 +57,11 @@ class GuardRepository(
      * built-in rows are only inserted when the table is empty.
      */
     suspend fun seedIfEmpty() {
+        // Guarded by a flag rather than by row counts. Keyed on emptiness, a
+        // user who deliberately cleared his blocklist got the whole thing back
+        // on next launch, silently undoing a decision he had made.
+        if (settings.current().guardSeeded) return
+
         if (guardDao.domainCount() == 0) {
             val list = content.blocklist()
             guardDao.upsertDomains(list.domains.map { BlockedDomainEntity(it.normaliseDomain()) })
@@ -65,6 +70,7 @@ class GuardRepository(
         if (guardDao.feedRuleCount() == 0) {
             guardDao.upsertRules(builtInFeedRules())
         }
+        settings.setGuardSeeded(true)
     }
 
     // --- Cooling-off lock -------------------------------------------------

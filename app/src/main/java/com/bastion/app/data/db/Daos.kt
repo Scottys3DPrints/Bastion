@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
@@ -34,6 +35,19 @@ interface JourneyDao {
 
     @Upsert
     suspend fun upsertUrge(urge: UrgeLogEntity)
+
+    /**
+     * One transaction, because these two writes are one event.
+     *
+     * Written separately, a crash between them left the urge recorded but the
+     * slip missing — the streak would silently keep running over a relapse the
+     * user had already admitted to.
+     */
+    @Transaction
+    suspend fun upsertUrgeAndDay(urge: UrgeLogEntity, day: DayLogEntity?) {
+        upsertUrge(urge)
+        if (day != null) upsertDay(day)
+    }
 
     @Query("SELECT * FROM urge_log ORDER BY timestamp DESC LIMIT :limit")
     fun recentUrges(limit: Int = 200): Flow<List<UrgeLogEntity>>

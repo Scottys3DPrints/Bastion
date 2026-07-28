@@ -167,8 +167,11 @@ class ShieldOverlay(private val service: AccessibilityService) {
         })
 
         if (secondaryLabel != null && onSecondary != null) {
-            column.addView(Button(ctx).apply {
+            val secondary = Button(ctx).apply {
                 text = secondaryLabel
+                // Some themes uppercase button text, which fights the app's
+                // deliberately steady tone at exactly the wrong moment.
+                transformationMethod = null
                 setTextColor(0xFF96A0BA.toInt())
                 background = GradientDrawable().apply {
                     cornerRadius = dp(14).toFloat()
@@ -176,9 +179,18 @@ class ShieldOverlay(private val service: AccessibilityService) {
                     setStroke(dp(1), 0xFF2E3A5E.toInt())
                 }
                 setPadding(dp(28), dp(14), dp(28), dp(14))
-                (layoutParams as? LinearLayout.LayoutParams)?.topMargin = dp(12)
                 setOnClickListener { onSecondary() }
-            })
+            }
+            // Params must be supplied to addView: reading layoutParams before a
+            // view is attached returns null, so the gap was silently dropped and
+            // the two buttons rendered flush together.
+            column.addView(
+                secondary,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply { topMargin = dp(12) },
+            )
         }
 
         root.addView(

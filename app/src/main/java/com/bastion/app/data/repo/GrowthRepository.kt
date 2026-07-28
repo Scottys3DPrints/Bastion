@@ -93,7 +93,9 @@ class GrowthRepository(
         progressDao.upsertChallenge(
             progress.copy(
                 completedDaysCsv = days.joinToString(","),
-                active = !finished,
+                // `&& progress.active`: logging a day on a challenge the user
+                // abandoned used to silently revive it.
+                active = progress.active && !finished,
                 completedAt = if (finished) System.currentTimeMillis() else null,
                 updatedAt = System.currentTimeMillis(),
             )
