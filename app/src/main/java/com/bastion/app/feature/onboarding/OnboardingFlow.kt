@@ -207,14 +207,17 @@ private fun WelcomeStep() {
         )
         Spacer(Modifier.height(16.dp))
         Text(
-            "A bastion is a stronghold — a thing that defends what matters.\n\n" +
-                "This app is not built on shame. Shame is what keeps the cycle turning. " +
-                "It's built on the opposite idea: that you are becoming someone, and this " +
-                "habit is simply in the way.\n\n" +
-                "The next few minutes are about who that man is.",
+            "Not built on shame — shame is what keeps the cycle turning.\n\n" +
+                "Built on who you're becoming.",
             style = MaterialTheme.typography.bodyLarge,
             color = BastionColors.TextSecondary,
             textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(20.dp))
+        Text(
+            "Three minutes.",
+            style = MaterialTheme.typography.labelMedium,
+            color = BastionColors.TextMuted,
         )
     }
 }
@@ -294,10 +297,9 @@ private fun DiagnosticStep(
         SectionLabel("An honest baseline")
         Spacer(Modifier.height(12.dp))
         Text(
-            "No one else sees this. It stays on your phone. It exists so that in three " +
-                "months you can see exactly how far you've come.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = BastionColors.TextSecondary,
+            "Stays on your phone. It's how you'll see how far you've come.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BastionColors.TextMuted,
         )
         Spacer(Modifier.height(22.dp))
 
@@ -374,10 +376,9 @@ private fun WhyStep(
         SectionLabel("Your why")
         Spacer(Modifier.height(12.dp))
         Text(
-            "Write it in your own words — who you're becoming, and what this is costing you now. " +
-                "Bastion will put this in front of you at the exact moment you need it.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = BastionColors.TextSecondary,
+            "You'll see this at the exact moment you need it.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BastionColors.TextMuted,
         )
         Spacer(Modifier.height(20.dp))
 
@@ -442,6 +443,9 @@ private fun CovenantStep(
                 modifier = Modifier.clickable { strokes.clear() },
             )
         }
+        // The oath is long enough to fill the scroll area exactly, which left
+        // "Clear" half-cut against the button row. Buy it some room.
+        Spacer(Modifier.height(20.dp))
     }
 }
 
@@ -452,13 +456,15 @@ private fun GuardrailsStep() {
         SectionLabel("Your guards")
         Spacer(Modifier.height(12.dp))
         Text(
-            "Bastion can let Instagram open so you can message a friend, and close the door " +
-                "the moment Reels appears. Same for Shorts and the TikTok For You page.\n\n" +
-                "That needs one permission, and you can turn it off whenever you like. " +
-                "Bastion reads which screen you're on — never your messages, never your photos, " +
-                "and nothing it sees ever leaves this phone.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = BastionColors.TextSecondary,
+            "Instagram opens. Reels doesn't. Same for Shorts and For You.",
+            style = MaterialTheme.typography.bodyLarge,
+            color = BastionColors.TextPrimary,
+        )
+        Spacer(Modifier.height(12.dp))
+        Text(
+            "Reads which screen you're on — never its contents. Nothing leaves this phone.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BastionColors.TextMuted,
         )
         Spacer(Modifier.height(22.dp))
         QuietButton(

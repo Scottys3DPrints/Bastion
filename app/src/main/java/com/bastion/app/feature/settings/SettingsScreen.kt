@@ -83,12 +83,11 @@ fun SettingsScreen(onBack: () -> Unit) {
             // --- Mode ---
             BastionCard {
                 SectionLabel("Mode")
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
-                    "Same engine, two vocabularies. Switching changes the daily briefs, the library, " +
-                        "the Mentor's voice and your rank titles. Nothing you have built is affected.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = BastionColors.TextSecondary,
+                    "Changes the writing, not your progress.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
                 )
                 Spacer(Modifier.height(16.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -114,7 +113,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                         Text("Daily brief", style = MaterialTheme.typography.titleMedium, color = BastionColors.TextPrimary)
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "Each morning: an anchor, a word tied to where you are, and one thing to do today.",
+                            "An anchor and one thing to do.",
                             style = MaterialTheme.typography.bodySmall,
                             color = BastionColors.TextMuted,
                         )
@@ -176,13 +175,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = BastionColors.TextSecondary,
                 )
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "Bastion is designed to be installed once. Updates land on top and keep everything — " +
-                        "your covenant, your signature, every day you have counted.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
             }
 
             Spacer(Modifier.height(12.dp))
@@ -190,29 +182,29 @@ fun SettingsScreen(onBack: () -> Unit) {
             // --- Privacy ---
             BastionCard(accent = BastionColors.Sage) {
                 SectionLabel("Privacy", color = BastionColors.SageBright)
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "No account. No analytics. No telemetry. Your covenant, your logs and your Why video " +
-                        "live in this app's private storage and are excluded from Google's cloud backup, " +
-                        "so they cannot leave that way either.\n\n" +
-                        "Bastion Guard reads which screen is open and nothing else — never messages, never " +
-                        "photos, never field contents. Learn Mode captures screen identifiers only.\n\n" +
-                        "The only network traffic Bastion ever makes is forwarding DNS lookups to your " +
-                        "chosen resolver" +
-                        if (settings.updateManifestUrl.isNotBlank())
-                            ", and checking the update address you entered above."
-                        else ".",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = BastionColors.TextSecondary,
-                )
+                Spacer(Modifier.height(12.dp))
+                listOf(
+                    "No account, no analytics, no telemetry",
+                    "Everything stays in private storage, cloud backup off",
+                    "Guard reads which screen is open — never its contents",
+                    "Network use: DNS lookups, and update checks you trigger",
+                ).forEach { line ->
+                    Row(Modifier.padding(vertical = 4.dp)) {
+                        Text("·  ", style = MaterialTheme.typography.bodyMedium, color = BastionColors.SageBright)
+                        Text(
+                            line,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = BastionColors.TextSecondary,
+                        )
+                    }
+                }
             }
 
             Spacer(Modifier.height(12.dp))
             BastionCard {
                 Text(
-                    "Bastion is a support tool, not treatment. If this sits alongside anxiety, depression, " +
-                        "trauma or something heavier, that deserves a real clinician — and asking for one is " +
-                        "not a failure of will.",
+                    "A support tool, not treatment. Anything heavier deserves a real clinician — " +
+                        "asking is not a failure of will.",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
@@ -248,10 +240,9 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
             style = MaterialTheme.typography.bodyMedium,
             color = BastionColors.TextPrimary,
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(6.dp))
         Text(
-            "Point this at wherever you publish new builds and Bastion will update itself in place. " +
-                "Leave it blank and the app never touches the network beyond DNS.",
+            "Updates install over the top. Nothing is lost.",
             style = MaterialTheme.typography.bodySmall,
             color = BastionColors.TextMuted,
         )

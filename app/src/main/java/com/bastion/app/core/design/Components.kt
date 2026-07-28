@@ -234,6 +234,9 @@ fun HabitRing(
             color = if (done) BastionColors.SageBright else BastionColors.TextMuted,
             textAlign = TextAlign.Center,
             maxLines = 2,
+            // Without this a long habit name is chopped mid-word ("Twenty-minu"),
+            // which reads as a rendering fault rather than a shortened label.
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
         )
     }
 }

@@ -79,11 +79,11 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
                 .padding(top = 52.dp, bottom = 32.dp)
         ) {
             Text("Brotherhood", style = MaterialTheme.typography.displaySmall, color = BastionColors.TextPrimary)
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Text(
-                "Isolation is where this wins. One person who knows changes the odds more than any blocker.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = BastionColors.TextSecondary,
+                "One person who knows beats any blocker.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
             )
             Spacer(Modifier.height(20.dp))
 
@@ -91,12 +91,11 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
             if (current == null) {
                 BastionCard {
                     SectionLabel("Your partner")
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(6.dp))
                     Text(
-                        "A friend, a mentor, a pastor, a sponsor — someone who will take a message at " +
-                            "midnight and not think less of you.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = BastionColors.TextSecondary,
+                        "Someone who'll take a message at midnight.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextMuted,
                     )
                     Spacer(Modifier.height(16.dp))
                     OutlinedTextField(
@@ -123,8 +122,7 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
                     ShareToggle("Tell them if I weaken a guard", shareGuard) { shareGuard = it }
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Bastion never sends anything on its own. It writes the message and hands it to " +
-                            "you — you press send.",
+                        "Bastion writes the message. You press send.",
                         style = MaterialTheme.typography.bodySmall,
                         color = BastionColors.TextMuted,
                     )
@@ -175,12 +173,7 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
 
             BastionCard {
                 SectionLabel("Today's check-in")
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    "How is it, honestly?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = BastionColors.TextSecondary,
-                )
+                Spacer(Modifier.height(10.dp))
                 Slider(
                     value = mood,
                     onValueChange = { mood = it },
@@ -250,9 +243,8 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
                 Spacer(Modifier.height(12.dp))
                 if (checkIns.isEmpty()) {
                     Text(
-                        "None yet. Even a one-word check-in on a flat day is worth more than a paragraph " +
-                            "on a good one.",
-                        style = MaterialTheme.typography.bodyMedium,
+                        "None yet.",
+                        style = MaterialTheme.typography.bodySmall,
                         color = BastionColors.TextMuted,
                     )
                 }
@@ -287,9 +279,7 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
                 SectionLabel("No one to tell yet?")
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "That is its own kind of hard, and it is worth naming rather than pushing down. " +
-                        "The Mentor is here in the meantime — and it will point you to real human support " +
-                        "when that is what's needed.",
+                    "That's its own kind of hard, and worth naming. The Mentor is here meanwhile.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = BastionColors.TextSecondary,
                 )

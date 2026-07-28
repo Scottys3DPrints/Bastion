@@ -39,6 +39,7 @@ import com.bastion.app.core.design.BastionCard
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.DawnBackground
 import com.bastion.app.core.design.PrimaryButton
+import com.bastion.app.core.design.ProportionBar
 import com.bastion.app.core.design.QuietButton
 import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.data.BastionGraph
@@ -142,17 +143,12 @@ private fun RegimenTab(graph: BastionGraph, onAdd: () -> Unit) {
     val todayFlow = remember(graph) { graph.growth.completionsToday() }
     val today by todayFlow.collectAsStateWithLifecycle(initialValue = emptyList())
 
-    BastionCard {
-        SectionLabel("The regimen")
-        Spacer(Modifier.height(10.dp))
-        Text(
-            "Keystone habits that crowd out the old pattern. Keep the list short enough that you " +
-                "actually do it — three kept beats ten intended.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = BastionColors.TextSecondary,
-        )
-    }
-    Spacer(Modifier.height(12.dp))
+    Text(
+        "Three kept beats ten intended.",
+        style = MaterialTheme.typography.bodySmall,
+        color = BastionColors.TextMuted,
+    )
+    Spacer(Modifier.height(14.dp))
 
     habits.forEach { habit ->
         val done = today.any { it.habitId == habit.id }
@@ -298,19 +294,18 @@ private fun BecomingTab(graph: BastionGraph) {
 
     BastionCard {
         SectionLabel("The man you're becoming")
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(6.dp))
         Text(
-            "Built from the last four weeks of habits actually completed. It moves slowly on purpose — " +
-                "character is not a streak.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = BastionColors.TextSecondary,
+            "Last four weeks. Moves slowly on purpose.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BastionColors.TextMuted,
         )
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(18.dp))
 
         if (scores.isEmpty()) {
             Text(
-                "Add a few habits in the Regimen tab and this fills in.",
-                style = MaterialTheme.typography.bodyMedium,
+                "Add habits and this fills in.",
+                style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.TextMuted,
             )
         }
@@ -326,21 +321,7 @@ private fun BecomingTab(graph: BastionGraph) {
                     )
                 }
                 Spacer(Modifier.height(6.dp))
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(BastionColors.SurfaceHigh)
-                ) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth(score.coerceIn(0.02f, 1f))
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(BastionColors.Sage)
-                    )
-                }
+                ProportionBar(fraction = score)
             }
         }
     }

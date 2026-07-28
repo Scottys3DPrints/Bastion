@@ -112,16 +112,12 @@ fun GuardScreen() {
                         color = BastionColors.TextPrimary,
                     )
                 }
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
-                    if (serviceRunning)
-                        "Guarded apps open normally. The moment a guarded feed appears, the door closes."
-                    else
-                        "This is what lets Bastion block Reels, Shorts and the For You page while leaving " +
-                            "the rest of the app usable. It reads which screen you're on — never your " +
-                            "messages or photos — and nothing it sees leaves this phone.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = BastionColors.TextSecondary,
+                    if (serviceRunning) "Apps open. Guarded feeds don't."
+                    else "Blocks Reels, Shorts and For You while the app stays usable.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
                 )
                 if (!serviceRunning) {
                     Spacer(Modifier.height(14.dp))
@@ -174,11 +170,9 @@ fun GuardScreen() {
                         colors = switchColors(),
                     )
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
                 Text(
-                    "Honest limits: apps that ship their own encrypted DNS can route around this, and it " +
-                        "filters whole domains rather than individual pages. It is one layer of three — " +
-                        "the Guard service and the Bastion browser are the others.",
+                    "Apps with their own encrypted DNS can route around this. One layer of three.",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
@@ -213,9 +207,8 @@ fun GuardScreen() {
 
                 if (guardedApps.isEmpty()) {
                     Text(
-                        "Nothing guarded yet. Start with the one that precedes the most urges — " +
-                            "for most men that's Instagram or YouTube.",
-                        style = MaterialTheme.typography.bodyMedium,
+                        "Nothing guarded yet. Instagram and YouTube are the usual first two.",
+                        style = MaterialTheme.typography.bodySmall,
                         color = BastionColors.TextMuted,
                     )
                 }
@@ -266,12 +259,9 @@ fun GuardScreen() {
                         modifier = Modifier.clickable { showLearnMode = true },
                     )
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
                 Text(
-                    "These identify the exact screen to close — Reels, Shorts, the For You page. " +
-                        "They live here rather than in the app's code, so when Instagram redesigns and a " +
-                        "rule stops firing, you recapture it with Learn Mode in seconds instead of waiting " +
-                        "for an update.",
+                    "A rule stopped firing? Learn it again in seconds.",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
@@ -319,14 +309,12 @@ fun GuardScreen() {
 
             // --- Tamper resistance ---
             BastionCard(accent = BastionColors.Bronze) {
-                SectionLabel("The cooling-off lock")
-                Spacer(Modifier.height(10.dp))
+                SectionLabel("Cooling-off lock")
+                Spacer(Modifier.height(8.dp))
                 Text(
-                    "Tightening a guard happens immediately. Weakening one waits " +
-                        "${settings.coolingOffHours} hours. The man at 1am has to still want it at " +
-                        "${settings.coolingOffHours + 1}am — which is the entire difference between a wish and a wall.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = BastionColors.TextSecondary,
+                    "Tightening is instant. Weakening waits ${settings.coolingOffHours}h.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
                 )
                 Spacer(Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -452,11 +440,9 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
             )
         }
         if (!hasPermission) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(10.dp))
             Text(
-                "Real grayscale needs a permission Android only grants over USB. Because you installed " +
-                    "Bastion directly rather than through the Play Store, you can grant it yourself — " +
-                    "plug the phone into a computer with adb and run:",
+                "True grayscale needs one adb command:",
                 style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.TextMuted,
             )
@@ -476,8 +462,7 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
             }
             Spacer(Modifier.height(8.dp))
             Text(
-                "Until then Bastion falls back to a dimming veil, which is a weaker tool and is not " +
-                    "pretending otherwise.",
+                "Until then: a dimming veil, which is weaker.",
                 style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.TextMuted,
             )
@@ -667,9 +652,8 @@ private fun LearnModeSheet(onClose: () -> Unit) {
         Text("Learn mode", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
         Spacer(Modifier.height(10.dp))
         Text(
-            "Leave this open, switch to the app, and go to the screen you want closed — the Reels tab, " +
-                "Shorts, the For You page. Come back and pick the identifier that belongs to it.\n\n" +
-                "Bastion captures identifiers only. No text from that screen is read or stored.",
+            "Leave this open, go to the screen you want closed, come back and pick its identifier. " +
+                "Identifiers only — no text is ever read.",
             style = MaterialTheme.typography.bodyMedium,
             color = BastionColors.TextSecondary,
         )
