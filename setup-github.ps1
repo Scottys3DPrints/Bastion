@@ -1,10 +1,11 @@
 # ---------------------------------------------------------------------------
 #  One-time setup: create the GitHub repo, upload the signing secrets, push.
 #
-#  Reads the keystore password straight from keystore.properties and pipes it
-#  into `gh secret set`, so it is never typed, echoed, or pasted anywhere.
+#  Reads the keystore password straight from keystore.properties and hands it to
+#  `gh secret set`, so it is never typed out or echoed to the console.
 #
-#  Run once. After this, shipping a version is: git tag v0.2.0 && git push origin v0.2.0
+#  Run once. After this, shipping a version is:
+#      git tag v0.2.0 && git push origin v0.2.0
 # ---------------------------------------------------------------------------
 
 param(
@@ -14,11 +15,29 @@ param(
     [string]$Visibility = "public"
 )
 
-$ErrorActionPreference = "Stop"
+# Note: deliberately NOT 'Stop'. Windows PowerShell turns any stderr output from
+# a native command into a NativeCommandError record, and `gh auth status` writes
+# its perfectly normal output to stderr. With ErrorActionPreference=Stop that
+# healthy output aborts the script. Native failures are detected by inspecting
+# $LASTEXITCODE explicitly instead, which is the only reliable signal anyway.
+$ErrorActionPreference = "Continue"
 Set-Location $PSScriptRoot
 
-function Fail($msg) { Write-Host ""; Write-Host "  [X] $msg" -ForegroundColor Red; exit 1 }
+function Fail($msg) {
+    Write-Host ""
+    Write-Host "  [X] $msg" -ForegroundColor Red
+    Write-Host ""
+    exit 1
+}
 function Step($msg) { Write-Host ""; Write-Host "  == $msg" -ForegroundColor Cyan }
+
+# Runs a native command, swallowing its output, and returns the exit code.
+# Wrapping it this way keeps stderr from being reinterpreted as a PowerShell error.
+function Invoke-Quiet {
+    param([Parameter(Mandatory = $true)][scriptblock]$Command)
+    & $Command 2>&1 | Out-Null
+    return $LASTEXITCODE
+}
 
 Write-Host ""
 Write-Host "  Bastion - GitHub setup" -ForegroundColor White
@@ -28,42 +47,51 @@ if ($Visibility -eq "private") {
     Write-Host ""
     Write-Host "  Note: with a private repo, release assets need authentication to" -ForegroundColor Yellow
     Write-Host "  download. The in-app updater fetches over a plain URL, so it will" -ForegroundColor Yellow
-    Write-Host "  NOT work. You would have to install each build from the browser" -ForegroundColor Yellow
-    Write-Host "  while signed in." -ForegroundColor Yellow
+    Write-Host "  NOT work. You would install each build from the browser instead," -ForegroundColor Yellow
+    Write-Host "  while signed in to GitHub on the phone." -ForegroundColor Yellow
 }
 
 # --- preflight -------------------------------------------------------------
 
 Step "Checking prerequisites"
 
-if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { Fail "GitHub CLI (gh) is not installed." }
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    Fail "GitHub CLI (gh) is not installed.  https://cli.github.com"
+}
+if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    Fail "git is not installed."
+}
 
-gh auth status 2>&1 | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    Fail "You are not signed in to GitHub CLI. Run:`n`n      gh auth login`n`n      then re-run this script."
+if ((Invoke-Quiet { gh auth status }) -ne 0) {
+    Fail "Not signed in to GitHub CLI. Run:`n`n      gh auth login`n`n      then re-run this script."
 }
 Write-Host "      gh authenticated"
 
-if (-not (Test-Path "keystore.properties")) { Fail "keystore.properties is missing." }
+if (-not (Test-Path "keystore.properties")) {
+    Fail "keystore.properties is missing. Without the signing key, CI builds cannot update your phone."
+}
 
 $props = @{}
-Get-Content "keystore.properties" | ForEach-Object {
-    $pair = $_.Split('=', 2)
+foreach ($line in Get-Content "keystore.properties") {
+    if ($line -match '^\s*#') { continue }
+    $pair = $line.Split('=', 2)
     if ($pair.Length -eq 2) { $props[$pair[0].Trim()] = $pair[1].Trim() }
 }
 foreach ($key in @('storeFile', 'storePassword', 'keyAlias', 'keyPassword')) {
-    if (-not $props.ContainsKey($key)) { Fail "keystore.properties has no '$key' entry." }
+    if (-not $props.ContainsKey($key) -or [string]::IsNullOrWhiteSpace($props[$key])) {
+        Fail "keystore.properties has no usable '$key' entry."
+    }
 }
-if (-not (Test-Path $props['storeFile'])) { Fail "Keystore file '$($props['storeFile'])' not found." }
+if (-not (Test-Path $props['storeFile'])) {
+    Fail "Keystore file '$($props['storeFile'])' not found."
+}
 Write-Host "      keystore found: $($props['storeFile'])"
 
 # --- repo ------------------------------------------------------------------
 
-Step "Creating the repository"
+Step "Repository"
 
-$exists = $false
-gh repo view "$Owner/$Repo" 2>&1 | Out-Null
-if ($LASTEXITCODE -eq 0) { $exists = $true }
+$exists = (Invoke-Quiet { gh repo view "$Owner/$Repo" }) -eq 0
 
 if ($exists) {
     Write-Host "      $Owner/$Repo already exists - using it"
@@ -71,7 +99,9 @@ if ($exists) {
     Write-Host "      About to create $Owner/$Repo as a $Visibility repository."
     $answer = Read-Host "      Continue? (y/n)"
     if ($answer -ne 'y') { Fail "Cancelled - nothing was created." }
-    gh repo create "$Owner/$Repo" --$Visibility --description "Bastion - quit porn by building the man you want to become" --disable-wiki
+
+    gh repo create "$Owner/$Repo" "--$Visibility" --disable-wiki `
+        --description "Bastion - quit porn by building the man you want to become"
     if ($LASTEXITCODE -ne 0) { Fail "Could not create the repository." }
     Write-Host "      created"
 }
@@ -80,44 +110,59 @@ if ($exists) {
 
 Step "Uploading signing secrets"
 
-# Base64 the keystore into a temp file, pipe it to gh, then shred the temp file.
-# The bytes never touch the console.
-$tmp = [System.IO.Path]::GetTempFileName()
-try {
-    [Convert]::ToBase64String([System.IO.File]::ReadAllBytes((Resolve-Path $props['storeFile']))) |
-        Out-File -FilePath $tmp -Encoding ascii -NoNewline
+# Passed with --body rather than piped through stdin on purpose. PowerShell
+# appends a trailing newline when piping a string to a native process, and that
+# newline would become part of the stored password — CI would then fail to sign
+# with a "wrong password" error that looks like a mystery. --body passes the
+# value as an argument, byte for byte.
+$keystoreB64 = [Convert]::ToBase64String(
+    [System.IO.File]::ReadAllBytes((Resolve-Path $props['storeFile']))
+)
 
-    Get-Content $tmp -Raw | gh secret set BASTION_KEYSTORE_BASE64 --repo "$Owner/$Repo"
-    if ($LASTEXITCODE -ne 0) { Fail "Could not set BASTION_KEYSTORE_BASE64." }
-} finally {
-    if (Test-Path $tmp) { Remove-Item $tmp -Force }
+$secrets = [ordered]@{
+    'BASTION_KEYSTORE_BASE64'   = $keystoreB64
+    'BASTION_KEYSTORE_PASSWORD' = $props['storePassword']
+    'BASTION_KEY_ALIAS'         = $props['keyAlias']
+    'BASTION_KEY_PASSWORD'      = $props['keyPassword']
 }
 
-$props['storePassword'] | gh secret set BASTION_KEYSTORE_PASSWORD --repo "$Owner/$Repo"
-$props['keyAlias']      | gh secret set BASTION_KEY_ALIAS         --repo "$Owner/$Repo"
-$props['keyPassword']   | gh secret set BASTION_KEY_PASSWORD      --repo "$Owner/$Repo"
+foreach ($name in $secrets.Keys) {
+    $value = $secrets[$name]
+    if ((Invoke-Quiet { gh secret set $name --repo "$Owner/$Repo" --body $value }) -ne 0) {
+        Fail "Could not set $name."
+    }
+    Write-Host "      set $name"
+}
 
-Write-Host "      4 secrets set"
+Write-Host ""
 gh secret list --repo "$Owner/$Repo"
 
 # --- push ------------------------------------------------------------------
 
 Step "Pushing the code"
 
-if (-not (Test-Path ".git")) { git init -q -b main }
+if (-not (Test-Path ".git")) {
+    git init -q -b main
+}
 
-git remote remove origin 2>&1 | Out-Null
+Invoke-Quiet { git remote remove origin } | Out-Null
 git remote add origin "https://github.com/$Owner/$Repo.git"
+if ($LASTEXITCODE -ne 0) { Fail "Could not set the git remote." }
 
 git add -A
-git diff --cached --quiet
+
+# `git diff --cached --quiet` exits 1 when there IS something staged.
+Invoke-Quiet { git diff --cached --quiet } | Out-Null
 if ($LASTEXITCODE -ne 0) {
     git commit -q -m "Bastion: initial commit"
+    if ($LASTEXITCODE -ne 0) { Fail "Commit failed. Set your git identity with:`n`n      git config --global user.email you@example.com`n      git config --global user.name  ""Your Name""" }
 }
 
 git branch -M main
 git push -u origin main
-if ($LASTEXITCODE -ne 0) { Fail "Push failed." }
+if ($LASTEXITCODE -ne 0) {
+    Fail "Push failed. If it asked for a password, use a personal access token instead - GitHub no longer accepts account passwords over https."
+}
 
 # --- done ------------------------------------------------------------------
 
@@ -129,9 +174,14 @@ Write-Host ""
 Write-Host "      git tag v0.1.0" -ForegroundColor White
 Write-Host "      git push origin v0.1.0" -ForegroundColor White
 Write-Host ""
-Write-Host "  Then watch https://github.com/$Owner/$Repo/actions"
-Write-Host "  Open the 'Report signing identity' step - you want a real SHA-256"
-Write-Host "  digest with no warning about a throwaway debug key underneath."
+Write-Host "  Then watch  https://github.com/$Owner/$Repo/actions"
+Write-Host "  Open the 'Report signing identity' step. You want this digest:"
 Write-Host ""
-Write-Host "  The APK lands at https://github.com/$Owner/$Repo/releases"
+Write-Host "      91626d9ade623311129c6b9ee557e83f1562a39943ec7a308b520c414416f7c2" -ForegroundColor White
+Write-Host ""
+Write-Host "  with no warning underneath about a throwaway debug key. That is the"
+Write-Host "  same key your local builds use, and it is what lets every future"
+Write-Host "  version install over the top instead of forcing a reinstall."
+Write-Host ""
+Write-Host "  The APK lands at  https://github.com/$Owner/$Repo/releases"
 Write-Host ""
