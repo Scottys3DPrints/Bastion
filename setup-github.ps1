@@ -62,10 +62,25 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
     Fail "git is not installed."
 }
 
-if ((Invoke-Quiet { gh auth status }) -ne 0) {
-    Fail "Not signed in to GitHub CLI. Run:`n`n      gh auth login`n`n      then re-run this script."
+# Deliberately not `gh auth status`: that reports failure if ANY configured
+# account has a stale token, even when the active one is perfectly good. Asking
+# the API who we are tests the thing that actually matters — can this CLI act on
+# your behalf right now.
+$account = (& { gh api user --jq .login } 2>&1 | Select-Object -First 1)
+if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($account)) {
+    Fail "GitHub CLI cannot reach the API. Run:`n`n      gh auth login`n`n      then re-run this script."
 }
-Write-Host "      gh authenticated"
+$account = $account.ToString().Trim()
+Write-Host "      authenticated as $account"
+
+# Pushing .github/workflows/ requires the 'workflow' scope; without it the push
+# is rejected at the end, after the repo and secrets already exist.
+$scopeCheck = (& { gh auth status } 2>&1 | Out-String)
+if ($scopeCheck -notmatch 'workflow') {
+    Write-Host "      [!] Your token may lack the 'workflow' scope, which is required to" -ForegroundColor Yellow
+    Write-Host "          push the release pipeline. If the push is rejected, run:" -ForegroundColor Yellow
+    Write-Host "          gh auth refresh -h github.com -s workflow" -ForegroundColor Yellow
+}
 
 if (-not (Test-Path "keystore.properties")) {
     Fail "keystore.properties is missing. Without the signing key, CI builds cannot update your phone."
