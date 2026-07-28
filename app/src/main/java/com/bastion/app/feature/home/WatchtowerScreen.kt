@@ -80,12 +80,32 @@ fun WatchtowerScreen(
     var brief by remember { mutableStateOf<DailyBrief?>(null) }
     var benefit by remember { mutableStateOf<BenefitCard?>(null) }
 
+    // Crossing a rank threshold is the emotional payoff of the whole model, so
+    // it gets a moment rather than silently incrementing a number. Compared
+    // against a persisted tier so it fires once, on the crossing, and never
+    // again on a recomposition or relaunch.
+    var celebrating by remember { mutableStateOf<com.bastion.app.domain.Rank?>(null) }
+    LaunchedEffect(state.rank, settings.lastSeenRankTier) {
+        if (state.rank.tier > settings.lastSeenRankTier) {
+            celebrating = state.rank
+            graph.settings.setLastSeenRankTier(state.rank.tier)
+        }
+    }
+    celebrating?.let { rank ->
+        RankUpCeremony(
+            rank = rank,
+            faithMode = faithMode,
+            onDismiss = { celebrating = null },
+        )
+    }
+
     LaunchedEffect(state.currentStreak, state.totalDays) {
         brief = graph.content.briefForDay(graph.journey.dayOfJourney())
         benefit = graph.content.unlockedBenefits(state.currentStreak).firstOrNull()
     }
 
-    DawnBackground {
+    val hour = remember { java.time.LocalTime.now().hour }
+    DawnBackground(intensity = com.bastion.app.core.design.dawnIntensityForHour(hour)) {
         Box(Modifier.fillMaxSize()) {
             Column(
                 Modifier

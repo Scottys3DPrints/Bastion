@@ -2,18 +2,51 @@ package com.bastion.app.core.design
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
+import com.bastion.app.R
 import androidx.compose.ui.unit.sp
 
 /**
  * Serif carries the weight — scripture, oaths and rank titles get gravitas.
  * Everything functional stays in the system sans so it disappears and reads fast.
  *
- * Deliberately uses platform families rather than bundled or downloadable fonts:
- * a man reaching for the panic button at 1am should never wait on a font.
+ * Fraunces is **bundled**, never downloadable. The 1am principle stands: a man
+ * reaching for the panic button must never wait on a network fetch, so the file
+ * ships inside the APK and is available on aeroplane mode, first launch, always.
+ * The system serif it replaced was what made an otherwise considered app read as
+ * ordinary on its identity surfaces — the medallion, the covenant, the scripture.
+ *
+ * SIL Open Font License 1.1; the licence travels with the app in
+ * assets/licenses/fraunces_ofl.txt.
  */
-private val Display = FontFamily.Serif
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+private val Display = FontFamily(
+    Font(R.font.fraunces, FontWeight.Normal, variationSettings = frauncesAxes(400)),
+    Font(R.font.fraunces, FontWeight.Medium, variationSettings = frauncesAxes(500)),
+    Font(R.font.fraunces, FontWeight.SemiBold, variationSettings = frauncesAxes(600)),
+)
+
+/**
+ * Fraunces is a variable font, and its default instance is both heavier and
+ * wonkier than this app wants. Pinning the axes keeps it restrained and reverent
+ * rather than characterful-for-its-own-sake:
+ *   wght — set per weight rather than synthesised by the renderer
+ *   opsz — optical size at display scale, which is where these styles are used
+ *   SOFT — a little softening, in keeping with the dawn
+ *   WONK — off; the quirky angled letterforms fight the sober tone
+ */
+@OptIn(androidx.compose.ui.text.ExperimentalTextApi::class)
+private fun frauncesAxes(weight: Int) = FontVariation.Settings(
+    FontVariation.weight(weight),
+    FontVariation.Setting("opsz", 32f),
+    FontVariation.Setting("SOFT", 20f),
+    FontVariation.Setting("WONK", 0f),
+)
+
+/** Body stays on the system sans: fast, familiar, and invisible, which is the job. */
 private val Body = FontFamily.SansSerif
 
 val BastionTypography = Typography(

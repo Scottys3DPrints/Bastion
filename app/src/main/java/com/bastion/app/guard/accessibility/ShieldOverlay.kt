@@ -55,7 +55,21 @@ class ShieldOverlay(private val service: AccessibilityService) {
             ).apply { gravity = Gravity.CENTER }
 
             runCatching {
+                // Fades and settles rather than popping into existence. An
+                // abrupt full-screen wall reads as a glitch; 180ms of ease makes
+                // it feel deliberate and calm, which is the entire tone of this
+                // app at the moment it matters most.
+                content.alpha = 0f
+                content.scaleX = 0.96f
+                content.scaleY = 0.96f
                 windowManager.addView(content, params)
+                content.animate()
+                    .alpha(1f)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(180)
+                    .setInterpolator(android.view.animation.DecelerateInterpolator())
+                    .start()
                 view = content
             }
             autoDismissMillis?.let { handler.postDelayed({ hide() }, it) }

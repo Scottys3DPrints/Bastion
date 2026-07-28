@@ -210,7 +210,12 @@ private fun BreatheStep(onDone: () -> Unit) {
         label = "breath",
     )
 
+    // A short pulse on each phase change, so the breathing can be followed with
+    // the eyes shut. Until now this was purely a visual circle, which is no use
+    // to a man trying not to look at a screen.
+    val context = LocalContext.current
     LaunchedEffect(index) {
+        pulse(context)
         delay(duration.toLong())
         if (index % phases.size == phases.size - 1) cycles++
         if (cycles >= 2) onDone() else index++
@@ -409,6 +414,28 @@ private fun OutcomeStep(
             onClick = onSlip,
             modifier = Modifier.fillMaxWidth(),
             accent = BastionColors.Amber,
+        )
+    }
+}
+
+/**
+ * One soft pulse, at each change of breath.
+ *
+ * Deliberately gentle and short: this is a metronome to breathe against, not an
+ * alert. Silently does nothing where the device has no vibrator or the user has
+ * haptics switched off.
+ */
+private fun pulse(context: android.content.Context) {
+    runCatching {
+        val vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            (context.getSystemService(android.os.VibratorManager::class.java))?.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(android.os.Vibrator::class.java)
+        }
+        if (vibrator?.hasVibrator() != true) return
+        vibrator.vibrate(
+            android.os.VibrationEffect.createOneShot(28, 60)
         )
     }
 }

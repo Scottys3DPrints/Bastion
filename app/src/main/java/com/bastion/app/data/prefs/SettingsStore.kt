@@ -54,6 +54,13 @@ data class Settings(
     val mentorOpenerSent: Boolean = false,
     /** Guards seed data from returning after a deliberate clear-out. */
     val guardSeeded: Boolean = false,
+    /**
+     * Highest rank the user has actually been shown.
+     *
+     * Defaults to 1 so that simply being a Recruit — the starting state, not an
+     * achievement — never triggers the ceremony.
+     */
+    val lastSeenRankTier: Int = 1,
 )
 
 /**
@@ -104,6 +111,7 @@ class SettingsStore(private val context: Context) {
         val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
         val MENTOR_OPENER_SENT = booleanPreferencesKey("mentor_opener_sent")
         val GUARD_SEEDED = booleanPreferencesKey("guard_seeded")
+        val LAST_SEEN_RANK = intPreferencesKey("last_seen_rank_tier")
     }
 
     val settings: Flow<Settings> = context.dataStore.data.map { p ->
@@ -130,6 +138,7 @@ class SettingsStore(private val context: Context) {
             lastUpdateCheck = p[Keys.LAST_UPDATE_CHECK] ?: 0L,
             mentorOpenerSent = p[Keys.MENTOR_OPENER_SENT] ?: false,
             guardSeeded = p[Keys.GUARD_SEEDED] ?: false,
+            lastSeenRankTier = p[Keys.LAST_SEEN_RANK] ?: 1,
         )
     }
 
@@ -159,6 +168,7 @@ class SettingsStore(private val context: Context) {
     suspend fun markUpdateChecked() = edit { it[Keys.LAST_UPDATE_CHECK] = System.currentTimeMillis() }
     suspend fun setMentorOpenerSent(value: Boolean) = edit { it[Keys.MENTOR_OPENER_SENT] = value }
     suspend fun setGuardSeeded(value: Boolean) = edit { it[Keys.GUARD_SEEDED] = value }
+    suspend fun setLastSeenRankTier(value: Int) = edit { it[Keys.LAST_SEEN_RANK] = value }
 
     suspend fun recordPanic() = edit {
         it[Keys.LAST_PANIC] = System.currentTimeMillis()

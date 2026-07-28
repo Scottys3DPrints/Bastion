@@ -51,6 +51,21 @@ import androidx.compose.foundation.layout.windowInsetsPadding
  * The dawn gradient that runs through the whole app. Every new day is a sunrise;
  * the horizon sits low so the screen stays dark where the eye rests.
  */
+/**
+ * How much dawn to show, from the actual hour.
+ *
+ * The metaphor was decorative while the intensity never changed. Tied to the
+ * clock it becomes felt: a real sunrise in the morning, and near-black at 1am —
+ * which is both when urges peak and when a bright screen is its own enemy.
+ */
+fun dawnIntensityForHour(hour: Int): Float = when (hour) {
+    in 5..8 -> 1f          // sunrise: the fullest the horizon ever gets
+    in 9..16 -> 0.55f      // daylight: present but quiet
+    in 17..20 -> 0.75f     // dusk: warm again
+    in 21..23 -> 0.3f      // late: banking down
+    else -> 0.12f          // the small hours: almost nothing
+}
+
 @Composable
 fun DawnBackground(
     modifier: Modifier = Modifier,
