@@ -1,0 +1,236 @@
+{
+  "version": 1,
+  "challenges": [
+    {
+      "id": "seven-day-reset",
+      "name": "7-Day Reset",
+      "tagline": "One week to clear the ground and see the pattern.",
+      "days": 7,
+      "difficulty": "starter",
+      "modes": ["faith", "discipline"],
+      "description": "A gentle first week. You are not trying to fix everything or prove anything — you are removing the easiest friction points and gathering honest information about your own patterns. Every task takes under thirty minutes. If a day goes sideways, pick up the next one; nothing here has to be done perfectly to work.",
+      "dailyTasks": [
+        {
+          "day": 1,
+          "task": "Write your reason in one sentence.",
+          "detail": "Not a list, not a vow. One sentence about the man you are building toward and why it matters to you. Keep it forward-looking rather than a promise never to fail. Save it where you will see it on a hard night."
+        },
+        {
+          "day": 2,
+          "task": "Move the phone out of the bedroom tonight.",
+          "detail": "Pick a charging spot in another room and set it up now, while it is easy. If you use your phone as an alarm, order or dig out a cheap alarm clock today. This single change is the most commonly reported turning point men describe."
+        },
+        {
+          "day": 3,
+          "task": "Do a fifteen-minute device sweep.",
+          "detail": "Delete or log out of two apps that show up in your pattern. Turn on the content filter built into your phone and browser. You are not trying to make it impossible, only slower. Slower is enough on most nights."
+        },
+        {
+          "day": 4,
+          "task": "Map your three highest-risk windows.",
+          "detail": "Look back over the last month. Which times of day, which rooms, which states did the urges cluster in? Write down three. Beside each, write one small thing you could change about that window rather than about yourself."
+        },
+        {
+          "day": 5,
+          "task": "Set a fixed wake time and hold it for the rest of the week.",
+          "detail": "Choose a time you can keep seven days a week, including the weekend. Set the alarm across the room. A fixed wake time anchors your sleep more powerfully than a fixed bedtime does."
+        },
+        {
+          "day": 6,
+          "task": "Tell one person something true.",
+          "detail": "It does not have to be the whole story. \"I am working on something and I would like you to ask me how it is going in a couple of weeks\" is enough to break the secrecy. Send the message today rather than waiting to feel ready."
+        },
+        {
+          "day": 7,
+          "task": "Review the week in ten lines and choose one thing to keep.",
+          "detail": "What was harder than expected? What was easier? Which single change did the most work? Keep that one running into next week. No scoring, no verdicts on yourself — just what you observed and what you will carry forward."
+        }
+      ],
+      "badgeId": "badge-reset",
+      "badgeName": "Ground Cleared"
+    },
+    {
+      "id": "thirty-day-foundation",
+      "name": "30-Day Foundation",
+      "tagline": "A month of building the structure the rest sits on.",
+      "days": 30,
+      "difficulty": "core",
+      "modes": ["faith", "discipline"],
+      "description": "Thirty days of small, concrete construction: sleep, environment, movement, honesty, and something to do with your evenings. Weeks two and three are usually the hardest stretch — the novelty is gone and the results have not arrived yet. That is the normal shape of the curve, not a sign it is failing. Every task fits in under thirty minutes.",
+      "dailyTasks": [
+        { "day": 1, "task": "Write the one-sentence version of what you are building.", "detail": "Describe the man, not the ban. \"I am a man who sleeps properly and is honest with his friends\" works better than a list of things you will never do again." },
+        { "day": 2, "task": "Set your fixed wake time for the whole month.", "detail": "Same time seven days a week. Write it down. This is the anchor everything else hangs on." },
+        { "day": 3, "task": "Phone charges outside the bedroom, starting tonight.", "detail": "Set up the charging spot and the alarm clock today. Make the default automatic so no decision is required at 11pm." },
+        { "day": 4, "task": "Get ten minutes of outdoor light within an hour of waking.", "detail": "Step outside with your coffee. Morning light sets the clock that makes you sleepy at a sensible hour tonight." },
+        { "day": 5, "task": "Twenty minutes of hard physical effort.", "detail": "Run, lift, ruck, swim, bodyweight circuit. Anything that leaves you breathing heavily. It does not need to be a program yet." },
+        { "day": 6, "task": "Set a hard shutdown time and keep it tonight.", "detail": "Pick a time, thirty to sixty minutes before bed, when screens go off and lights come down. Put something analogue where you will reach for it." },
+        { "day": 7, "task": "Ten-line week review.", "detail": "What worked, what did not, which single change carried the most weight. Choose one adjustment for next week." },
+        { "day": 8, "task": "Start the trigger log.", "detail": "Four columns: when, where, state in one word, what happened in the preceding hour. Log every strong urge for the next two weeks, acted on or not." },
+        { "day": 9, "task": "Write your urge protocol on a card and put it in your wallet.", "detail": "Name it. Locate it in the body. Breathe out long for two minutes. Change room. Set a fifteen-minute timer. Five lines, decided now while you are calm." },
+        { "day": 10, "task": "Rehearse the protocol once when you are not in an urge.", "detail": "Run through it deliberately for five minutes. Rehearsed responses are far more available under pressure than improvised ones." },
+        { "day": 11, "task": "Twenty-five minutes on one thing that asks something of you.", "detail": "An instrument, a language, a real book, a repair. Difficulty is the ingredient that makes it satisfying." },
+        { "day": 12, "task": "Twenty-minute walk without headphones or phone.", "detail": "Leave the phone at home. Boredom is a skill and this is the beginner's version of training it." },
+        { "day": 13, "task": "Ask one person for a standing weekly check-in.", "detail": "Same day, same time each week. A scheduled conversation means you are not only ever making contact after a bad night." },
+        { "day": 14, "task": "Two-week review.", "detail": "Read the trigger log. Look for repeats rather than causes. Name the single most common chain you see." },
+        { "day": 15, "task": "Break the earliest link in that chain.", "detail": "Pick the earliest point you can realistically change — a meal, a bedtime, a room, a device location — and change it today." },
+        { "day": 16, "task": "Plan tomorrow evening in writing before you go to bed.", "detail": "Three lines: what happens between dinner and bed, and where. An unstructured evening is a design flaw, not a character test." },
+        { "day": 17, "task": "Twenty minutes of hard physical effort.", "detail": "Repeat the day 5 session or a variation. Consistency is doing more work here than intensity." },
+        { "day": 18, "task": "Cut caffeine after 2pm today.", "detail": "Notice whether tonight's sleep differs. Caffeine has a long tail and most men underestimate it." },
+        { "day": 19, "task": "Serve someone for twenty minutes.", "detail": "Carry something, cook something, fix something, show up for someone. Being needed is a direct answer to feeling irrelevant." },
+        { "day": 20, "task": "Twenty-five minutes on your skill pursuit.", "detail": "Same slot, same activity as day 11. You are building an owner for the empty hour." },
+        { "day": 21, "task": "Three-week review.", "detail": "Are the gaps lengthening? Is sleep better? What is still unhandled? Adjust one thing rather than five." },
+        { "day": 22, "task": "Write your 24-hour slip protocol.", "detail": "Change location within the hour. Four honest lines within the day. Tell one person within the day. Then resume normally, with no compensating punishment. Decide it now while you are calm." },
+        { "day": 23, "task": "Twenty minutes outside in daylight, moving.", "detail": "Walk, run, or ride. Light and movement together do more for mood than either alone." },
+        { "day": 24, "task": "Call a friend for fifteen minutes. Voice, not text.", "detail": "You do not have to discuss any of this. The point is a real conversation with a real person." },
+        { "day": 25, "task": "Do a second device sweep.", "detail": "Fifteen minutes. What crept back in? Which new route opened? Close it the same way you closed the first ones." },
+        { "day": 26, "task": "Twenty minutes of hard physical effort.", "detail": "Note what you could do on day 5 and what you can do now. Small measurable progress is evidence, and evidence builds identity." },
+        { "day": 27, "task": "Sit with ten minutes of deliberate stillness.", "detail": "No screen, no music, no task. Set a timer and let it be uncomfortable. You are practising staying in a state you usually escape." },
+        { "day": 28, "task": "Write what has changed that has nothing to do with counting days.", "detail": "Sleep, mood, focus, relationships, what you do with an evening. These are the measures that do not reset." },
+        { "day": 29, "task": "Choose the three habits you are carrying past day 30.", "detail": "Three, not ten. Write them down and put them in your Regimen. Everything else is optional." },
+        { "day": 30, "task": "Write the next thirty days in ten lines.", "detail": "What continues, what gets added, who is holding you to it, and what you will do on the hard nights. Then pick your next challenge." }
+      ],
+      "badgeId": "badge-foundation",
+      "badgeName": "Foundation Laid"
+    },
+    {
+      "id": "ninety-day-reboot",
+      "name": "90-Day Reboot",
+      "tagline": "A full season of rebuilding, one ordinary day at a time.",
+      "days": 90,
+      "difficulty": "advanced",
+      "modes": ["faith", "discipline"],
+      "description": "Ninety days is not a biological deadline and nothing magic happens at day 91 — it is simply long enough for a season of life to change shape. This challenge runs on a repeating daily core plus a theme for each week. THE DAILY CORE, every day: (1) hold your fixed wake time, (2) phone charges outside the bedroom, (3) twenty minutes of movement, (4) three lines in your journal before bed. Each week adds one focus on top of that. Expect weeks two to four to be the hardest and the results to arrive late. That is the normal shape, not a failure of effort. This app is a support tool, not treatment — if the pattern will not shift, bring in a professional alongside it.",
+      "dailyTasks": [
+        { "day": 1, "task": "Week 1 — Ground clearing.", "detail": "Set the daily core in place: fixed wake time, phone out of the bedroom, twenty minutes of movement, three lines before bed. This week, do a full device sweep and write your one-sentence reason. Each day, run the core and check the sweep held." },
+        { "day": 8, "task": "Week 2 — Sleep.", "detail": "On top of the daily core: hard shutdown thirty minutes before bed, ten minutes of outdoor light within an hour of waking, caffeine cutoff by 2pm. This is usually the week the novelty wears off. Keep the core running and let the week be dull." },
+        { "day": 15, "task": "Week 3 — Trigger mapping.", "detail": "On top of the daily core: log every strong urge in four columns — when, where, state in one word, preceding hour. No editing, no commentary. At the end of the week, look for repeats rather than causes." },
+        { "day": 22, "task": "Week 4 — Break the earliest link.", "detail": "On top of the daily core: take the most common chain from last week and change its earliest link — a meal, a bedtime, a room, a device location. Rehearse your urge protocol once this week while calm." },
+        { "day": 29, "task": "Week 5 — People.", "detail": "On top of the daily core: set up a standing weekly check-in with one person, and have one fifteen-minute voice call with a friend. Loneliness is the hunger underneath more often than desire is." },
+        { "day": 36, "task": "Week 6 — Build the body.", "detail": "On top of the daily core: move from twenty minutes of general movement to three structured training sessions this week, with something you can measure. Progress you can see is evidence, and evidence builds identity." },
+        { "day": 43, "task": "Week 7 — Own the empty hour.", "detail": "On top of the daily core: twenty-five minutes on one skill pursuit, three times this week, in the same slot. Something that asks effort of you and leaves an outcome behind." },
+        { "day": 50, "task": "Week 8 — Stillness.", "detail": "On top of the daily core: ten minutes daily of deliberate stillness — prayer, meditation, or simply sitting with no input. You are training the capacity to stay in an uncomfortable state without escaping it." },
+        { "day": 57, "task": "Week 9 — Serve someone.", "detail": "On top of the daily core: three acts of concrete service this week, each under thirty minutes. Being needed answers the sense of irrelevance more directly than any amount of self-work." },
+        { "day": 64, "task": "Week 10 — Second sweep and honest audit.", "detail": "On top of the daily core: redo the device sweep, and write honestly about what has quietly crept back. Also write what has genuinely improved that has nothing to do with counting days." },
+        { "day": 71, "task": "Week 11 — Handle the hard states.", "detail": "On top of the daily core: for each of stressed, angry, lonely, bored and exhausted, write one specific thing you will do instead. Put the list in your wallet. These are substitutions, not penalties." },
+        { "day": 78, "task": "Week 12 — Relationships and repair.", "detail": "On top of the daily core: one longer, unhurried conversation with someone who matters to you. If disclosure to a partner is on your mind, plan it with a counsellor rather than deciding it alone at midnight." },
+        { "day": 85, "task": "Week 13 — What comes after.", "detail": "On top of the daily core: write the plan for the next season. Which three habits continue, who is holding you to them, and what you do on a hard night. Day 90 is a waypoint, not a finish line." }
+      ],
+      "badgeId": "badge-reboot",
+      "badgeName": "A Season Rebuilt"
+    },
+    {
+      "id": "wake-at-six",
+      "name": "Wake at 6",
+      "tagline": "Win the morning and the night gets easier.",
+      "days": 7,
+      "difficulty": "starter",
+      "modes": ["faith", "discipline"],
+      "description": "A week of early, consistent rising. This is not about being a morning person or grinding yourself down — it is that a fixed early wake time anchors your whole sleep rhythm, and a properly tired man at 11pm is a far safer man than a restless one. Adjust the hour if 6 does not fit your life; the consistency matters more than the number.",
+      "dailyTasks": [
+        { "day": 1, "task": "Set the alarm for 6 and put it across the room.", "detail": "Tonight, lay out clothes and put the alarm somewhere you must stand up to reach. Remove every decision from the moment you wake." },
+        { "day": 2, "task": "Up at 6. Outside within twenty minutes.", "detail": "Even two minutes of morning daylight helps set the clock. Do not check your phone before you have been outside." },
+        { "day": 3, "task": "Up at 6. Ten minutes of movement before anything else.", "detail": "Press-ups, a walk, stretching. Moving early makes waking early stick far better than willpower does." },
+        { "day": 4, "task": "Up at 6. Protect the first hour from the phone.", "detail": "The first hour belongs to you. Notice how different the day feels when nobody else has had your attention first." },
+        { "day": 5, "task": "Up at 6. Use twenty minutes of the quiet deliberately.", "detail": "Read, pray, plan the day, or work on something that matters. The point of the early hour is that it is yours to spend." },
+        { "day": 6, "task": "Up at 6 — including on the weekend.", "detail": "The weekend lie-in is what undoes the week. Keeping the time on Saturday is the difference between a rhythm and a rota." },
+        { "day": 7, "task": "Up at 6. Write four lines on what changed.", "detail": "Sleep, mood, evenings, urges. Then decide whether you are keeping this and at what hour." }
+      ],
+      "badgeId": "badge-first-light",
+      "badgeName": "First Light"
+    },
+    {
+      "id": "digital-sabbath",
+      "name": "Digital Sabbath",
+      "tagline": "One day a week where the screen does not run your life.",
+      "days": 7,
+      "difficulty": "core",
+      "modes": ["faith", "discipline"],
+      "description": "A week of building toward one full screen-light day. The aim is not a purity test — it is to discover what your attention does when nothing is competing for it, and to prove to yourself that the empty hours can be filled by something better. Each day here takes under thirty minutes except the sabbath itself, which is simply a day lived differently.",
+      "dailyTasks": [
+        { "day": 1, "task": "Check your actual screen time and write the number down.", "detail": "No commentary, no judgement. Most men are surprised. You cannot change a number you have never looked at." },
+        { "day": 2, "task": "Turn off every non-essential notification.", "detail": "Fifteen minutes in settings. Keep calls and messages from real people. Everything else is someone selling your attention." },
+        { "day": 3, "task": "No phone for the first hour after waking.", "detail": "Leave it in the other room until you have been up, moved, and had something to eat or drink." },
+        { "day": 4, "task": "No phone for the last hour before bed.", "detail": "Charge it in the kitchen. Put a real book on the nightstand where the phone used to be." },
+        { "day": 5, "task": "Choose your sabbath day and tell someone.", "detail": "Pick the day, decide the hours, and tell one person so it is real. Plan what you are doing with it, not just what you are avoiding." },
+        { "day": 6, "task": "Prepare for tomorrow.", "detail": "Download directions, tell anyone who might need you, put the phone somewhere out of reach, and leave the day's plan written on paper." },
+        { "day": 7, "task": "Take the sabbath.", "detail": "One day, screens off. People, outdoors, food, rest, worship, work with your hands. At the end, write four lines on what it was like — including the parts that were uncomfortable." }
+      ],
+      "badgeId": "badge-sabbath",
+      "badgeName": "The Quiet Day"
+    },
+    {
+      "id": "eyes-up",
+      "name": "Eyes Up",
+      "tagline": "Train the two-second habit that decides the next hour.",
+      "days": 7,
+      "difficulty": "starter",
+      "modes": ["faith", "discipline"],
+      "description": "Bouncing the eyes is a small, practical skill: noticing the pull of a second look and redirecting within about two seconds, before the thought has time to build a story. This is not about pretending you did not see, treating attraction as shameful, or walking around ashamed of being a man with eyes. It is about deciding in advance where your attention goes, so it is not decided for you.",
+      "dailyTasks": [
+        { "day": 1, "task": "Learn the two-second rule and say it out loud once.", "detail": "The first look is automatic. The second is a decision. Your job is only to redirect within two seconds — look at something else, and keep walking. No self-criticism attached, ever." },
+        { "day": 2, "task": "Pick your redirect target in advance.", "detail": "Decide now where your eyes go instead: the horizon, the ground ten paces ahead, whatever you were doing. Having a destination makes redirecting far easier than trying to look at nothing." },
+        { "day": 3, "task": "Practise once deliberately in a public place.", "detail": "Twenty minutes in a cafe, gym, or high street. Notice the pull, redirect, continue. You are rehearsing the motion, not testing your virtue." },
+        { "day": 4, "task": "Apply it to feeds for one day.", "detail": "Same rule on a screen: notice, scroll past within two seconds, do not linger to justify. If one feed makes this impossible, that is useful information about that feed." },
+        { "day": 5, "task": "Count your redirects for one day.", "detail": "Just a tally on your phone or a scrap of paper. You are measuring reps, not sins. Most men find the number drops sharply by the end of the week." },
+        { "day": 6, "task": "Write the sentence you use when you catch yourself.", "detail": "Something short and kind: \"Not for me, keep moving.\" Practise it so the automatic response is a redirect rather than a wave of self-reproach." },
+        { "day": 7, "task": "Review and decide what to keep.", "detail": "Was it easier by day 7? Which situations were hardest? This is a skill that fades without use, so decide how you keep it running." }
+      ],
+      "badgeId": "badge-eyes-up",
+      "badgeName": "Eyes Up"
+    },
+    {
+      "id": "cold-start",
+      "name": "Cold Start",
+      "tagline": "Two weeks of doing one hard thing before the day begins.",
+      "days": 14,
+      "difficulty": "core",
+      "modes": ["faith", "discipline"],
+      "description": "Cold water is a substitution and a training exercise, never a punishment. You are practising staying calm inside an uncomfortable state while it is happening, on your own terms, at a time you chose. That is exactly the skill an urge asks for. Never use a cold shower to punish yourself after a slip — that teaches the wrong lesson. Skip this challenge if you have a heart condition, Raynaud's, uncontrolled blood pressure, or are pregnant, and check with a doctor if you are unsure.",
+      "dailyTasks": [
+        { "day": 1, "task": "Finish your normal shower with fifteen seconds cold.", "detail": "Warm shower as usual, then turn it cold for fifteen seconds at the end. Breathe out slowly rather than gasping. That is the whole session." },
+        { "day": 2, "task": "Fifteen seconds cold, focus on the exhale.", "detail": "The instinct is to hold your breath and tense. The practice is a long, slow exhale. This is the same tool you will use in an urge." },
+        { "day": 3, "task": "Thirty seconds cold.", "detail": "Notice the moment your mind starts negotiating. Stay for the timer, not for the feeling. Then get out and get warm." },
+        { "day": 4, "task": "Thirty seconds cold, shoulders relaxed.", "detail": "Deliberately drop your shoulders and unclench your jaw while the water is cold. Calm inside discomfort is the actual skill." },
+        { "day": 5, "task": "Forty-five seconds cold.", "detail": "Count the exhales rather than the seconds. Six or seven slow breaths and you are done." },
+        { "day": 6, "task": "Forty-five seconds cold. Write one line afterwards.", "detail": "How you felt going in, and how you felt ten minutes later. Most men notice the gap between anticipation and reality." },
+        { "day": 7, "task": "One minute cold.", "detail": "Halfway. Nothing to prove, no records to break. The point is the repetition, not the number." },
+        { "day": 8, "task": "One minute cold, first thing after waking.", "detail": "Move it to the start of the day if it is not already there. A hard thing completed before 7am changes how the rest of the day feels." },
+        { "day": 9, "task": "One minute cold. Use it as an urge rehearsal.", "detail": "Silently run your urge protocol while you are in there: name the state, locate it in the body, breathe out long. Same drill, safe setting." },
+        { "day": 10, "task": "Ninety seconds cold.", "detail": "If the temperature is genuinely painful rather than uncomfortable, warm it slightly. Discomfort trains; pain does not." },
+        { "day": 11, "task": "Ninety seconds cold, no negotiating.", "detail": "Decide before you step in and do not renegotiate once you are wet. Deciding while calm and executing while uncomfortable is the transferable part." },
+        { "day": 12, "task": "Two minutes cold.", "detail": "Long exhales, loose shoulders, steady. Get properly warm afterwards and eat something." },
+        { "day": 13, "task": "Two minutes cold. Notice what changed since day 1.", "detail": "Same water, different man. That difference is the evidence you are collecting." },
+        { "day": 14, "task": "Two minutes cold, then decide how this continues.", "detail": "Daily, every other day, or as a tool for specific hard moments. Write four lines on what it gave you and set your ongoing target." }
+      ],
+      "badgeId": "badge-cold-start",
+      "badgeName": "Cold Start"
+    },
+    {
+      "id": "iron-and-ink",
+      "name": "Iron & Ink",
+      "tagline": "Train the body, then tell the truth on paper.",
+      "days": 14,
+      "difficulty": "core",
+      "modes": ["faith", "discipline"],
+      "description": "Two weeks pairing physical training with honest writing. The body work gives you something measurable that improves, and the writing keeps you from drifting through the change without noticing it. Each day is a short session — twenty minutes of training and five minutes of writing — well inside thirty minutes total. Scale the training to where you actually are, not where you wish you were.",
+      "dailyTasks": [
+        { "day": 1, "task": "Twenty-minute session. Write your baseline.", "detail": "Train however you can. Then write down honestly where you are starting: what you can lift, run, or do, and how you feel about your body without insulting it." },
+        { "day": 2, "task": "Twenty-minute walk. Write about last night.", "detail": "Walk without headphones. Then five lines on how yesterday evening actually went — the hour before bed in particular." },
+        { "day": 3, "task": "Strength session. Write what you are training for.", "detail": "Push, pull, legs, core — pick two and go hard for twenty minutes. Then write who this is in service of, beyond the mirror." },
+        { "day": 4, "task": "Rest day. Write the trigger log entry you have been avoiding.", "detail": "The one you did not want to put down. Facts only: when, where, state, preceding hour. No verdicts on yourself." },
+        { "day": 5, "task": "Conditioning session. Write about the state you find hardest.", "detail": "Twenty minutes of something that raises your heart rate. Then five lines on which internal state most reliably sends you looking for escape." },
+        { "day": 6, "task": "Strength session. Write one thing you are grateful for.", "detail": "Specific, not general. A person, a moment this week, something ordinary. Gratitude reliably lowers the pull of a hollow substitute." },
+        { "day": 7, "task": "Long walk. Week one review in ten lines.", "detail": "Thirty minutes outside, then what worked, what did not, and one change for week two." },
+        { "day": 8, "task": "Strength session. Write a letter you will not send.", "detail": "To someone you are carrying something about — resentment, regret, or love you never said. Five to ten minutes. Then close the notebook." },
+        { "day": 9, "task": "Conditioning session. Write about who you were at twenty.", "detail": "What he wanted, what he expected, and what you would tell him. Written without contempt for him." },
+        { "day": 10, "task": "Rest day, twenty-minute walk. Write your evening plan for the week.", "detail": "Which nights are unstructured, and what is going in them. An owned hour is worth more than an hour of resistance." },
+        { "day": 11, "task": "Strength session. Write what has already improved.", "detail": "Sleep, mood, focus, energy, relationships, what you do with a free evening. Evidence, not encouragement." },
+        { "day": 12, "task": "Conditioning session. Write your hard-night protocol.", "detail": "Exactly what you do, in order, on a bad night. Write it as instructions to yourself from a calmer man." },
+        { "day": 13, "task": "Strength session. Write about the man you are becoming.", "detail": "Present tense, no promises. What he does on an ordinary Tuesday. This is identity work, and it does more than any counter." },
+        { "day": 14, "task": "Test day. Retest your day 1 baseline and write the comparison.", "detail": "Same movements, same measures. Write the numbers side by side, then write what changed that the numbers do not show." }
+      ],
+      "badgeId": "badge-iron-ink",
+      "badgeName": "Iron & Ink"
+    }
+  ]
+}

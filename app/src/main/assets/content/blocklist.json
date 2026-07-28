@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "_note": "Seed adult-domain list for the on-device DNS filter. 'domains' blocks the domain and every subdomain. 'keywords' is a heuristic for the long tail; it is deliberately conservative because over-blocking health and education resources would do real harm. 'allow' always wins over 'keywords'. Users can add their own entries in Guard settings.",
+
+  "domains": [
+    "pornhub.com", "xvideos.com", "xnxx.com", "xhamster.com", "youporn.com",
+    "redtube.com", "tube8.com", "spankbang.com", "porntrex.com", "eporner.com",
+    "txxx.com", "hclips.com", "upornia.com", "hqporner.com", "porn300.com",
+    "porndig.com", "pornone.com", "sunporno.com", "porngo.com", "pornhat.com",
+    "youjizz.com", "tnaflix.com", "empflix.com", "drtuber.com", "nuvid.com",
+    "gotporn.com", "vporn.com", "ixxx.com", "pornhd.com", "beeg.com",
+    "motherless.com", "pornhubpremium.com", "brazzers.com", "realitykings.com",
+    "bangbros.com", "naughtyamerica.com", "digitalplayground.com", "mofos.com",
+    "twistys.com", "babes.com", "blacked.com", "tushy.com", "vixen.com",
+    "deeper.com", "evilangel.com", "wicked.com", "adulttime.com", "gamelink.com",
+    "sextube.com", "sexvid.xxx", "freeones.com", "thothub.tv", "camwhores.tv",
+    "chaturbate.com", "stripchat.com", "bongacams.com", "livejasmin.com",
+    "cam4.com", "myfreecams.com", "camsoda.com", "flirt4free.com", "streamate.com",
+    "imlive.com", "xlovecam.com", "camplace.com", "cherry.tv",
+    "onlyfans.com", "fansly.com", "manyvids.com", "clips4sale.com", "iwantclips.com",
+    "justfor.fans", "loyalfans.com", "fancentro.com",
+    "nhentai.net", "hanime.tv", "hentaihaven.xxx", "hentai2read.com", "hitomi.la",
+    "e-hentai.org", "exhentai.org", "rule34.xxx", "gelbooru.com", "danbooru.donmai.us",
+    "hentaifox.com", "simply-hentai.com", "fakku.net", "hentaila.com",
+    "erome.com", "imagefap.com", "sex.com", "porn.com", "xxx.com",
+    "literotica.com", "asstr.org", "nifty.org",
+    "adultfriendfinder.com", "ashleymadison.com", "fling.com", "benaughty.com",
+    "seeking.com", "getiton.com",
+    "javhd.com", "javfinder.is", "jav.guru", "javbus.com", "supjav.com", "missav.com",
+    "pornolab.net", "kink.com", "fetlife.com", "bdsmstreak.com",
+    "gaytube.com", "men.com", "seancody.com", "corbinfisher.com", "gayforit.eu",
+    "boyfriendtv.com", "pornmd.com", "porngames.com", "nutaku.net",
+    "recurbate.com", "camvideos.tv", "leakedzone.com", "coomer.su", "kemono.su",
+    "thefappening.pro", "fapello.com", "nudostar.com", "influencersgonewild.com",
+    "sxyprn.com", "daftsex.com", "hotmovs.com", "anysex.com", "pornpics.com",
+    "sexyandfunny.com", "definebabe.com", "babepedia.com", "pornstarbyface.com",
+    "xhamsterlive.com", "xvideos2.com", "xnxx-porn.net", "pornhub.org"
+  ],
+
+  "keywords": [
+    "porn", "xxx", "xnxx", "xvideo", "hentai", "camgirl", "camwhore",
+    "sexcam", "sextube", "sexvid", "freesex", "sexchat", "sexvideo", "sexmovie",
+    "milf", "hardcore-", "fuck", "nudes", "nudez", "boobs", "titties",
+    "escort", "brothel", "fetishtube", "bdsmtube", "erotica-", "eroticfilm",
+    "adultvideo", "adulttube", "adultmovie", "nsfwtube", "jerkmate", "fapp",
+    "onlyfansleak", "nudeleak", "cumshot", "creampie", "gangbang", "deepthroat",
+    "rule34", "e621", "doujin", "ecchi-"
+  ],
+
+  "allow": [
+    "sussex.ac.uk", "essex.ac.uk", "middlesex.ac.uk", "wessex.ac.uk",
+    "sussex.gov.uk", "essex.gov.uk", "essex.police.uk", "sussexpolice.uk",
+    "middlesex.edu", "sussex.edu",
+    "analytics.google.com", "google-analytics.com", "analysis.com",
+    "scunthorpe.gov.uk", "penistone.gov.uk", "lightwater.co.uk",
+    "nhs.uk", "mayoclinic.org", "healthline.com", "webmd.com", "plannedparenthood.org",
+    "who.int", "cdc.gov", "nih.gov", "psychologytoday.com", "sexinfoonline.com",
+    "sexualhealth.nhs.uk", "brook.org.uk", "fpa.org.uk", "scarleteen.com",
+    "rainn.org", "thehotline.org", "childline.org.uk", "nspcc.org.uk",
+    "samaritans.org", "findahelpline.com", "988lifeline.org", "crisistextline.org",
+    "saa-recovery.org", "sa.org", "sexaa.org", "iitap.com", "aasat.org",
+    "covenanteyes.com", "fightthenewdrug.org", "yourbrainonporn.com",
+    "nofap.com", "rebootnation.org", "reddit.com", "wikipedia.org",
+    "biblegateway.com", "bible.com", "esv.org", "blueletterbible.org",
+    "middlesexhospital.org", "sexualviolencecentre.ie", "1in6.org",
+    "menshealth.com", "psychcentral.com", "verywellmind.com", "betterhelp.com"
+  ]
+}

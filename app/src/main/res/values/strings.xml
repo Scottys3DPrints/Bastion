@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Bastion</string>
+    <string name="filtered_browser">Bastion Browser</string>
+    <string name="panic_tile_label">Hold the Line</string>
+    <string name="accessibility_label">Bastion Guard</string>
+    <string name="accessibility_summary">Blocks chosen apps and short-form feeds like Reels, Shorts and the TikTok For You page.</string>
+    <string name="accessibility_description">Bastion Guard watches only for which screen is open in the apps you have chosen to guard, so it can block short-form feeds like Reels, Shorts and the For You page while still letting you use the rest of the app.\n\nIt reads the identity of the screen you are on. It never reads, stores or transmits your messages, photos, passwords or any other content, and nothing it observes ever leaves this device.\n\nYou turn this on yourself, and you can turn it off at any time in Settings.</string>
+    <string name="notif_channel_guard">Guard</string>
+    <string name="notif_channel_guard_desc">Shows while the content filter is running.</string>
+    <string name="notif_channel_daily">Daily Brief</string>
+    <string name="notif_channel_daily_desc">Your morning brief and check-in reminder.</string>
+    <string name="notif_channel_partner">Brotherhood</string>
+    <string name="notif_channel_partner_desc">Check-ins and alerts you have chosen to share.</string>
+</resources>

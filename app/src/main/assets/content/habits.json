@@ -1,0 +1,275 @@
+{
+  "version": 1,
+  "habits": [
+    {
+      "id": "strength-training",
+      "name": "Strength training",
+      "domain": "Body",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "3x per week",
+      "icon": "🏋️",
+      "why": "Gives you a measurable, visible reason to respect your own body instead of using it as a vending machine for relief."
+    },
+    {
+      "id": "conditioning",
+      "name": "Hard conditioning session",
+      "domain": "Body",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "2x per week",
+      "icon": "🏃",
+      "why": "Discharges the restless physical energy that would otherwise go looking for the fastest available outlet."
+    },
+    {
+      "id": "daily-walk",
+      "name": "Twenty-minute walk",
+      "domain": "Body",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "🚶",
+      "why": "Changes your state and your location in twenty minutes, which is exactly what an urge cannot survive."
+    },
+    {
+      "id": "cold-shower",
+      "name": "Cold finish to the shower",
+      "domain": "Discipline",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "🚿",
+      "why": "Trains you to stay calm inside discomfort on your own terms, which is the same skill an urge asks for."
+    },
+    {
+      "id": "early-rising",
+      "name": "Fixed wake time",
+      "domain": "Discipline",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "⏰",
+      "why": "Anchors your whole sleep rhythm so you are properly tired at night instead of restless and unsupervised."
+    },
+    {
+      "id": "sleep-by-time",
+      "name": "Asleep by your set time",
+      "domain": "Body",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "🌙",
+      "why": "Removes you from the hour when judgement is weakest and the old pattern is strongest."
+    },
+    {
+      "id": "no-phone-in-bed",
+      "name": "Phone charges outside the bedroom",
+      "domain": "Discipline",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "🔌",
+      "why": "Removes the single most reliable cue at the single most reliable time, before you have to decide anything."
+    },
+    {
+      "id": "no-phone-first-hour",
+      "name": "No phone for the first hour",
+      "domain": "Discipline",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "🌅",
+      "why": "Starts the day with your attention belonging to you rather than to whatever was optimised to hold it."
+    },
+    {
+      "id": "hard-shutdown",
+      "name": "Screens off an hour before bed",
+      "domain": "Discipline",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "📵",
+      "why": "Closes the door on the late-night drift that most slips quietly begin with."
+    },
+    {
+      "id": "morning-sunlight",
+      "name": "Daylight within an hour of waking",
+      "domain": "Body",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "☀️",
+      "why": "Sets the body clock that makes you genuinely sleepy at a sensible hour instead of wired at midnight."
+    },
+    {
+      "id": "journalling",
+      "name": "Three lines in the journal",
+      "domain": "Mind",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "📓",
+      "why": "Turns a vague, heavy day into specific facts you can actually adjust tomorrow."
+    },
+    {
+      "id": "trigger-log",
+      "name": "Log every strong urge",
+      "domain": "Mind",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "🗺️",
+      "why": "Shows you the chain that starts hours before the moment, where it is far cheaper to break."
+    },
+    {
+      "id": "evening-review",
+      "name": "Evening review",
+      "domain": "Mind",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "🕯️",
+      "why": "Examining the day rather than sentencing yourself is what keeps a hard evening from becoming a hard fortnight."
+    },
+    {
+      "id": "plan-tomorrow-evening",
+      "name": "Plan tomorrow evening in writing",
+      "domain": "Discipline",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "📝",
+      "why": "An owned hour costs nothing to arrange in daylight and everything to survive unplanned at 9pm."
+    },
+    {
+      "id": "meditation",
+      "name": "Ten minutes of stillness",
+      "domain": "Mind",
+      "modes": ["discipline"],
+      "defaultTarget": "daily",
+      "icon": "🧘",
+      "why": "Trains the capacity to stay in an uncomfortable state without immediately escaping it."
+    },
+    {
+      "id": "prayer",
+      "name": "Prayer",
+      "domain": "Faith",
+      "modes": ["faith"],
+      "defaultTarget": "daily",
+      "icon": "🙏",
+      "why": "Replaces the reflex of hiding with the habit of turning toward the one place shame cannot follow you."
+    },
+    {
+      "id": "scripture-reading",
+      "name": "Scripture reading",
+      "domain": "Faith",
+      "modes": ["faith"],
+      "defaultTarget": "daily",
+      "icon": "📖",
+      "why": "Keeps grace louder than condemnation, which is the difference between honesty and hiding."
+    },
+    {
+      "id": "sabbath-day",
+      "name": "One screen-light day",
+      "domain": "Faith",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "weekly",
+      "icon": "🕊️",
+      "why": "Proves to you that the empty hours can be filled by something better than a feed."
+    },
+    {
+      "id": "gathered-worship",
+      "name": "Gather with your church",
+      "domain": "Faith",
+      "modes": ["faith"],
+      "defaultTarget": "weekly",
+      "icon": "⛪",
+      "why": "Puts you in a room with people who know your name, which is the opposite of the secrecy this feeds on."
+    },
+    {
+      "id": "confession-checkin",
+      "name": "Confession with a trusted brother",
+      "domain": "Faith",
+      "modes": ["faith"],
+      "defaultTarget": "weekly",
+      "icon": "🤝",
+      "why": "Shame cannot survive being known and met with kindness, and secrecy is what gives the pattern its power."
+    },
+    {
+      "id": "gratitude",
+      "name": "Name one specific gratitude",
+      "domain": "Mind",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "🙌",
+      "why": "Noticing what is actually good lowers the pull of a hollow substitute for it."
+    },
+    {
+      "id": "reading",
+      "name": "Read a real book",
+      "domain": "Mind",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "📚",
+      "why": "Rebuilds the attention span that endless scrolling quietly took, so slow rewards feel worth having again."
+    },
+    {
+      "id": "skill-pursuit",
+      "name": "Practise your skill",
+      "domain": "Mind",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "4x per week",
+      "icon": "🎸",
+      "why": "Gives the empty evening an owner and gives you an outcome that is further along than it was yesterday."
+    },
+    {
+      "id": "deep-work",
+      "name": "One block of focused work",
+      "domain": "Discipline",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "🎯",
+      "why": "Builds the tolerance for effortful reward that the instant kind has been eroding."
+    },
+    {
+      "id": "accountability-checkin",
+      "name": "Weekly check-in with your person",
+      "domain": "Relationships",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "weekly",
+      "icon": "📞",
+      "why": "A scheduled conversation means you are not only ever making contact after a bad night."
+    },
+    {
+      "id": "call-a-friend",
+      "name": "Call a friend, voice not text",
+      "domain": "Relationships",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "weekly",
+      "icon": "☎️",
+      "why": "Answers the loneliness underneath directly, instead of letting a counterfeit answer it badly."
+    },
+    {
+      "id": "serve-someone",
+      "name": "Do something for someone else",
+      "domain": "Relationships",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "2x per week",
+      "icon": "🧰",
+      "why": "Being needed by a real person is the most direct available answer to feeling irrelevant."
+    },
+    {
+      "id": "shoulder-to-shoulder",
+      "name": "Time with other men in person",
+      "domain": "Relationships",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "weekly",
+      "icon": "👥",
+      "why": "Shoulder to shoulder is how most men actually build the friendship that makes secrecy unnecessary."
+    },
+    {
+      "id": "presence-with-partner",
+      "name": "Unhurried time with your partner",
+      "domain": "Relationships",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "3x per week",
+      "icon": "💬",
+      "why": "Attention given to a particular, real person competes directly with an abstraction, and abstractions lose."
+    },
+    {
+      "id": "eat-properly",
+      "name": "Eat a real evening meal",
+      "domain": "Body",
+      "modes": ["faith", "discipline"],
+      "defaultTarget": "daily",
+      "icon": "🍽️",
+      "why": "Tired, hungry and alone is the state most slips are built from, and this removes one leg of it."
+    }
+  ]
+}

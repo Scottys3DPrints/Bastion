@@ -1,0 +1,862 @@
+{
+  "version": 1,
+  "intents": [
+    {
+      "id": "crisis",
+      "label": "I am in a dark place",
+      "matchKeywords": [
+        "kill myself",
+        "killing myself",
+        "suicide",
+        "suicidal",
+        "end it all",
+        "end my life",
+        "want to die",
+        "wish i was dead",
+        "better off dead",
+        "better off without me",
+        "no reason to live",
+        "not worth living",
+        "cant go on",
+        "can't go on",
+        "self harm",
+        "self-harm",
+        "hurt myself",
+        "hurting myself",
+        "cutting myself",
+        "overdose",
+        "hopeless",
+        "no hope",
+        "no way out",
+        "give up on life",
+        "worthless",
+        "hate myself so much",
+        "being abused",
+        "abused me",
+        "abusing me",
+        "someone is hurting me",
+        "unsafe at home",
+        "not safe",
+        "emergency"
+      ],
+      "priority": 0,
+      "responses": {
+        "faith": [
+          "I am glad you said that out loud. I want to be honest with you: what you are carrying is bigger than an app, and you deserve a real person, not a script.\n\nPlease reach out now. findahelpline.com will find a free, confidential line anywhere in the world. In the US or Canada, call or text 988. In the UK or Ireland, call Samaritans on 116 123, any hour.\n\nIf you are in immediate danger, call your emergency number or go to the nearest emergency department.\n\nAnd if there is one person who could sit with you tonight — a friend, family, your pastor — call them. You do not have to explain it well. Just say you are struggling and you did not want to be alone.",
+          "Thank you for telling me. I am not going to try to counsel you through this, because you deserve better than that — you deserve a human being who is trained for exactly this moment.\n\nfindahelpline.com lists free confidential support in your country. US and Canada: 988, call or text. UK and Ireland: Samaritans, 116 123, free, day or night.\n\nIf you might act on this soon, please call emergency services or get to an emergency department.\n\nYou are not a burden for needing help. Reach for a person tonight, and let the rest wait.",
+          "I hear you, and I am not going to give you a lesson. This is beyond what an app should handle, and I would rather point you somewhere real.\n\nFind a helpline for your country at findahelpline.com. In the US or Canada, 988 connects you to the Suicide and Crisis Lifeline. In the UK or Ireland, Samaritans are on 116 123, free, at any hour.\n\nIf you are in danger right now, please call emergency services.\n\nOne more thing: tell someone you trust that today is hard. Not the whole story if you cannot manage it — just enough that you are not alone with it. You are loved more than you can feel right now, and that does not depend on how this week went.",
+          "I am glad you are still here and still talking. I want to be straight with you — I am a support tool, not a counsellor, and this needs a person.\n\nfindahelpline.com will point you to free confidential help wherever you are. US and Canada: call or text 988. UK and Ireland: Samaritans, 116 123.\n\nIf you are in immediate danger, call your local emergency number now.\n\nWould you also message one person you trust and tell them you are having a hard night? That single message does more than anything I could say."
+        ],
+        "discipline": [
+          "I am glad you said that. I want to be honest: this is bigger than an app, and you deserve a real person rather than a script.\n\nPlease reach out now. findahelpline.com finds free, confidential lines anywhere in the world. In the US or Canada, call or text 988. In the UK or Ireland, call Samaritans on 116 123, at any hour.\n\nIf you are in immediate danger, call your emergency number or go to the nearest emergency department.\n\nAnd if there is anyone who could be with you tonight, call them. You do not need the right words. \"Today is bad and I did not want to be on my own\" is enough.",
+          "Thank you for telling me. I am not going to try to talk you through this, because you deserve someone trained for exactly this, not a set of curated responses.\n\nfindahelpline.com lists free confidential support in your country. US and Canada: 988, call or text. UK and Ireland: Samaritans, 116 123, free, day or night.\n\nIf you think you might act on this, call emergency services or get to an emergency department now.\n\nNeeding help is not weakness and it is not a burden on anyone. Reach for a person tonight. Everything else can wait.",
+          "I hear you. No lecture, no plan, no lesson — this is beyond what an app should handle, and I would rather point you somewhere real.\n\nfindahelpline.com will find a helpline in your country. In the US or Canada, 988 reaches the Suicide and Crisis Lifeline. In the UK or Ireland, Samaritans are on 116 123, free, any hour.\n\nIf you are in danger right now, call emergency services.\n\nAnd tell one person you trust that today is hard. Not the whole story — just enough that you are not carrying it alone.",
+          "I am glad you are still here and still talking. Being straight with you: I am a support tool, not a counsellor, and this needs a human being.\n\nfindahelpline.com points to free confidential help wherever you are. US and Canada: call or text 988. UK and Ireland: Samaritans, 116 123.\n\nIf you are in immediate danger, call your local emergency number now.\n\nCould you send one message to someone you trust, just saying tonight is rough? That does more than anything I can offer."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "How do I find a therapist?",
+          "intentId": "professional_help"
+        },
+        {
+          "label": "I'm safe, I just feel low",
+          "intentId": "shame"
+        }
+      ]
+    },
+    {
+      "id": "professional_help",
+      "label": "I think I need real help",
+      "matchKeywords": [
+        "therapist",
+        "therapy",
+        "counsellor",
+        "counselor",
+        "counselling",
+        "counseling",
+        "psychologist",
+        "psychiatrist",
+        "professional help",
+        "see someone",
+        "get help",
+        "treatment",
+        "rehab",
+        "doctor",
+        "gp",
+        "specialist",
+        "cbt",
+        "need more than an app"
+      ],
+      "priority": 1,
+      "responses": {
+        "faith": [
+          "That is a good instinct, and I want to say clearly: this app is a support tool, not treatment. Wanting a professional is not admitting defeat — it is what a serious man does when he intends to actually solve something.\n\nSearch for someone who works with **compulsive sexual behaviour**, **out-of-control sexual behaviour**, or **problematic pornography use**. Those are the terms clinicians in this field use. Psychology Today, AASECT, and the BACP or UKCP registers are good starting points, and most offer video sessions.\n\nOn the first call, ask how often they work with this and how they think about shame. A warm, practical, non-moralising answer is the strongest signal you will get.\n\nIf you want someone who shares your faith, ask whether they also have clinical training in compulsive behaviour. Pastoral support and clinical care are both good, and they are not interchangeable. Ideally have both.",
+          "Good. Bringing in help is the move — and worth saying plainly, this app was never meant to be treatment.\n\nLook for a therapist specialising in compulsive sexual behaviour or problematic pornography use. Directories worth trying: Psychology Today, AASECT-certified therapists, CSAT-trained clinicians, and national registers like BACP or UKCP.\n\nMost offer a free first call. Ask what a course of work looks like week to week, and whether they screen for depression, anxiety, ADHD and trauma — those often sit underneath, and treating them directly does more than working on the behaviour alone.\n\nIf money is the obstacle, ask about sliding scale, look at university training clinics, check whether your employer has an assistance programme, or in the UK self-refer to NHS talking therapies.",
+          "Yes. And I would rather point you to a person than pretend I am one.\n\nThe search terms that find the right people are compulsive sexual behaviour, out-of-control sexual behaviour, or problematic pornography use. Try Psychology Today, AASECT, CSAT-trained clinicians, or your national register.\n\nWatch for two things on the first call: does he lecture you, and does he leave you feeling smaller? Both are reasons to keep looking. Most men who try therapy for this and give up did so after one bad fit, not because therapy does not work.\n\nAnd if you have a pastor you trust, tell him too. Grace and clinical care are not in competition."
+        ],
+        "discipline": [
+          "That is a sound instinct, and worth saying plainly: this app is a support tool, not treatment. Wanting a professional is not conceding anything — it is what someone does when he intends to solve a problem rather than perform managing it.\n\nSearch for a therapist working with **compulsive sexual behaviour**, **out-of-control sexual behaviour**, or **problematic pornography use**. Psychology Today, AASECT-certified therapists, CSAT-trained clinicians, and national registers such as BACP or UKCP are the places to look. Most offer video sessions.\n\nOn the first call, ask how often they work with this and how they think about shame. A practical, non-moralising answer is the best signal available.",
+          "Good call. Bring in someone trained.\n\nUse the terms clinicians use: compulsive sexual behaviour, problematic pornography use, out-of-control sexual behaviour. Directories: Psychology Today, AASECT, CSAT, BACP, UKCP.\n\nUse the free consultation. Ask what the work looks like week to week, roughly how long, and whether they screen for depression, anxiety, ADHD and trauma. Compulsive behaviour rarely travels alone, and treating what sits underneath often moves the behaviour faster than attacking the behaviour directly.\n\nCost workarounds: sliding scale places, university training clinics, employer assistance programmes, or NHS talking therapies self-referral in the UK.",
+          "Worth doing, and worth doing deliberately — fit matters more here than anything else.\n\nSearch for compulsive sexual behaviour or problematic pornography use. Try Psychology Today, AASECT, CSAT-trained clinicians, or your country's register.\n\nRed flags on the first call: certainty that your problem has one cause, pressure toward conclusions you did not ask for, contempt, or a large upfront fee for a promised cure. Green flag: a calm, specific answer when you ask how they handle shame.\n\nMost men who quit on therapy for this saw one poor match and generalised. Treat the first call as an interview, and be willing to make three of them."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "What do I do tonight?",
+          "intentId": "plan_tomorrow"
+        },
+        {
+          "label": "I'm having an urge now",
+          "intentId": "urge_now"
+        }
+      ]
+    },
+    {
+      "id": "urge_now",
+      "label": "I'm having an urge right now",
+      "matchKeywords": [
+        "urge",
+        "craving",
+        "temptation",
+        "tempted",
+        "want to look",
+        "about to",
+        "struggling right now",
+        "help me now",
+        "need help now",
+        "im gonna",
+        "i'm going to relapse",
+        "close to relapsing",
+        "hard right now",
+        "cant resist",
+        "can't resist",
+        "horny",
+        "turned on",
+        "fighting it"
+      ],
+      "priority": 1,
+      "responses": {
+        "faith": [
+          "Right. First thing: stand up and change rooms. Do it before you read the rest of this.\n\nDone? Good. Now set a timer for fifteen minutes. Your only job is to reach the end of it — nothing more.\n\nWhile it runs: name where you feel this in your body. Chest, gut, jaw, hands. Then breathe out longer than you breathe in. Four in, eight out. Keep going.\n\nThis is a wave, not a tide. It rises, it peaks, it falls. You do not have to defeat it. You only have to outlast it.\n\nAnd you are not alone in the room. \"God is faithful, and he will not let you be tempted beyond your ability, but with the temptation he will also provide the way of escape.\" The way out here is the door, the timer, and the next fifteen minutes.",
+          "Move first, think second. Get out of that room — kitchen, hallway, outside, anywhere else. Take the phone with you only if you have to.\n\nNow: fifteen minutes on a timer. That is the whole task.\n\nCold water on your hands and face. Twenty press-ups. Long exhales. Give the body something to do so the mind has less room to negotiate.\n\nWhat you are feeling is a trained response arriving on schedule. It is not a verdict on your character and it is not a prophecy about tonight. Every wave you ride out teaches your brain that this cue no longer leads anywhere.\n\nPray it plainly if you can: \"I want out of this. Hold me for fifteen minutes.\" He is not disappointed in you for being here.",
+          "Change your location and your posture. Standing, different room, ideally outside. Two minutes of walking is worth more than two hours of resolve right now.\n\nThen name it out loud: \"This is an urge. It is about a seven. It will pass.\" Naming moves you from inside the wave to alongside it.\n\nSet fifteen minutes. Reaching the end of the timer is a task you can genuinely complete, which is more than can be said for winning an argument with yourself.\n\nIf it helps: message one person. One line — \"having a rough one, going to bed early.\" Secrecy is what gives this most of its power.\n\nYou are not fighting this alone, and you are not fighting it for your standing with God. That is already settled. Fight it because you want the life on the other side."
+        ],
+        "discipline": [
+          "First: stand up and change rooms. Do that before reading further.\n\nNow set a timer for fifteen minutes. Reaching the end of the timer is the entire objective. Nothing else.\n\nWhile it runs: locate the feeling physically — chest, gut, jaw, hands. Then breathe out longer than in. Four in, eight out. Repeat.\n\nAn urge is a wave, not a tide. It rises, peaks, and falls. You do not have to overpower it. You have to outlast it, and the clock is doing most of that work for you.\n\nEpictetus: the impression arrived without your permission. The assent is yours. That gap is where you live right now.",
+          "Move before you deliberate. Different room, different posture, ideally outside. Two minutes of walking beats two hours of willpower.\n\nFifteen minutes on the clock. That is the task.\n\nCold water on hands and face. Twenty press-ups. Long slow exhales. Occupy the body and the mind has less space to negotiate.\n\nThis is a conditioned response firing on cue. It says nothing about your character and nothing about how tonight ends. Every wave you sit through weakens the association — that is the actual mechanism, and you are running it right now.",
+          "Name it: \"This is an urge, about a seven, and it will pass.\" Saying it out loud moves you from inside the thing to alongside it.\n\nThen the standard drill. Change room. Timer for fifteen. Long exhales. Hands under cold water.\n\nTest the proposal plainly while you wait: it is offering a screen, a few minutes, a familiar hollow afterwards, and a stronger cue tomorrow. That is the actual product. Stated honestly, it loses most of its appeal.\n\nOne more option: send one message to one person. \"Rough night, heading to bed.\" Secrecy is the multiplier on all of this."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "It's late and I can't sleep",
+          "intentId": "late_night"
+        },
+        {
+          "label": "I'm bored",
+          "intentId": "bored"
+        },
+        {
+          "label": "I'm lonely",
+          "intentId": "lonely"
+        }
+      ]
+    },
+    {
+      "id": "late_night",
+      "label": "It's late and I can't sleep",
+      "matchKeywords": [
+        "cant sleep",
+        "can't sleep",
+        "insomnia",
+        "3am",
+        "2am",
+        "1am",
+        "midnight",
+        "late night",
+        "still awake",
+        "wide awake",
+        "lying in bed",
+        "in bed",
+        "tired but wired",
+        "up late",
+        "scrolling in bed"
+      ],
+      "priority": 1,
+      "responses": {
+        "faith": [
+          "The dark hours are the hardest, and not because you are weak. Tired judgement barely resembles daytime judgement — the brake is weaker and the accelerator is heavier at 1am. Everything you are feeling right now makes sense.\n\nPractical, in order:\n\nGet the phone out of the bedroom. Kitchen, hallway, anywhere with a door between it and you.\n\nIf you have been lying there more than twenty minutes, get up. Low light, another room, something dull on paper. Come back when you are actually sleepy. Fighting for sleep in bed teaches your brain that bed is a place for fighting.\n\nLong exhales while you lie there. Four in, eight out.\n\nIf your mind is racing, dump it onto paper. Everything unfinished, in a list. It will keep until morning.\n\nAnd if you want words for it: \"In peace I will both lie down and sleep, for you alone, O Lord, make me dwell in safety.\" You do not have to fix anything tonight.",
+          "Late night with a phone in your hand is the highest-risk hour there is. Not a character problem — a design problem, and the design is fixable.\n\nRight now: phone in another room, on a charger, screen down. Do it now rather than after one more scroll.\n\nThen, if sleep will not come, get up. Do not lie there negotiating in the dark. Dim light, a paper book, a boring one, twenty minutes. Return when your eyes are heavy.\n\nTomorrow, in daylight, make it permanent: alarm clock instead of phone, fixed wake time, hard shutdown thirty minutes before bed.\n\nTonight is not a test of your resolve. It is a night. Put the phone down and let it be an ordinary one.",
+          "You are not going to win a 2am debate with yourself, so let us not have one.\n\nThree moves:\n\nPhone leaves the room. Now.\n\nGet up if you have been awake more than twenty minutes. Different room, low light, something on paper, no screens.\n\nBreathe out long — four in, eight out — for two minutes, and let the racing settle.\n\nWhatever you are chewing on will still be there in the morning, and you will be far better equipped to face it. Sleep is not avoidance. It is the single highest-leverage thing available to you at this hour.\n\nHe is not asking you to be strong tonight. He is asking you to rest."
+        ],
+        "discipline": [
+          "The dark hours are the hardest, and it is not a weakness of yours. Sleep loss degrades exactly the systems you are relying on — planning and inhibition go down while reactivity goes up. Weaker brake, heavier accelerator, at the hour you are most alone with a screen.\n\nIn order:\n\nPhone out of the bedroom. Another room, door closed.\n\nIf you have been lying awake more than twenty minutes, get up. Low light, another room, something dull on paper. Come back when genuinely sleepy — fighting for sleep in bed only teaches your brain that bed is where you fight.\n\nLong exhales: four in, eight out.\n\nIf your head is racing, write the list. It keeps until morning.",
+          "Late night, alone, phone in hand is the highest-risk configuration there is. That is a design problem, not a discipline problem, and design problems have solutions.\n\nNow: phone in another room, on the charger, screen down. Before one more scroll.\n\nIf sleep will not come, get up. No negotiating in the dark. Dim light, dull book, twenty minutes, then back.\n\nTomorrow, in daylight, make it structural: cheap alarm clock, fixed wake time seven days a week, hard shutdown thirty minutes before bed. Fix the system and you stop needing to be heroic at 1am.",
+          "You will not win a 2am argument with yourself. So do not have one.\n\nThree moves, in order: phone out of the room; get up if you have been awake twenty minutes; four in, eight out, for two minutes.\n\nWhatever you are turning over will still be there tomorrow, and tomorrow's version of you is far better equipped for it. Sleep is not avoidance — it is the highest-leverage move available at this hour, by a wide margin.\n\nSet the fixed wake time before you put the phone down. That is tomorrow's version of this conversation, handled in advance."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "I'm having an urge",
+          "intentId": "urge_now"
+        },
+        {
+          "label": "Give me a plan for tomorrow",
+          "intentId": "plan_tomorrow"
+        }
+      ]
+    },
+    {
+      "id": "just_slipped",
+      "label": "I just slipped",
+      "matchKeywords": [
+        "i slipped",
+        "slipped up",
+        "relapsed",
+        "relapse",
+        "i failed",
+        "messed up",
+        "gave in",
+        "did it again",
+        "watched",
+        "broke my streak",
+        "lost my streak",
+        "back to zero",
+        "start over",
+        "fell",
+        "caved"
+      ],
+      "priority": 1,
+      "responses": {
+        "faith": [
+          "Alright. Take a breath. Here is the first true thing: you are not back to zero. Everything you built — the sleep, the changed environment, the friend who knows, every wave you rode out — none of that unhappened. A counter resetting is a design choice, not a description of your brain. You are at day forty-three with one hard evening in it.\n\nWhat costs men months is never the slip. It is the story that follows it. \"I have ruined it\" removes every reason to stop now, and one evening becomes a fortnight.\n\nSo, next twenty-four hours:\n\nChange location within the hour. Shower, walk, get outside. Do not lie there rehearsing it.\n\nWrite four lines today. What preceded it. Which link in the chain broke. What changes tomorrow. What you keep doing.\n\nTell one person today. This is the highest-value action and the one shame will fight hardest.\n\nThen resume normally. No penance, no compensating punishment, nothing to repay. In the story, the father was already running before the son finished his speech.",
+          "Thank you for telling me instead of going quiet. That matters more than you think — silence is what turns a slip into a drift.\n\nYou have not lost the ground. Extinction learning is not erased by one reinstatement. The path is still there.\n\nRight now: get up, change rooms, shower or walk. Movement first, reflection after.\n\nLater today, four honest lines — what happened before it, not how bad you are. And send one message to your person: \"Rough night last night, back on it today.\" That is all it needs to say.\n\nThen just carry on with the plan as if today were an ordinary day, because it is. There is no punishment owed here. \"If we confess our sins, he is faithful and just to forgive.\" That is a settled transaction, not a negotiation.",
+          "Okay. No lecture from me.\n\nOne evening. That is the actual cost. The rest is whatever story you attach to it, and the story is the expensive part.\n\nDo these four things and today is genuinely fine:\n\nChange location in the next hour. Get the body moving.\n\nWrite what preceded it — the hour before, not the ten years before.\n\nTell one person before you sleep.\n\nResume the plan tonight. Normal bedtime, phone in the kitchen, alarm set.\n\nAnd hear the difference between the two voices arriving right now. One says \"you are disgusting, nothing will change\" — that one is vague, backward-facing, and hands you a sentence. The other says \"that was not consistent with who you are, and the shutdown time slipped again\" — specific, forward-facing, and hands you a step. Only one of them is worth listening to."
+        ],
+        "discipline": [
+          "Alright. First true thing: you are not back to zero. The sleep habits, the changed environment, the friend who knows, every urge you rode out — none of that unhappened. A counter resetting is a design choice, not a fact about your brain. You are at day forty-three with one difficult evening in it.\n\nWhat costs men months is never the slip. It is the conclusion drawn from it. \"I have ruined it\" removes every reason to stop now, and one evening becomes a fortnight. Researchers named this: the abstinence violation effect. The lapse is small. The interpretation does the damage.\n\nNext twenty-four hours:\n\nChange location within the hour. Shower, walk, get outside.\n\nFour lines today: what preceded it, which link broke, what changes tomorrow, what you keep.\n\nTell one person today.\n\nThen resume normally. No compensating punishment, no extra cold shower as penance. Nothing is owed.",
+          "Thanks for saying it rather than going quiet. Silence is what converts a slip into a drift, and drift is the thing that actually costs months.\n\nThe ground is not lost. One reinstatement does not erase extinction learning.\n\nNow: up, out of the room, shower or walk. Movement first, analysis second.\n\nLater: four honest lines about the preceding hour. Facts, no adjectives about yourself.\n\nThen one message to your person: \"Rough one last night, back on it today.\" That is the whole message.\n\nThen carry on as if today were ordinary, because it is. Seneca reviewed each day at night — examining, not sentencing. Look, adjust, sleep.",
+          "No lecture.\n\nOne evening. That is the real cost. Everything else is the story you attach, and the story is the expensive part.\n\nFour things and today is genuinely fine:\n\nChange location in the next hour.\n\nWrite what preceded it — the hour before, not the decade before.\n\nTell one person before you sleep.\n\nResume tonight. Normal bedtime, phone in the kitchen, alarm set.\n\nThe useful question is not \"why am I like this.\" It is \"which link in the chain broke, and what does that cost me to change?\" That question has an answer you can act on."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "I feel awful about myself",
+          "intentId": "shame"
+        },
+        {
+          "label": "Give me a plan for tomorrow",
+          "intentId": "plan_tomorrow"
+        },
+        {
+          "label": "Does God forgive this?",
+          "intentId": "gods_forgiveness"
+        }
+      ]
+    },
+    {
+      "id": "shame",
+      "label": "I feel like garbage",
+      "matchKeywords": [
+        "ashamed",
+        "shame",
+        "disgusting",
+        "hate myself",
+        "pathetic",
+        "weak",
+        "loser",
+        "guilty",
+        "guilt",
+        "dirty",
+        "filthy",
+        "worthless",
+        "cant forgive myself",
+        "can't forgive myself",
+        "im a fraud",
+        "hypocrite",
+        "embarrassed",
+        "self loathing"
+      ],
+      "priority": 1,
+      "responses": {
+        "faith": [
+          "I want to name something, because it matters: shame is not what is going to get you out of this. It is part of what keeps you in.\n\nGuilt says \"I did something that does not fit who I am.\" It points at the action, leaves you intact, and produces repair. Shame says \"I am the kind of man who does this.\" It points at you, and there is nothing to repair — only something to escape. And your fastest, most practised escape is the exact behaviour you are ashamed of. That is the loop. It is not a moral failure; it is a mechanism.\n\nSo let us swap it for something that actually works: accuracy plus responsibility. \"That happened. Here is what preceded it. Here is what I am changing about tomorrow.\" No adjectives about your worth. No sentencing.\n\nAnd hear this clearly: there is now no condemnation for those who are in Christ Jesus. Not less. None. So the voice reading your charges back to you is not the Judge — the Judge has already ruled.",
+          "You are being harder on yourself than anyone who loves you would be. And it is not working, which is the part worth noticing.\n\nShame is a painful state, and painful states demand relief. Your quickest relief is the thing you are ashamed of. So self-attack reliably delivers you back to the behaviour, usually within a day or two. Men describe this as feeling insane — \"I hate this, so I do it more.\" You are not insane. You are running a loop with an obvious exit.\n\nThe way out is not letting yourself off. It is being precise instead of cruel. What happened, what preceded it, what changes. That is all that is required of you.\n\nAnd if the heaviness is not lifting — if you have been carrying self-hatred for weeks — please take that to a professional rather than managing it alone. This app is a support, not treatment.",
+          "That voice is loud tonight. Let me offer two questions to test it.\n\nDoes it move you toward God and toward people, or away from them? Conviction draws you in. Condemnation isolates — do not tell anyone, do not pray tonight, wait until you are cleaner.\n\nDoes it give you something to do? Conviction hands you a next step. Condemnation hands you a sentence.\n\nIf what you are hearing is vague, backward-facing, and full of verdicts about who you are, that is not the voice of the God who ran down the road to meet his son. It is shame in borrowed clothes.\n\nSo: say the specific thing plainly, receive the specific correction, take the specific step — message your friend, phone in the kitchen, alarm set. Then sleep. Conviction finishes its business and leaves. Anything still shouting at 1am is not it."
+        ],
+        "discipline": [
+          "Worth naming plainly: shame is not going to get you out of this. It is part of what keeps you in.\n\nGuilt points at the action — \"I did something that does not fit who I am\" — and produces repair. Shame points at the self — \"I am the kind of man who does this\" — and there is nothing to repair, only something to escape. Your fastest escape is the exact behaviour you are ashamed of. That is the loop, and it is a mechanism rather than a moral failing.\n\nReplace it with accuracy plus responsibility. \"That happened. Here is what preceded it. Here is what changes tomorrow.\" No adjectives about your worth, no sentencing.\n\nMarcus Aurelius did not spend his evenings insulting himself. He described what happened plainly and adjusted. That is the whole practice.",
+          "You are being harder on yourself than you would be on any friend in the same position. And it is not producing results, which is the practical objection.\n\nShame is a painful state. Painful states demand regulation. Your most practised regulation strategy is the behaviour itself. So self-attack routinely returns you to the thing that caused it, usually within a couple of days.\n\nThe alternative is not going soft. It is being precise instead of cruel. What happened. What preceded it. What changes. Done, and on with the day.\n\nOne caution: if the self-hatred has been heavy for weeks, take it to a professional. This app is a support tool, not treatment, and some things genuinely need a trained human being.",
+          "Two questions to test what you are hearing.\n\nDoes it move you toward people or away from them? Useful correction draws you toward others. Shame isolates — do not tell anyone, handle it alone, stay quiet.\n\nDoes it hand you a step or a sentence? A step you can act on tonight. A sentence just sits on you.\n\nIf it is vague, backward-facing, and mostly verdicts about your character, it is not information. It is noise dressed up as honesty.\n\nSo write the four lines, send the one message, set the alarm, and go to bed. Examine, adjust, sleep. That is the entire evening review, and it is enough."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "Does God forgive this?",
+          "intentId": "gods_forgiveness"
+        },
+        {
+          "label": "Is this even working?",
+          "intentId": "doubting_progress"
+        },
+        {
+          "label": "I think I need real help",
+          "intentId": "professional_help"
+        }
+      ]
+    },
+    {
+      "id": "lonely",
+      "label": "I'm lonely",
+      "matchKeywords": [
+        "lonely",
+        "alone",
+        "isolated",
+        "no friends",
+        "nobody",
+        "no one cares",
+        "unwanted",
+        "unloved",
+        "single",
+        "empty",
+        "disconnected",
+        "no one to talk to",
+        "miss having someone",
+        "left out"
+      ],
+      "priority": 1,
+      "responses": {
+        "faith": [
+          "That is worth taking seriously rather than pushing past, because loneliness is the state that shows up most often in men's logs before a slip — more often than desire does.\n\nHere is why it hits so hard: porn does not only simulate sex. It simulates being wanted, chosen, and attended to, with none of the risk real intimacy asks for. No rejection, no need to be interesting, no obligation to show up tomorrow. For a lonely man, that is an extremely well-fitted counterfeit.\n\nBut counterfeits do not nourish. Most men feel more isolated afterwards, not less.\n\nSo the real move tonight is a person. One fifteen-minute call. Not a group chat — a voice. If it is too late to call, send the message that arranges it for tomorrow.\n\nAnd this ache is not your enemy. You were made for communion, and the pull is pointing at something real. The counterfeit only has power because it borrowed the shape of something good.",
+          "Loneliness is the hunger underneath this for a lot of men, and it does not get solved by abstinence alone. You can white-knuckle for months and still be starving.\n\nWhat actually addresses it:\n\nOne real conversation a week with someone who knows you. Voice, not text.\n\nBeing known by at least one person in this specific area. Secrecy multiplies everything.\n\nSomething you do with other men in person — training, a project, a table, a service rota. For most men, shoulder to shoulder counts more than face to face.\n\nBeing needed by someone. Serving is not a moral bonus; it is a direct answer to feeling irrelevant.\n\nTonight, pick one. The smallest one. Send one message.\n\nAnd if it is late and there is nobody to call, that is not a verdict on your worth. It is a Tuesday. Go to bed, and send the message in the morning.",
+          "I hear you, and I am not going to talk you out of it. It is real.\n\nOne thing though: loneliness lies about permanence. It presents itself as a fact about your life rather than a state you are in tonight. It is a state.\n\nSmallest useful action available right now: message one person something real. Not a status update — one true sentence. \"Bit of a rough week, would be good to catch up.\" That is it.\n\nThen do something that puts you near other humans this week, even if you barely speak to them. A gym, a service, a class, a table. Proximity is a starting point.\n\n\"It is not good that the man should be alone.\" That was said before anything went wrong. The need is not a defect in you — it is the design."
+        ],
+        "discipline": [
+          "Worth taking seriously rather than pushing past. Loneliness shows up in men's trigger logs more often than desire does.\n\nWhy it hits so hard: porn simulates being wanted, chosen, and attended to, with none of the risk real connection requires. No rejection, no need to be interesting, no obligation tomorrow. For a lonely man that is a well-fitted counterfeit — and counterfeits do not nourish. Most men report feeling more isolated afterwards, not less.\n\nSo the move tonight is a person. One fifteen-minute call, voice not text. If it is too late, send the message that sets it up for tomorrow.\n\nThe Stoics were blunt about this: humans are social animals, and a man who arranges his life without real friendship has an unmet need that will find a cheaper outlet.",
+          "This does not get solved by abstinence. You can hold out for months and still be starving.\n\nWhat actually addresses it:\n\nOne real conversation a week with someone who knows you. Voice.\n\nOne person who knows about this specifically. Secrecy is the multiplier.\n\nSomething done with other men in person — training, a project, a rota. Shoulder to shoulder beats face to face for most men.\n\nBeing needed. Serving someone is the most direct available answer to feeling irrelevant.\n\nPick the smallest one and do it tonight. One message is enough to count.",
+          "It is real, and I am not going to argue you out of it.\n\nBut note what loneliness does: it presents itself as a permanent fact about your life rather than a state you are in this evening. It is a state, and states move.\n\nSmallest useful action right now: one true sentence to one person. \"Rough week, be good to catch up.\" Send it.\n\nThen put something in the calendar this week that involves being physically near other people, even if you barely speak. Proximity first, conversation later. That order works better than waiting until you feel sociable."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "I'm having an urge",
+          "intentId": "urge_now"
+        },
+        {
+          "label": "Things are hard with my partner",
+          "intentId": "relationship_trouble"
+        }
+      ]
+    },
+    {
+      "id": "bored",
+      "label": "I'm bored",
+      "matchKeywords": [
+        "bored",
+        "boredom",
+        "nothing to do",
+        "restless",
+        "killing time",
+        "empty evening",
+        "nothing on",
+        "aimless",
+        "wasting time",
+        "cant settle",
+        "can't settle",
+        "fidgety"
+      ],
+      "priority": 2,
+      "responses": {
+        "faith": [
+          "Boredom is one of the biggest triggers there is, and almost nobody names it as one. Men say stress. The logs say empty evening.\n\nIt is not a neutral absence — it is an uncomfortable, restless state, and like any uncomfortable state it demands relief. Your fastest relief is the practised one.\n\nSo do not try to win this at 9pm. Fill the space instead, and fill it with something that asks a bit of you. Passive filling — another feed, another autoplay — leaves the restlessness exactly where it was.\n\nThree options for the next thirty minutes: something that requires effort (an instrument, a language, a real book, a repair), something outdoors (a walk with no headphones), or something for someone else (a message, a meal, a lift, a job you have been avoiding).\n\nPick one now, before the evening picks for you.",
+          "Right — and this one is fixable in advance, which is the good news.\n\nAn unstructured evening is a design flaw, not a character test. Trying to white-knuckle through four empty hours is a losing setup no matter how motivated you are.\n\nFor tonight: pick one thing, twenty minutes, and start it in the next five. Anything with a visible outcome — something further along at the end than it was at the start.\n\nFor next week: decide what those hours are for while you are clear-headed. Same slot, same activity, absurdly small. The point is not the hobby. The point is that the empty hour now has an owner.\n\nAnd worth saying: sitting with a bit of boredom is a skill you are relearning. If a few years passed where every dull moment got filled instantly, that capacity is genuinely low right now. It comes back with use.",
+          "Boredom is where a lot of evenings quietly go wrong, so let us handle it directly.\n\nStand up first. The state changes faster when the body does.\n\nThen pick one: twenty minutes outside without your phone, twenty minutes on something you are trying to get good at, or twenty minutes doing something for another person.\n\nIf none of those appeal — that is the boredom talking, and it will say no to everything. Pick one anyway and start badly. Interest usually arrives about four minutes in, not before.\n\nThere is an old idea worth keeping: idleness is not rest. Rest restores you. Idleness just leaves the door open."
+        ],
+        "discipline": [
+          "Boredom is one of the most under-reported triggers there is. Men say stress; the logs say empty evening.\n\nIt is not a neutral absence. It is an uncomfortable, restless state, and uncomfortable states demand relief. Your fastest relief is the practised one.\n\nDo not try to win this at 9pm. Fill the space, and fill it with something that asks effort of you. Passive filling — another feed, another autoplay — leaves the restlessness untouched.\n\nThree options for the next thirty minutes: something difficult (instrument, language, real book, repair), something outdoors (walk, no headphones), or something for someone else.\n\nChoose now, before the evening chooses for you.",
+          "Fixable, and fixable in advance.\n\nAn unstructured evening is a design flaw, not a character test. White-knuckling through four empty hours is a losing setup regardless of motivation.\n\nTonight: one thing, twenty minutes, started within five. Something with a visible outcome.\n\nNext week: decide what those hours are for while you are still clear-headed, ideally the day before. Same slot, same activity, small enough to be almost embarrassing. The point is not the hobby — it is that the empty hour now has an owner.\n\nAlso worth knowing: tolerating boredom is a trainable capacity, and yours is probably low right now because it has not been asked for in years. It returns with use.",
+          "Stand up first. State changes faster when the body does.\n\nThen pick one: twenty minutes outside with no phone, twenty minutes on a skill you are building, or twenty minutes doing something useful for someone else.\n\nIf none of it appeals — that is boredom talking, and it will veto everything on offer. Pick one anyway and start badly. Interest generally shows up about four minutes in, not before.\n\nIdleness is not rest. Rest restores. Idleness just leaves the door open."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "I'm having an urge",
+          "intentId": "urge_now"
+        },
+        {
+          "label": "Give me a plan for tomorrow",
+          "intentId": "plan_tomorrow"
+        }
+      ]
+    },
+    {
+      "id": "stressed",
+      "label": "I'm stressed",
+      "matchKeywords": [
+        "stressed",
+        "stress",
+        "anxious",
+        "anxiety",
+        "overwhelmed",
+        "pressure",
+        "burnt out",
+        "burned out",
+        "exhausted",
+        "too much",
+        "cant cope",
+        "can't cope",
+        "worried",
+        "panicking",
+        "work is killing me",
+        "deadline"
+      ],
+      "priority": 2,
+      "responses": {
+        "faith": [
+          "Stress is a genuine trigger, and the logic behind it is not stupid: your nervous system is looking for the fastest available down-regulator, and you have trained one that works in four minutes. That is not weakness. That is efficiency aimed at the wrong target.\n\nThe problem is that it works briefly and costs a lot, and it leaves the actual pressure exactly where it was.\n\nFaster and cheaper alternatives, right now: two minutes of long exhales, four in and eight out. Ten minutes of walking, preferably outside. Twenty press-ups. Cold water on your hands and face. All of them shift the physiology, which is what you are actually after.\n\nThen, if you can, write the pressure down. Everything on you, in a list. Unnamed stress feels infinite; on paper it is usually four things, one of which is urgent.\n\nAnd you are allowed to put it down for the night. \"Cast all your anxieties on him, because he cares for you.\" You are not the one holding the world up.",
+          "Let us separate two things: the pressure itself, and how your body is carrying it.\n\nYou can rarely change the first in the next hour. You can always change the second.\n\nFor the body: long exhales for two minutes. A ten-minute walk. Something physically hard for five. Cold water. These are substitutions, not punishments — you are giving the nervous system a different route down.\n\nFor the pressure: write the list. Then circle the one thing that is genuinely due next, and ignore the rest until tomorrow. Overwhelm is usually a sequencing problem wearing a catastrophe costume.\n\nAnd check the basics before you attribute all of this to your circumstances — sleep, food, water, movement, whether you have spoken to another human today. Those four account for a surprising amount of what feels like an unmanageable life.",
+          "Stress plus tiredness plus alone plus a phone is the highest-risk combination there is. If three of those are true right now, change one of them in the next five minutes. Easiest is the phone.\n\nThen: ten minutes outside. Not as a tip — as the actual task. Movement and daylight do more for a stressed nervous system in ten minutes than an hour of trying to think your way calm.\n\nWhen you are back, one honest sentence about what is actually pressing on you. Naming it usually shrinks it by half.\n\nAnd if the stress has been at this level for months rather than days, that is worth taking to someone — a doctor or a therapist. An app can help you hold the line; it cannot carry a sustained load for you."
+        ],
+        "discipline": [
+          "Stress is a real trigger, and the underlying logic is sound even though the target is wrong: your nervous system wants the fastest available down-regulator, and you have trained one that works in four minutes. That is efficiency misapplied, not weakness.\n\nThe trouble is that it works briefly, costs a lot, and leaves the pressure exactly where it was.\n\nFaster and cheaper, available now: two minutes of long exhales, four in and eight out. Ten minutes walking, outside if possible. Twenty press-ups. Cold water on hands and face. All of them shift the physiology, which is the actual objective.\n\nThen write the pressure down. Unnamed stress feels infinite; on paper it is usually four things, one of which is urgent.",
+          "Two separate problems: the pressure, and how your body is carrying it.\n\nYou usually cannot change the first in the next hour. You can always change the second.\n\nBody: long exhales for two minutes, a ten-minute walk, five minutes of something physically hard, cold water. Substitutions, not punishments — a different route down for the nervous system.\n\nPressure: write the list, circle the one thing genuinely due next, ignore the rest until tomorrow. Overwhelm is usually a sequencing problem in a catastrophe costume.\n\nAnd audit the basics before blaming your circumstances: sleep, food, water, movement, and whether you have spoken to another human today. Those four explain a lot of what feels unmanageable.",
+          "Stressed, tired, alone, holding a phone is the highest-risk configuration available. If three of those are true, change one in the next five minutes. The phone is the easiest.\n\nThen ten minutes outside — as the task, not as a suggestion. Movement and daylight do more for a stressed nervous system in ten minutes than an hour of thinking your way toward calm.\n\nAfterwards, one honest sentence about what is actually pressing. Naming it usually halves it.\n\nIf this has been the baseline for months rather than days, take it to a doctor or a therapist. An app helps you hold a line. It cannot carry a sustained load."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "I'm having an urge",
+          "intentId": "urge_now"
+        },
+        {
+          "label": "I can't sleep",
+          "intentId": "late_night"
+        }
+      ]
+    },
+    {
+      "id": "angry",
+      "label": "I'm angry",
+      "matchKeywords": [
+        "angry",
+        "anger",
+        "furious",
+        "raging",
+        "pissed off",
+        "annoyed",
+        "frustrated",
+        "resentful",
+        "resentment",
+        "bitter",
+        "want to punch",
+        "fed up",
+        "irritated",
+        "seething"
+      ],
+      "priority": 2,
+      "responses": {
+        "faith": [
+          "Anger is one of the most reliable and least discussed triggers. It carries a lot of energy, it demands discharge, and the practised discharge is right there in your pocket.\n\nSo let us route it somewhere useful.\n\nFirst, discharge the physical load: get outside and walk fast for ten minutes, or do a hard set of something — press-ups, sprints, a bag if you have one. Anger sits in the body and it will not be reasoned with until the body has moved.\n\nSecond, name what is under it. Anger is usually a second emotion. Underneath is often hurt, fear, or a boundary that got crossed. One sentence: \"I am angry because ______, and underneath that I feel ______.\"\n\nThird, do not make a decision or send a message for at least an hour.\n\n\"Be angry and do not sin; do not let the sun go down on your anger.\" Notice the first half. The anger itself is not the problem. What you do with it in the next hour is.",
+          "Right. Move first, think second — anger is physiological before it is anything else, and you will not talk yourself calm while it is still in your chest and jaw.\n\nTen minutes of hard movement. Walk fast, run, lift, press-ups until your arms complain. Then come back to it.\n\nAfterwards, two questions: what actually happened, and what do I want to do about it tomorrow? Tomorrow, not tonight. Almost nothing decided in an angry hour survives contact with the morning.\n\nAnd watch the specific move where anger looks for something to take. That is the most dangerous minute in an angry evening. Recognising it as it happens robs it of most of its force.\n\nIf there is a real wrong here that needs addressing, address it — properly, in daylight, with words you chose while calm. That is a stronger response than anything available tonight.",
+          "Anger has a way of feeling like permission. \"After the day I have had, I have earned this.\" Worth noticing that thought as it arrives, because it is the oldest trick in the set.\n\nWhat you have earned is rest, food, and someone to talk to. Not a thing that will make tomorrow harder.\n\nSo: ten minutes of hard physical work. Then a shower. Then one honest line about what actually happened, on paper.\n\nThen, if the anger is about a person, consider whether you are carrying something that needs saying to them or forgiving in them. Both are daylight jobs. Tonight, just put it down and sleep."
+        ],
+        "discipline": [
+          "Anger is a reliable and under-discussed trigger. It carries energy, it demands discharge, and the practised discharge is in your pocket.\n\nRoute it somewhere useful instead.\n\nFirst, discharge the physical load: ten minutes walking fast outside, or a hard set of something — press-ups, sprints, a bag. Anger lives in the body and will not be reasoned with until the body has moved.\n\nSecond, name what is beneath it. Anger is usually second. Underneath is often hurt, fear, or a crossed boundary. One sentence: \"I am angry because ______, and underneath that ______.\"\n\nThird, make no decisions and send no messages for at least an hour. Seneca wrote a whole book on this, and the practical core of it was: delay. Anger cannot survive a delay.",
+          "Move first, think second. Anger is physiological before it is anything else, and you will not reason yourself calm while it is still in your chest and jaw.\n\nTen minutes of hard movement. Then return to the problem.\n\nThen two questions: what actually happened, and what do I intend to do about it tomorrow? Tomorrow, not tonight. Very little decided in an angry hour survives contact with the morning.\n\nWatch for the specific moment when anger goes looking for something to take. That is the most dangerous minute of an angry evening, and simply recognising it as it happens takes most of its force away.",
+          "Anger tends to arrive carrying a permission slip. \"After the day I have had, I have earned this.\" Notice that sentence as it forms — it is the oldest move in the set.\n\nWhat you have earned is food, rest, and someone to talk to. Not something that makes tomorrow harder.\n\nSo: ten minutes of hard physical work. Shower. One honest line on paper about what actually happened.\n\nIf it concerns a person, whatever needs saying is a daylight job, said in words you chose while calm. That is a far stronger response than anything available to you tonight."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "I'm having an urge",
+          "intentId": "urge_now"
+        },
+        {
+          "label": "I'm stressed too",
+          "intentId": "stressed"
+        }
+      ]
+    },
+    {
+      "id": "app_trigger",
+      "label": "A specific app keeps triggering me",
+      "matchKeywords": [
+        "instagram",
+        "reddit",
+        "twitter",
+        "x app",
+        "tiktok",
+        "snapchat",
+        "youtube",
+        "discord",
+        "telegram",
+        "onlyfans",
+        "tinder",
+        "dating app",
+        "explore page",
+        "feed",
+        "algorithm",
+        "keeps showing me",
+        "recommendations",
+        "delete the app",
+        "block",
+        "blocker",
+        "filter"
+      ],
+      "priority": 2,
+      "responses": {
+        "faith": [
+          "Good — naming the specific app is genuinely useful. Vague resolve loses to a specific feed every time.\n\nUnderstand what you are up against: that feed is optimised by a system with far more data about your attention than you have, and it is not going to stop offering you what holds you. This is not a fair fight and there is no honour in taking it fairly.\n\nSo, in order of effectiveness:\n\nDelete the app from your phone. Use the browser version only if you genuinely need it — it is deliberately worse, and that friction is the point.\n\nIf you cannot delete it, log out and do not save the password. Store it somewhere inconvenient.\n\nAggressively retrain the feed: unfollow, mute, mark not interested, block. Ten minutes of this changes what you are served.\n\nTurn on the OS-level content filter and screen time limits, and let someone else set the passcode.\n\nRemoving a cue costs you almost nothing at 9am and saves you enormous effort at 11pm. This is not weakness. It is the highest-leverage move you have.",
+          "The honest answer is that this specific app has to go, at least for a season.\n\nMen resist that because it feels like an overreaction, or like admitting the app has power over them. But you would not keep a bottle on the desk and call it strength. Environment beats willpower, consistently and by a wide margin.\n\nDo it now while you are clear-headed, not at 11pm when you are not:\n\nDelete it from the phone.\n\nLog out on every other device.\n\nSet the screen time passcode and have a friend enter it so you do not know it.\n\nDecide when you will review the decision — thirty days is a reasonable checkpoint.\n\nAnd if that feels disproportionate, notice how strongly you want to argue against it. That reaction is information.",
+          "Cues are specific — an app icon, a sound, a posture, a time of night. Your brain has an inventory and it does not need your permission to consult it. Which means the fix is also specific, and mercifully practical.\n\nFor tonight: move the app off your home screen, or delete it outright. Two minutes of work now, and the evening gets much easier.\n\nFor this week: retrain or abandon the feed, put a content filter on at the OS level, and get the phone out of the bedroom entirely. That last one does more than the rest combined.\n\nOne caution: blockers and filters are a fence, not a relationship. They raise friction at the moment your judgement is weakest, which is real value — but the goal was never to make it impossible. It was to make it unnecessary. Use the tools, and keep doing the other work too."
+        ],
+        "discipline": [
+          "Naming the specific app is useful. Vague resolve loses to a specific feed every time.\n\nUnderstand the matchup: that feed is optimised by a system holding far more data about your attention than you have, and it will keep offering what holds you. It is not a fair fight, and there is no honour in fighting it fairly.\n\nIn order of effectiveness:\n\nDelete the app from your phone. Browser only if genuinely necessary — it is deliberately worse, and the friction is the point.\n\nIf you cannot delete it, log out and do not save the password.\n\nRetrain the feed hard: unfollow, mute, not interested, block. Ten minutes changes what you are served.\n\nEnable OS-level content filters and screen time limits, and let someone else hold the passcode.\n\nRemoving a cue costs nothing at 9am and saves an enormous amount at 11pm.",
+          "The honest answer is that this app goes, at least for a season.\n\nThat feels like an overreaction only because you are still treating this as a contest of will. It is not. Environment beats willpower consistently and by a wide margin, and arranging your environment well is the intelligent move rather than the weak one.\n\nDo it now, while clear-headed:\n\nDelete from phone. Log out everywhere else. Screen time passcode entered by someone else. Set a thirty-day review date.\n\nIf that feels disproportionate, notice how much you want to argue against it. That reaction is data.",
+          "Cues are specific — an icon, a sound, a posture, an hour. Your brain keeps an inventory and consults it without asking. The upside is that the fix is equally specific and entirely practical.\n\nTonight: app off the home screen, or gone. Two minutes of work and the evening gets materially easier.\n\nThis week: retrain or abandon the feed, OS-level content filter on, phone out of the bedroom. The last one outperforms the rest combined.\n\nOne caution: filters are a fence, not a strategy. They raise friction when your judgement is weakest, which is genuine value — but the aim was never to make it impossible, only to make it unnecessary. Keep doing the other work alongside."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "Give me a plan for tomorrow",
+          "intentId": "plan_tomorrow"
+        },
+        {
+          "label": "I'm having an urge",
+          "intentId": "urge_now"
+        }
+      ]
+    },
+    {
+      "id": "doubting_progress",
+      "label": "Is this even working?",
+      "matchKeywords": [
+        "not working",
+        "isnt working",
+        "isn't working",
+        "no progress",
+        "pointless",
+        "whats the point",
+        "what's the point",
+        "waste of time",
+        "same as before",
+        "no different",
+        "still struggling",
+        "nothing has changed",
+        "why bother",
+        "hopeless about this",
+        "keep failing",
+        "always back here"
+      ],
+      "priority": 2,
+      "responses": {
+        "faith": [
+          "Fair question, and worth answering honestly rather than cheerfully.\n\nProgress here does not look like a line. It looks like a staircase with landings and the occasional step back. A hard week after three good ones is not a reversal — it is the shape of the curve. And the hardest stretch for most men is weeks two to four, precisely because the novelty has gone and the results have not arrived yet. Most attempts end there, not from weakness, but from the entirely reasonable conclusion that it is not working. It is working. The evidence is just late.\n\nSo measure something better than the counter. Are the gaps between urges lengthening? Do you recover in a day instead of a fortnight? Are you sleeping? Does anyone know the truth about you? Is there more in your life than there was a month ago?\n\nThose numbers do not reset. They compound.",
+          "Let me ask a different set of questions, because \"is it working\" usually gets measured against a schedule you invented.\n\nA month ago, how long would a slip have knocked you off course? And now?\n\nA month ago, did anyone know? Do they now?\n\nA month ago, what time did you go to bed, and where was your phone?\n\nIf those answers have moved even slightly, the thing is working — regardless of what the counter says.\n\nAnd if honestly nothing has shifted after a couple of months of real structure, that is not a reason to quit. It is a signal to bring in help. This app is a support tool, not treatment, and some patterns need a professional alongside it. That is not defeat; it is the next sensible step.",
+          "The doubt is worth taking seriously, and so is this: you are still here, still asking, still trying. That is not nothing. A lot of men stop asking.\n\nWhat I would push back on is the standard. If you are measuring against \"I should never feel this pull again,\" you have set an exam nobody passes. Rewiring does not mean deletion. Learned associations do not get erased — they get outcompeted by stronger new ones. An old urge appearing after a quiet stretch is a documented feature of that process, not evidence that nothing worked.\n\nThe realistic goal is a wider gap between the urge and the hand. That gap is measurable, and it is almost certainly wider than it was.\n\n\"Let us not grow weary of doing good, for in due season we will reap, if we do not give up.\" In due season. Not on your timetable."
+        ],
+        "discipline": [
+          "Fair question, and it deserves an honest answer rather than encouragement.\n\nProgress here is not a line. It is a staircase with landings and occasional steps back. A hard week following three good ones is the shape of the curve, not a reversal. And weeks two to four are the hardest stretch for most men, precisely because the novelty is gone and nothing visible has improved yet. Most attempts end there — not from weakness, but from a reasonable conclusion drawn from incomplete data. The evidence is simply late.\n\nMeasure better things than the counter. Are the gaps lengthening? Do you recover in a day rather than a fortnight? Are you sleeping? Does anyone know the truth? Is your life fuller than it was?\n\nThose numbers do not reset. They compound.",
+          "Different set of questions, because \"is it working\" is usually being measured against a schedule you invented.\n\nA month ago, how long would a slip have knocked you sideways? And now?\n\nA month ago, did anyone know? Do they now?\n\nA month ago, what time did you sleep, and where was your phone?\n\nIf those have moved at all, it is working, whatever the counter says.\n\nIf genuinely nothing has shifted after a couple of months of real structure, that is not a reason to quit — it is a signal to bring in a professional. This app is a support tool, not treatment. Escalating is the sensible next step, not a concession.",
+          "Push back on the standard you are using. If you are measuring against \"I should never feel this pull again,\" you have set an exam nobody passes.\n\nRewiring does not mean deletion. Old associations are not erased; they are outcompeted by stronger new ones. An old urge surfacing after a long quiet stretch is a documented part of extinction learning — spontaneous recovery — not proof that the work failed.\n\nThe realistic target is a wider gap between the urge and the hand. That is measurable, and it is almost certainly wider than it was a month ago.\n\nMarcus Aurelius kept a note to himself about returning to the work after falling short, and being glad to come back to it. He was not writing to a man who had it handled. He was writing to himself, repeatedly, for years."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "I think I need real help",
+          "intentId": "professional_help"
+        },
+        {
+          "label": "Give me a plan for tomorrow",
+          "intentId": "plan_tomorrow"
+        }
+      ]
+    },
+    {
+      "id": "quit_app",
+      "label": "I want to delete this app",
+      "matchKeywords": [
+        "delete this app",
+        "uninstall",
+        "quit the app",
+        "stop using this",
+        "done with this",
+        "this app is useless",
+        "not for me",
+        "want out",
+        "give up on this",
+        "cancel",
+        "remove the app"
+      ],
+      "priority": 2,
+      "responses": {
+        "faith": [
+          "You are free to, and I mean that — no guilt trip from me. This is a tool, and tools are allowed to be put down.\n\nBut let me ask one honest question first: is it the app you want gone, or the reminder?\n\nMen usually reach for delete at two moments. After a slip, when the app feels like an accusation. And when things are going well, when it feels unnecessary. The first is shame talking. The second is the exact moment the structure quietly comes down and drift begins.\n\nIf it is genuinely not helping — if the tone is wrong, or the counter is doing more harm than good — turn off the streak display, or use only the mentor and the habits. You can strip it back rather than remove it.\n\nAnd if it is the reminder you are trying to escape, the better move is not deletion. It is a conversation with someone who knows you. Would you send that message instead, tonight?",
+          "That is your call, and it is a legitimate one. But three things before you do.\n\nOne: if this is after a hard night, please wait twenty-four hours. Decisions made from shame are almost never the ones you would make tomorrow.\n\nTwo: if you are doing well and it feels unnecessary — that is exactly the point at which most men take the structure down and drift back over the following months. Keeping something small in place costs you very little.\n\nThree: if the app itself is the problem, tell me what is wrong and use less of it. Switch modes, hide the counter, keep only the habits. There is no obligation to use all of it.\n\nAnd whatever you decide, please do not delete the person. Whoever knows about this — keep them. The app is optional. Being known is not.",
+          "Genuinely fine either way. Nothing here depends on you keeping an app installed, and your standing with God certainly does not.\n\nOne thought before you go, though. Whatever led you to install this in the first place has not changed in the last hour. If the app is not the right tool, something else needs to take its place: a friend, a group, a counsellor, a written plan on paper. Do not let deletion be the whole plan.\n\nIf you want, tell me what is not working. Sometimes it is the tone, sometimes the streak, sometimes the mode. Most of that is adjustable.\n\nAnd if you do delete it — go well. Keep the sleep, keep the phone out of the bedroom, keep the person who knows. Those were always the parts doing the heavy lifting."
+        ],
+        "discipline": [
+          "Your call, and no guilt from me. This is a tool, and tools are allowed to be put down.\n\nOne honest question first: is it the app you want gone, or the reminder?\n\nMen usually reach for delete at two moments. Right after a slip, when it feels like an accusation. And when things are going well, when it feels unnecessary. The first is shame; the second is the moment the structure comes down and drift starts.\n\nIf it genuinely is not helping — wrong tone, or a counter doing more harm than good — strip it back. Turn off the streak, use only the mentor and the habits. Removal is not the only option.",
+          "Legitimate decision. Three things before you make it.\n\nOne: if this follows a hard night, wait twenty-four hours. Decisions made from shame rarely match the ones you would make tomorrow.\n\nTwo: if you are doing well and it feels unnecessary — that is precisely when most men dismantle the structure and drift back over the following months. Keeping something small in place is cheap insurance.\n\nThree: if the app is the problem, use less of it rather than none. Switch mode, hide the counter, keep the habits only.\n\nWhatever you decide, do not delete the person. Whoever knows about this, keep them. The app is optional. Being known is not.",
+          "Fine either way. Nothing here depends on an app staying installed.\n\nOne thought first: whatever led you to install it has not changed in the last hour. If this is the wrong tool, something has to take its place — a friend, a group, a therapist, a plan written on paper. Deletion should not be the entire plan.\n\nIf you want to say what is not working, most of it is adjustable — tone, mode, counter, notifications.\n\nAnd if you go: keep the sleep, keep the phone out of the bedroom, keep the person who knows. Those were always doing the heavy lifting anyway."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "Is this even working?",
+          "intentId": "doubting_progress"
+        },
+        {
+          "label": "I think I need real help",
+          "intentId": "professional_help"
+        }
+      ]
+    },
+    {
+      "id": "milestone",
+      "label": "I hit a milestone",
+      "matchKeywords": [
+        "30 days",
+        "60 days",
+        "90 days",
+        "one week",
+        "a month",
+        "milestone",
+        "hit a record",
+        "longest ever",
+        "made it",
+        "proud",
+        "celebrating",
+        "good news",
+        "doing well",
+        "best ive done",
+        "best i've done",
+        "first time"
+      ],
+      "priority": 2,
+      "responses": {
+        "faith": [
+          "That is genuinely worth stopping for. Take a moment with it rather than immediately looking at the next number.\n\nAnd notice what actually got you here. It was not one heroic night. It was a stack of ordinary decisions: bedtimes kept, a phone in the kitchen, an evening that had an owner, a message sent when you would rather have gone quiet. Fifty ordinary evenings handled differently beat one dramatic weekend every time.\n\nTwo things to do today.\n\nWrite down what changed that has nothing to do with the counter. Sleep, mood, focus, how you are with people, what you do with a free evening. Those are the measures that never reset.\n\nTell the person who has been walking this with you. Let them be glad with you — receiving that is a skill, and most men are poor at it.\n\nThen keep the structure. The most common time to drift is right after things start going well.\n\nThanks be to God, and well done.",
+          "Well done. Genuinely.\n\nOne caution offered warmly: do not let the number become the thing. A streak measures days avoided. What you are actually building is an identity, and that is made of accumulated evidence — every time you went to bed on time, trained when you did not feel like it, called your friend, rode out a wave and slept.\n\nThe reason this distinction matters is that a bad evening cannot take an identity from you, but it can take a number. Men who anchor to the number get anxious at the top and devastated at the bottom.\n\nSo celebrate this, and then answer the better questions. Am I sleeping? Does anyone know the truth about me? Am I training? Have I spoken to a friend this week? Is there more in my life than there was?\n\nIf those are yes, you are not on a streak. You are becoming someone.",
+          "Good. Take the win properly — do not skip past it to the next target, and do not immediately start bracing for the fall.\n\nMark it somehow today. Tell someone. Eat something good. Write four lines on what the last stretch was actually like, including the parts that were hard.\n\nThen a practical note: the period right after a milestone is a known soft spot. Confidence quietly removes the structures that produced it — the phone comes back to the nightstand, the check-in gets skipped, the bedtime slides. Keep the things that worked, especially the ones that now feel unnecessary.\n\n\"Well done, good and faithful servant\" was said about faithfulness in small things. That is exactly what this was."
+        ],
+        "discipline": [
+          "Worth stopping for. Take the moment rather than immediately eyeing the next number.\n\nNotice what actually produced this. Not one heroic night — a stack of ordinary decisions. Bedtimes kept, phone in the kitchen, evenings that had an owner, a message sent when going quiet would have been easier. Repetition beats intensity, consistently.\n\nTwo things today.\n\nWrite what changed that has nothing to do with the counter: sleep, mood, focus, how you are with people, what you do with a free evening. Those measures never reset.\n\nTell the person walking this with you. Let them be glad about it.\n\nThen keep the structure. The most common time to drift is right after things start going well.",
+          "Well done.\n\nOne caution, offered without deflating it: do not let the number become the point. A streak measures days avoided. What you are building is an identity, made of accumulated evidence — every early night, every training session you did not feel like, every wave ridden out.\n\nThe distinction matters because a bad evening can take a number from you but cannot take an identity. Men anchored to the number get anxious at the top and flattened at the bottom.\n\nSo mark this, then answer the better questions. Sleeping? Known by someone? Training? Spoken to a friend this week? Life fuller than it was?\n\nIf those are yes, you are not on a streak. You are becoming someone.",
+          "Take the win properly. Do not skip to the next target and do not start bracing for a fall.\n\nMark it today: tell someone, eat well, write four lines on what the stretch was actually like, hard parts included.\n\nPractical note: the period straight after a milestone is a known soft spot. Confidence quietly dismantles the structures that produced it — phone drifts back to the nightstand, check-in gets skipped, bedtime slides. Keep the things that worked, especially the ones that now feel unnecessary.\n\nThat is the whole discipline: keep doing the boring things after they stop feeling urgent."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "Give me a plan for tomorrow",
+          "intentId": "plan_tomorrow"
+        },
+        {
+          "label": "What should I work on next?",
+          "intentId": "plan_tomorrow"
+        }
+      ]
+    },
+    {
+      "id": "relationship_trouble",
+      "label": "Things are hard with my partner",
+      "matchKeywords": [
+        "my wife",
+        "my girlfriend",
+        "my partner",
+        "she found out",
+        "she knows",
+        "marriage",
+        "married",
+        "breakup",
+        "broke up",
+        "argument",
+        "fighting",
+        "she is hurt",
+        "should i tell her",
+        "disclosure",
+        "confess to her",
+        "trust",
+        "intimacy",
+        "sex life",
+        "erectile",
+        "cant perform",
+        "can't perform"
+      ],
+      "priority": 2,
+      "responses": {
+        "faith": [
+          "This is tender ground, so let me be careful.\n\nIf she has found out, the thing she is most likely reeling from is not the content. Partners consistently describe the concealment as the deeper wound. That means the repair is mostly about honesty and consistency over time, not about explaining or defending.\n\nWhat helps: telling the truth once, fully, rather than in instalments — staggered disclosure re-injures. Then letting your actions be the argument. No pressure on her timeline for forgiveness. No demand that she reassure you about your worth; that is not a load she should carry right now.\n\nWhat helps most of all is a third party. A couples counsellor, or your own therapist, or both. This is beyond what an app should be handling, and it is beyond what most couples manage alone.\n\nAnd if you are wondering whether to tell her — that decision has real consequences for her, not only for you. Plan it with a counsellor rather than delivering it on impulse at midnight.",
+          "A few honest things, gently.\n\nOn the physical side, if things are not working with a real partner while everything works alone, that is a recognised pattern and it commonly improves when the input changes. It usually takes months, not weeks. If it persists, see a doctor — there are several ordinary medical causes and most are treatable. It is not a verdict on your masculinity or your marriage.\n\nOn expectations: long exposure quietly moves the baseline of what you unconsciously compare against — bodies, enthusiasm, frequency, pace. Nobody chooses those standards; they arrive by repetition. That is a distortion in the lens, not a fact about her. Naming it in the moment collapses most of it: \"that is the lens, not her.\"\n\nOn repair: presence is the currency. Attention given to an actual person — her face, her voice, the particular things about her — competes directly with the abstraction, and abstractions do not survive much contact with the particular.\n\nAnd please get a counsellor involved. Two of you carrying this alone is a heavy load.",
+          "I am sorry. That is a hard place to be, and I am not going to pretend a chat screen can fix it.\n\nWhat I can offer: whatever else is true, secrecy will make it worse and honesty — handled well, with help — is the road back. Not honesty as a dump at 1am to relieve your own guilt. Honesty as a considered conversation, ideally with a counsellor's guidance, aimed at her wellbeing rather than yours.\n\nAlso: do not try to buy forgiveness with intensity. Grand gestures feel like pressure to the person receiving them. Consistency over months is what rebuilds trust, and it is slower and less satisfying than you want it to be.\n\nIf you pray, pray for her first tonight rather than for your own relief. And find someone — a pastor, a counsellor, a wise older couple. This is not a solo project."
+        ],
+        "discipline": [
+          "Careful ground, so plainly.\n\nIf she has found out, the deeper wound is usually the concealment rather than the content. Partners report that consistently. Which means repair is about honesty and consistency over time, not about explaining or defending yourself.\n\nWhat helps: telling the truth once, fully, rather than in instalments — staggered disclosure re-injures. Letting actions carry the argument. No pressure on her timeline. And no asking her to reassure you about your worth; that is not a load she should be carrying right now.\n\nWhat helps most is a third party — a couples counsellor, your own therapist, or both. This is beyond what an app should handle.\n\nIf you are still deciding whether to tell her: that decision has real consequences for her, not only for you. Plan it with a counsellor rather than acting on impulse at midnight.",
+          "Some honest specifics.\n\nPhysical side: if things work alone but not with a partner, that is a recognised pattern and it commonly improves once the input changes — over months, not weeks. If it persists, see a doctor. Several ordinary medical causes exist and most are treatable. It is not a verdict on you.\n\nExpectations: long exposure moves the baseline you unconsciously compare against — bodies, enthusiasm, frequency, pace. Those standards arrive by repetition, not by choice. That is a distortion in the lens, not a fact about her. Naming it in the moment does most of the work: \"that is the lens, not her.\"\n\nRepair: presence is the currency. Attention to an actual, particular person competes directly with an abstraction, and abstractions lose that contest reliably.\n\nGet a counsellor involved. Two people carrying this alone is a heavy load.",
+          "Hard place to be, and a chat screen is not going to fix it.\n\nWhat holds up: secrecy makes it worse, and honesty handled well makes the road back possible. Not honesty as a 1am confession to relieve your own discomfort — a considered conversation, guided by a counsellor, aimed at her wellbeing rather than yours.\n\nAlso: do not attempt to buy trust back with intensity. Grand gestures read as pressure to the person receiving them. Consistency across months is what rebuilds it, and it is slower and duller than you would like.\n\nFind someone qualified to help with this. It is not a solo project and it is not one an app should be running."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "How do I find a therapist?",
+          "intentId": "professional_help"
+        },
+        {
+          "label": "I feel awful about myself",
+          "intentId": "shame"
+        }
+      ]
+    },
+    {
+      "id": "gods_forgiveness",
+      "label": "Does God still forgive me?",
+      "matchKeywords": [
+        "god",
+        "jesus",
+        "forgive",
+        "forgiveness",
+        "sin",
+        "sinned",
+        "pray",
+        "prayer",
+        "grace",
+        "repent",
+        "repentance",
+        "confession",
+        "church",
+        "bible",
+        "scripture",
+        "does god",
+        "will god",
+        "unforgivable",
+        "hypocrite christian",
+        "backslidden",
+        "faith"
+      ],
+      "priority": 1,
+      "responses": {
+        "faith": [
+          "Yes. Not reluctantly, not with a limit you have finally reached, and not less than the first time.\n\nThe usual objection is \"but this is the fortieth time.\" Peter asked about a number and was given seventy times seven — which was not a ceiling but a refusal to give him a ceiling.\n\nHere is the thing about the way you are feeling: you are almost certainly projecting your own exhaustion onto God and calling it his disappointment. But the pattern in Scripture runs the other way. Peter denies him three times and is fed breakfast on a beach and handed work to do. In Luke 15 the father is already watching the road and runs before the son has finished his speech.\n\n\"If we confess our sins, he is faithful and just to forgive us our sins and to cleanse us from all unrighteousness.\" That is a settled transaction, not a negotiation you have to win tonight.\n\nSo say it plainly, receive it, and go to bed. Re-confessing the same thing for weeks is not devotion. It is shame wearing devotion's clothes.",
+          "Yes — and it is worth being clear about what grace actually is, because two errors sit on either side of this road.\n\nOne says grace means it does not matter. That turns it into a permission slip and hollows the whole thing out.\n\nThe other — the more common and heavier one — says grace has limits and you have found them. That is the voice you are hearing tonight.\n\nGrace is neither leniency nor a lowered standard. It is a settled relationship your performance did not earn and your failure does not revoke.\n\nWhich is exactly why it produces change rather than complacency. A man working *for* acceptance is terrified — every slip threatens his standing, so he hides. A man working *from* acceptance can look at his own patterns honestly, because looking is no longer dangerous. And honesty is the raw material of every real change.\n\nGrace is what makes honesty survivable. Take him at his word and get some sleep.",
+          "Yes. And the fact that you are asking is itself worth noticing — that ache is not condemnation. Condemnation makes you hide. What draws you back toward him is conviction, and conviction is the kindest thing in the room.\n\nTwo ways to tell them apart. Conviction is specific and points at the action; condemnation is vague and points at you. Conviction hands you a next step; condemnation hands you a sentence.\n\n\"There is therefore now no condemnation for those who are in Christ Jesus.\" Not less. None. So the voice reading your charges back at 1am is not the Judge. The Judge has already ruled.\n\nPractically, tonight: say the specific thing. Receive the specific mercy. Take the specific step — message your brother, phone in the kitchen, alarm set. Then rest. Conviction finishes its business and leaves. Anything still shouting afterwards is not from him.\n\nAnd if you can, tell one person tomorrow. James says confess to one another, that you may be healed. The healing tends to show up in the horizontal part."
+        ],
+        "discipline": [
+          "That is a question for faith mode, and you can switch any time — I will not pretend to answer it well from here.\n\nWhat I can say in this mode is the part that holds either way: the belief that you have exhausted everyone's patience, including your own, is not an observation. It is what shame produces, and it reliably sends men back to the behaviour rather than away from it.\n\nSo whatever framework you use, the practical move is the same. Name what happened specifically. Take the specific next step. Do not hand yourself a sentence.\n\nIf faith matters to you, switch modes — or better, talk to someone in your community who can answer it properly. That conversation is worth more than anything I have here.",
+          "You are in discipline mode, so I will keep to what belongs here — and switch to faith mode any time if you want that answered properly.\n\nThe common ground: self-forgiveness is not leniency, and it is not optional. Men who cannot let go of a past event stay stuck in it, and staying stuck is the condition in which the behaviour thrives. The Stoics were clear that what is past is outside your control entirely. The only live question is what you do next.\n\nSo: examine, adjust, resume. Seneca reviewed his days at night — examining, not sentencing. No amount of continued self-punishment improves a past evening, and it measurably worsens tomorrow.\n\nIf the religious question is a real one for you, take it to someone in that tradition rather than to an app.",
+          "Fair question, but not one this mode is built to answer — switch to faith mode and you will get a proper response.\n\nWhat I would say from here: the sense that you have used up your allowance is not information. It is what shame sounds like, and shame is the single most reliable driver of the next slip.\n\nWhichever framework you hold, the mechanics are identical. Be specific about what happened. Take one concrete step tonight. Tell one person tomorrow. Then let it be finished.\n\nRe-litigating the same evening for weeks does not make you more responsible. It makes you more tired, and tired is when this is hardest."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "I feel awful about myself",
+          "intentId": "shame"
+        },
+        {
+          "label": "Give me a plan for tomorrow",
+          "intentId": "plan_tomorrow"
+        }
+      ]
+    },
+    {
+      "id": "plan_tomorrow",
+      "label": "Give me a plan for tomorrow",
+      "matchKeywords": [
+        "plan",
+        "what do i do",
+        "next steps",
+        "tomorrow",
+        "how do i start",
+        "where do i begin",
+        "advice",
+        "help me plan",
+        "what should i do",
+        "routine",
+        "structure",
+        "schedule",
+        "habits"
+      ],
+      "priority": 2,
+      "responses": {
+        "faith": [
+          "Good. Decide it now, while you are calm — that is the whole trick. Nothing here takes more than thirty minutes.\n\n**Tonight, before bed:** phone charges in another room. Alarm set for a time you can hold all week. Lights down thirty minutes before you sleep.\n\n**Morning:** up at the alarm, outside within twenty minutes for daylight, and no phone for the first hour.\n\n**During the day:** twenty minutes of hard movement, and one message to a real person. Just one.\n\n**Evening:** decide before dinner what the hours between dinner and bed are for. Write it down. An unstructured evening is a design flaw, not a character test.\n\n**If it gets hard:** change rooms, set a fifteen-minute timer, breathe out long, and message your person.\n\nThat is it. Five small things. Ask him for the day in the morning rather than for rescue at midnight.",
+          "Here is a plan you can actually execute.\n\nPick three, not ten. Men who pick ten are back here in a week.\n\n**The three that do the most work:** a fixed wake time seven days a week, the phone charging outside your bedroom, and twenty minutes of movement daily.\n\n**Then add one relational thing:** one voice call this week, or one honest message to the person who knows.\n\n**Then own the empty hour:** choose one activity, twenty minutes, same slot. Something that asks a little of you and leaves an outcome behind.\n\nWrite those five lines somewhere you will see them tomorrow morning. Then start badly and keep going — consistency beats intensity here by a wide margin, and fifty ordinary days handled well beat one heroic weekend.\n\nCommit the day to him in the morning. It is much easier to walk with something than to fight it alone at 11pm.",
+          "Let us make tomorrow boring, in the best sense.\n\n**Before you sleep tonight:** phone out of the room, alarm set, three lines in your journal about how today actually went.\n\n**Tomorrow morning:** get up on the first alarm, get daylight, eat properly. Do not open a feed before you have done all three.\n\n**Tomorrow at some point:** twenty minutes moving hard, and one act of service for someone else, however small. Being needed does more for this than most men expect.\n\n**Tomorrow evening:** the hours are already spoken for — you decide now what fills them.\n\n**Have the hard-night protocol written down:** change room, timer for fifteen, long exhales, message one person, go to bed early. Written while calm, executed while not.\n\nThat is a good day. Repeat it about fifty times and you will be someone else."
+        ],
+        "discipline": [
+          "Decide it now, while you are calm. That is the whole trick. Nothing here takes over thirty minutes.\n\n**Tonight:** phone charges in another room. Alarm set for a time you can hold all week. Lights down thirty minutes before sleep.\n\n**Morning:** up on the alarm, outside within twenty minutes for daylight, no phone for the first hour.\n\n**Day:** twenty minutes of hard movement, and one message to a real person.\n\n**Evening:** decide before dinner what the hours between dinner and bed are for. Write it down. An unstructured evening is a design flaw, not a character test.\n\n**If it gets hard:** change rooms, fifteen-minute timer, long exhales, message your person.\n\nFive things. Decided in advance, executed without negotiation.",
+          "A plan you can actually run.\n\nPick three, not ten. Ten gets you back here in a week.\n\n**The three highest-leverage:** fixed wake time seven days a week, phone charging outside the bedroom, twenty minutes of movement daily.\n\n**Add one relational item:** one voice call this week, or one honest message to whoever knows.\n\n**Then own the empty hour:** one activity, twenty minutes, same slot, something that asks effort of you.\n\nWrite the five lines where you will see them in the morning. Start badly and continue. Repetition beats intensity here — fifty ordinary evenings handled well beat one heroic weekend, every time.",
+          "Make tomorrow boring, in the best sense.\n\n**Tonight:** phone out of the room, alarm set, three lines on how today actually went.\n\n**Morning:** up on the first alarm, daylight, food. No feed until all three are done.\n\n**Day:** twenty minutes of hard movement, and one useful thing done for someone else. Being needed does more for this than most men expect.\n\n**Evening:** already spoken for. You decide the content now, not at 9pm.\n\n**Hard-night protocol, written down:** change room, fifteen-minute timer, long exhales, one message, early bed. Written while calm, executed while not.\n\nThat is a good day. Run it fifty times and you are a different man — not through any single decision, but through the accumulated evidence."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "I'm having an urge",
+          "intentId": "urge_now"
+        },
+        {
+          "label": "I'm bored in the evenings",
+          "intentId": "bored"
+        },
+        {
+          "label": "An app keeps triggering me",
+          "intentId": "app_trigger"
+        }
+      ]
+    },
+    {
+      "id": "fallback",
+      "label": "",
+      "matchKeywords": [],
+      "priority": 99,
+      "responses": {
+        "faith": [
+          "I hear you. I am a set of prepared words rather than a mind, so I may have missed the shape of that — but I am still here, and it still counts that you said it.\n\nTell me which of these is closest to where you are: the urge itself, the hour, the shame, the loneliness, or just needing a plan for tomorrow.",
+          "I might not have caught that properly. What I can tell you is that naming a thing out loud, even to an app at a bad hour, is the opposite of hiding — and hiding is what this habit runs on.\n\nWhat is loudest right now?",
+          "That did not match anything I know how to answer well, and I would rather say so than pretend. You are not being judged here, by me or by God.\n\nTry me with the plainest version: what is happening, and what hour is it?",
+          "I want to be honest that I am limited — curated words, not a counsellor. If this is heavier than a hard evening, a real person is worth more than anything I can say.\n\nOtherwise, tell me the simple version and we will work from there."
+        ],
+        "discipline": [
+          "I hear you. I am a set of prepared responses rather than a mind, so I may have missed the shape of that — but it still counts that you put it into words.\n\nTell me which is closest: the urge itself, the hour, the shame, the loneliness, or needing a plan for tomorrow.",
+          "I might not have caught that properly. What is true regardless is that naming a thing beats carrying it silently — silence is the condition this habit needs.\n\nWhat is loudest right now?",
+          "That did not match anything I answer well, and I would rather admit it than bluff. Nothing here is a judgement on you.\n\nGive me the plainest version: what is happening, and what time is it?",
+          "Worth being straight with you: I am curated words, not a counsellor. If this is heavier than a hard evening, a real person is worth more than I am.\n\nOtherwise, give me the simple version and we will work from there."
+        ]
+      },
+      "followUps": [
+        {
+          "label": "I am having an urge",
+          "intentId": "urge_now"
+        },
+        {
+          "label": "I cannot sleep",
+          "intentId": "late_night"
+        },
+        {
+          "label": "I just slipped",
+          "intentId": "just_slipped"
+        },
+        {
+          "label": "I need real help",
+          "intentId": "professional_help"
+        }
+      ]
+    }
+  ],
+  "openers": {
+    "faith": [
+      "Good to see you. What is going on right now?",
+      "I am here. No judgement, no lecture — just tell me where you are at.",
+      "Whatever kind of day it has been, you are welcome here. What do you need?",
+      "Grace first, always. What is on you tonight?",
+      "Glad you opened this. What would be most useful right now?"
+    ],
+    "discipline": [
+      "Good to see you. What is going on right now?",
+      "I am here. No judgement, no lecture — just tell me where you are at.",
+      "Straight to it: what do you need right now?",
+      "Whatever kind of day it has been, you showed up. What is on you?",
+      "Tell me where you are at and we will work the next step."
+    ]
+  }
+}

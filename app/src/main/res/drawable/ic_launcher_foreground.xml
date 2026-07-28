@@ -1,0 +1,17 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Shield outline, forged bronze. -->
+    <path
+        android:fillColor="#C8A24B"
+        android:pathData="M54,28L36,35.5v13.9c0,10.8 7.6,20.9 18,23.1c10.4,-2.2 18,-12.3 18,-23.1V35.5L54,28zM54,33.6l13.5,5.6v10.2c0,8.5 -5.8,16.4 -13.5,18.4c-7.7,-2 -13.5,-9.9 -13.5,-18.4V39.2L54,33.6z" />
+    <!-- Dawn horizon line through the shield: every day is a sunrise. -->
+    <path
+        android:fillColor="#E8C877"
+        android:pathData="M43,50h22v3.2h-22z" />
+    <path
+        android:fillColor="#6FA287"
+        android:pathData="M54,40.5a5.6,5.6 0,1 0,0.01 0zM54,44a2.1,2.1 0,1 1,-0.01 0z" />
+</vector>
