@@ -207,7 +207,7 @@ private fun BlockedNotice(host: String, onBack: () -> Unit) {
             SectionLabel(host)
             Spacer(Modifier.height(14.dp))
             Text(
-                "You set this boundary yourself, in a clearer moment. It's holding.",
+                "Your boundary is holding.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = BastionColors.TextSecondary,
             )

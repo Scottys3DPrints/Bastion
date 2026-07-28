@@ -226,26 +226,24 @@ private fun WelcomeStep() {
 private fun ModeStep(faithMode: Boolean, onChange: (Boolean) -> Unit) {
     Column {
         SectionLabel("Choose your language")
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
-            "Same engine, two vocabularies. You can switch any time.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = BastionColors.TextSecondary,
+            "Switch any time.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BastionColors.TextMuted,
         )
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(20.dp))
 
         ChoiceCard(
             title = "Faith",
-            body = "Scripture, prayer and the covenant a man makes to guard his eyes. " +
-                "Grace-centred throughout — you are loved and being made new, not condemned.",
+            body = "Scripture and prayer. Grace-centred.",
             selected = faithMode,
             onClick = { onChange(true) },
         )
         Spacer(Modifier.height(12.dp))
         ChoiceCard(
             title = "Discipline",
-            body = "Stoic self-mastery. Focus, energy, confidence, being a man of your word. " +
-                "Philosophy and behavioural science in place of scripture.",
+            body = "Stoic self-mastery. No religious language.",
             selected = !faithMode,
             onClick = { onChange(false) },
         )
@@ -395,8 +393,7 @@ private fun WhyStep(
 
         Spacer(Modifier.height(20.dp))
         Text(
-            "Even stronger: record thirty seconds of yourself saying it, calm and clear. " +
-                "Watching your own face at 1am is one of the most effective interrupters there is.",
+            "Stronger still: thirty seconds on camera. Your own face at 1am works.",
             style = MaterialTheme.typography.bodySmall,
             color = BastionColors.TextMuted,
         )
@@ -475,8 +472,7 @@ private fun GuardrailsStep() {
         )
         Spacer(Modifier.height(14.dp))
         Text(
-            "You can also set this up later in the Guard tab — along with the content filter, " +
-                "schedules and the cooling-off lock.",
+            "Or set it up later in the Guard tab.",
             style = MaterialTheme.typography.bodySmall,
             color = BastionColors.TextMuted,
         )

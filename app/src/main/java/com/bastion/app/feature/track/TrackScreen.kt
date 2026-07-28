@@ -503,12 +503,8 @@ private fun RecoveryFlow(
                 Text("You're human.", style = MaterialTheme.typography.headlineMedium, color = BastionColors.TextPrimary)
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    if (faithMode)
-                        "No condemnation here, and none waiting for you with God. You are not back at " +
-                            "the beginning — you are a man being made new, who fell today and told the truth."
-                    else
-                        "This is a data point, not a verdict. You are not back at the beginning — you are " +
-                            "a man who has built something real, who fell today and chose to look at it honestly.",
+                    if (faithMode) "No condemnation here. You're not back at the beginning."
+                    else "A data point, not a verdict. You're not back at the beginning.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = BastionColors.TextSecondary,
                 )
@@ -552,7 +548,7 @@ private fun RecoveryFlow(
                         .padding(16.dp)
                 ) {
                     Text(
-                        "Streak restarts tomorrow. Rank stays $rankName — everything you've built is still yours.",
+                        "Streak restarts. Rank stays $rankName.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = BastionColors.TextPrimary,
                     )
@@ -568,18 +564,19 @@ private fun RecoveryFlow(
     }
 }
 
+/** One line. A man who has just slipped will not read a paragraph. */
 private fun tipFor(trigger: String?): String = when (trigger) {
-    "Late night" -> "Late-night slips are usually a sleep problem in disguise. Phone across the room, hard lights-out. Decide it now, while it's easy."
-    "Boredom" -> "Boredom is a vacuum, and this is very good at filling vacuums. Have something already queued for the empty hour."
-    "Stress" -> "You were regulating, not indulging. Pick one physical outlet and make it automatic, before the other one gets there first."
-    "Loneliness" -> "The hunger underneath was for connection, not content. Message someone real tomorrow. It does more than any blocker."
-    "Social media" -> "The feed did the priming. Guarding the feed removes the on-ramp instead of fighting at the destination."
-    "Tiredness" -> "Tired brains have almost no brake. Protect sleep first — most of the willpower you think you're missing is rest."
-    "Anger" -> "Anger looks for discharge. Choose its outlet in advance, so the decision is already made when the feeling arrives."
-    "Anxiety" -> "This was self-soothing. If anxiety is constant rather than occasional, that's worth a doctor in its own right — it's often the root."
-    "Alcohol" -> "Alcohol removes the brake before the urge arrives. The decision that matters is the earlier one, about drinking."
-    "Home alone" -> "Solitude plus a screen plus no plan. Change one of the three — the plan is usually easiest."
-    else -> "Log a few more moments and your own data will point at the lever more accurately than any general advice."
+    "Late night" -> "Phone across the room. Hard lights-out."
+    "Boredom" -> "Queue something for the empty hour, in advance."
+    "Stress" -> "Pick one physical outlet. Make it automatic."
+    "Loneliness" -> "Message someone real tomorrow."
+    "Social media" -> "Guard the feed, not the destination."
+    "Tiredness" -> "Protect sleep first. The willpower follows."
+    "Anger" -> "Choose its outlet before the feeling arrives."
+    "Anxiety" -> "If it's constant, that's worth a doctor. Often it's the root."
+    "Alcohol" -> "The decision that matters is the earlier one."
+    "Home alone" -> "Solitude, screen, no plan. Change the plan."
+    else -> "Log a few more and your own data will point at it."
 }
 
 @Composable

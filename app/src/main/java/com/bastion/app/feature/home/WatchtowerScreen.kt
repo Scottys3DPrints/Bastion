@@ -2,6 +2,7 @@ package com.bastion.app.feature.home
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -40,7 +41,7 @@ import com.bastion.app.core.design.HabitRing
 import com.bastion.app.core.design.MetricTile
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.RankMedallion
-import com.bastion.app.core.design.ScriptureStyle
+import com.bastion.app.core.design.ScriptureCompactStyle
 import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.data.BastionGraph
 import com.bastion.app.data.content.BenefitCard
@@ -133,7 +134,10 @@ fun WatchtowerScreen(
                     BastionCard {
                         SectionLabel("Today")
                         Spacer(Modifier.height(14.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
                             habits.take(4).forEach { habit ->
                                 val done = completions.any { it.habitId == habit.id }
                                 HabitRing(
@@ -141,6 +145,7 @@ fun WatchtowerScreen(
                                     emoji = habit.emoji,
                                     done = done,
                                     onToggle = { scope.launch { graph.growth.toggleHabit(habit.id, !done) } },
+                                    modifier = Modifier.weight(1f),
                                 )
                             }
                         }
@@ -194,18 +199,34 @@ fun WatchtowerScreen(
                 }
             }
 
-            PrimaryButton(
-                text = "Hold the Line",
-                onClick = {
-                    context.startActivity(
-                        Intent(context, PanicActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    )
-                },
-                modifier = Modifier
+            // The panic button floats above the scroll so it is reachable from
+            // anywhere. Without a scrim it read as a bar slicing through
+            // whatever card happened to be behind it; the fade makes it a layer.
+            Column(
+                Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
-            )
+                    .background(
+                        androidx.compose.ui.graphics.Brush.verticalGradient(
+                            0f to androidx.compose.ui.graphics.Color.Transparent,
+                            0.45f to BastionColors.MidnightDeep.copy(alpha = 0.92f),
+                            1f to BastionColors.MidnightDeep,
+                        )
+                    )
+                    .padding(top = 28.dp)
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 20.dp),
+            ) {
+                PrimaryButton(
+                    text = "Hold the Line",
+                    onClick = {
+                        context.startActivity(
+                            Intent(context, PanicActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }
@@ -233,7 +254,7 @@ private fun BriefCard(brief: DailyBrief, faithMode: Boolean) {
     BastionCard(accent = BastionColors.Bronze) {
         SectionLabel(brief.theme)
         Spacer(Modifier.height(12.dp))
-        Text(side.anchor, style = ScriptureStyle, color = BastionColors.TextPrimary)
+        Text(side.anchor, style = ScriptureCompactStyle, color = BastionColors.TextPrimary)
         Spacer(Modifier.height(8.dp))
         Text(
             side.anchorRef,

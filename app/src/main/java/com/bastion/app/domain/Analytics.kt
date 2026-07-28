@@ -17,9 +17,15 @@ object Analytics {
     /** Minimum sample before Bastion claims to have spotted anything. */
     private const val MIN_SAMPLE = 6
 
+    /**
+     * A headline and, where possible, one tap that acts on it.
+     *
+     * There is deliberately no explanatory body. An insight that needs a
+     * paragraph to justify itself is not an insight — it is an essay, and it
+     * will not be read on a phone.
+     */
     data class Insight(
         val headline: String,
-        val detail: String,
         val defence: Defence?,
     )
 
@@ -42,9 +48,7 @@ object Analytics {
     }
 
     private fun warmUpInsight(count: Int) = Insight(
-        headline = "Still listening",
-        detail = "Log a few more moments — urges you resisted count just as much as ones you didn't — " +
-            "and Bastion will start showing you your own patterns. ${MIN_SAMPLE - count} to go.",
+        headline = "${MIN_SAMPLE - count} more logs and your patterns appear",
         defence = null,
     )
 
@@ -62,9 +66,7 @@ object Analytics {
         if (share < 0.35f) return null
         val end = (bestStart + 3) % 24
         return Insight(
-            headline = "${pct(share)} of your urges land between ${hour(bestStart)} and ${hour(end)}",
-            detail = "That window is where the fight actually happens. Tightening your guards before it " +
-                "starts is worth more than willpower once it has.",
+            headline = "${pct(share)} of urges hit ${hour(bestStart)}–${hour(end)}",
             defence = Defence.TightenAtHour(bestStart),
         )
     }
@@ -78,8 +80,6 @@ object Analytics {
         val label = labels[pkg] ?: pkg.substringAfterLast('.').replaceFirstChar { it.uppercase() }
         return Insight(
             headline = "$label precedes ${pct(share)} of them",
-            detail = "It isn't the whole story, but it is the doorway. Guarding the feed inside $label " +
-                "leaves you the messages and takes away the spiral.",
             defence = Defence.HardenApp(pkg, label),
         )
     }
@@ -94,8 +94,6 @@ object Analytics {
         val name = quietest.getDisplayName(TextStyle.FULL, Locale.getDefault())
         return Insight(
             headline = "${name}s are your strongest day",
-            detail = "Whatever you do differently on a $name — the routine, the people, the sleep — " +
-                "is working. Worth copying into ${busiest.getDisplayName(TextStyle.FULL, Locale.getDefault())}s.",
             defence = null,
         )
     }
@@ -105,9 +103,7 @@ object Analytics {
         val (trigger, count) = counts.maxByOrNull { it.value } ?: return null
         if (count < 4) return null
         return Insight(
-            headline = "\"$trigger\" is your most common trigger",
-            detail = "Naming it is most of the work. The next step is deciding now — calmly, in daylight — " +
-                "exactly what you will do the next time it shows up.",
+            headline = "\"$trigger\" is your top trigger",
             defence = null,
         )
     }
@@ -116,9 +112,7 @@ object Analytics {
         val resisted = urges.count { it.resisted }
         val share = resisted.toFloat() / urges.size
         return Insight(
-            headline = "You've held the line ${pct(share)} of the time",
-            detail = "$resisted of ${urges.size} logged urges did not become anything. That number is the " +
-                "one that compounds.",
+            headline = "Held the line $resisted of ${urges.size} times",
             defence = null,
         )
     }

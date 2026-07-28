@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -54,31 +55,62 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/**
+ * Tab labels are short, plain words rather than the app's thematic names.
+ *
+ * "Watchtower" and "Brotherhood" overflowed the bar and clipped off-screen at
+ * five tabs, and a navigation label's only job is to be understood instantly.
+ * The thematic names still head their screens, where there is room for them.
+ */
 private enum class Destination(
     val route: String,
     val label: String,
     val icon: ImageVector,
 ) {
-    WATCHTOWER("watchtower", "Watchtower", Icons.Filled.Shield),
+    WATCHTOWER("watchtower", "Home", Icons.Filled.Shield),
     TRACK("track", "Track", Icons.Filled.Insights),
     GUARD("guard", "Guard", Icons.Filled.Security),
     GROW("grow", "Grow", Icons.Filled.TrendingUp),
-    BROTHERHOOD("brotherhood", "Brotherhood", Icons.Filled.Forum),
+    BROTHERHOOD("brotherhood", "Partner", Icons.Filled.Forum),
 }
 
 @Composable
 private fun BastionRoot() {
     val context = androidx.compose.ui.platform.LocalContext.current
     val graph = androidx.compose.runtime.remember { BastionGraph.from(context) }
-    val settings by graph.settings.settings.collectAsStateWithLifecycle(initialValue = Settings())
 
-    BastionTheme(faithMode = settings.faithMode) {
-        if (!settings.onboarded) {
-            // Onboarding owns the whole window: the Covenant is a ceremony, and
-            // a navigation bar underneath it would cheapen the moment.
-            OnboardingFlow(onComplete = { })
-        } else {
-            MainScaffold(faithMode = settings.faithMode)
+    // Null until DataStore has actually answered.
+    //
+    // Seeding this with a default Settings() meant `onboarded` read false for
+    // the first frames of every cold start, so an already-covenanted user saw
+    // the sign-up ceremony flash past on each launch — and on a slow morning
+    // could have tapped into it.
+    val settings by graph.settings.settings
+        .collectAsStateWithLifecycle<Settings?>(initialValue = null)
+
+    val loaded = settings
+    BastionTheme(faithMode = loaded?.faithMode ?: true) {
+        when {
+            // Brief on a real phone, but a pure black rectangle reads as a
+            // broken app rather than a loading one, so it carries the mark.
+            loaded == null -> Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(BastionColors.Midnight),
+                contentAlignment = androidx.compose.ui.Alignment.Center,
+            ) {
+                Text(
+                    "◇",
+                    style = MaterialTheme.typography.displayMedium,
+                    color = BastionColors.BronzeDeep,
+                )
+            }
+            !loaded.onboarded -> {
+                // Onboarding owns the whole window: the Covenant is a ceremony,
+                // and a navigation bar underneath it would cheapen the moment.
+                OnboardingFlow(onComplete = { })
+            }
+            else -> MainScaffold(faithMode = loaded.faithMode)
         }
     }
 }
@@ -106,7 +138,13 @@ private fun MainScaffold(faithMode: Boolean) {
                             }
                         },
                         icon = { Icon(destination.icon, contentDescription = destination.label) },
-                        label = { Text(destination.label, style = MaterialTheme.typography.labelSmall) },
+                        label = {
+                            Text(
+                                destination.label,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                            )
+                        },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = BastionColors.MidnightDeep,
                             selectedTextColor = BastionColors.BronzeBright,

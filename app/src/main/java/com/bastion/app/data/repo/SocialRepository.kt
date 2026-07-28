@@ -129,7 +129,6 @@ class SocialRepository(
     private companion object {
         const val CRISIS_INTENT = "crisis"
         const val FALLBACK_INTENT = "fallback"
-        const val DEFAULT_REPLY =
-            "I'm here. Tell me what's happening right now — the urge, the mood, the hour, whatever's loudest."
+        const val DEFAULT_REPLY = "I'm here. What's loudest right now?"
     }
 }

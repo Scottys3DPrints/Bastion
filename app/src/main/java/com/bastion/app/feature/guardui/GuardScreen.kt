@@ -652,10 +652,15 @@ private fun LearnModeSheet(onClose: () -> Unit) {
         Text("Learn mode", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
         Spacer(Modifier.height(10.dp))
         Text(
-            "Leave this open, go to the screen you want closed, come back and pick its identifier. " +
-                "Identifiers only — no text is ever read.",
+            "Open the screen you want closed, come back, pick its identifier.",
             style = MaterialTheme.typography.bodyMedium,
             color = BastionColors.TextSecondary,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Identifiers only — no text is read.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BastionColors.TextMuted,
         )
         Spacer(Modifier.height(16.dp))
 

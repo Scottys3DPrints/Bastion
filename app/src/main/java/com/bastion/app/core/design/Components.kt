@@ -210,8 +210,11 @@ fun HabitRing(
     onToggle: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // No fixed width: the caller gives each ring an equal share of the row, so
+    // three habits get roomy labels and five still fit. A fixed 78dp was
+    // breaking "Twenty-minute walk" mid-word.
     Column(
-        modifier = modifier.width(72.dp),
+        modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(

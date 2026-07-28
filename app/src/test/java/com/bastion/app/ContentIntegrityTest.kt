@@ -88,6 +88,23 @@ class ContentIntegrityTest {
         }
     }
 
+    /**
+     * A trimming pass once shortened this description to fit a word budget and
+     * took the medical warning with it. Cold-water immersion is genuinely unsafe
+     * for some people, so the warning outranks the house style on brevity.
+     */
+    @Test
+    fun `the cold water challenge keeps its medical warning`() {
+        val challenges = json.decodeFromString<Challenges>(asset("challenges.json"))
+        val cold = challenges.challenges.firstOrNull { it.id == "cold-start" }
+        assertNotNull("the cold-start challenge is missing", cold)
+
+        val text = cold!!.description.lowercase()
+        listOf("heart", "pregnan", "doctor").forEach {
+            assertTrue("cold-start description no longer warns about '$it'", text.contains(it))
+        }
+    }
+
     @Test
     fun `mentor script has a crisis intent that outranks everything else`() {
         val script = json.decodeFromString<MentorScript>(asset("mentor.json"))

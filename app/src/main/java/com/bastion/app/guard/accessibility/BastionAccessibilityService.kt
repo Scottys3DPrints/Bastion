@@ -131,9 +131,9 @@ class BastionAccessibilityService : AccessibilityService() {
         val guarded = guardedApps[pkg] ?: return
 
         when (guarded.mode) {
-            BlockMode.FULL -> blockApp(guarded, "This one is closed for now.")
+            BlockMode.FULL -> blockApp(guarded, "Closed for now.")
             BlockMode.SCHEDULE -> if (withinWindow(guarded.scheduleStart, guarded.scheduleEnd)) {
-                blockApp(guarded, "You set this window as protected time.")
+                blockApp(guarded, "Protected time.")
             }
             BlockMode.TIME_LIMIT -> checkTimeLimit(guarded)
             BlockMode.FEED_ONLY -> checkFeed(pkg, guarded)
@@ -147,7 +147,7 @@ class BastionAccessibilityService : AccessibilityService() {
             val used = graph.database.guardDao()
                 .usage(app.packageName, LocalDate.now().toEpochDay())?.foregroundMillis ?: 0L
             if (used >= app.timeLimitMinutes * 60_000L) {
-                blockApp(app, "You've used your ${app.timeLimitMinutes} minutes here today. Enough to talk to someone, not enough to fall in.")
+                blockApp(app, "${app.timeLimitMinutes} minutes used today.")
             }
         }
     }
@@ -185,8 +185,7 @@ class BastionAccessibilityService : AccessibilityService() {
             performGlobalAction(GLOBAL_ACTION_BACK)
             shield.show(
                 title = "Not this.",
-                message = "${matched.label} is guarded. The rest of ${app.label} is still yours — " +
-                    "message who you meant to message, then put it down.",
+                message = "The rest of ${app.label} is still yours.",
                 primaryLabel = "Good call",
                 onPrimary = { shield.hide() },
                 secondaryLabel = "Hold the line",

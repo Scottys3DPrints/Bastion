@@ -194,7 +194,7 @@ private fun BreatheStep(onDone: () -> Unit) {
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            "It will pass whether or not you act on it. Breathe with the circle.",
+            "It passes either way. Breathe with the circle.",
             style = MaterialTheme.typography.bodyMedium,
             color = BastionColors.TextSecondary,
             textAlign = TextAlign.Center,
@@ -247,7 +247,7 @@ private fun WhyStep(covenant: CovenantEntity?, onNext: () -> Unit) {
 
         Text(
             covenant?.whyText?.takeIf { it.isNotBlank() }
-                ?: "You wrote this down for exactly this moment. Add your Why in Bastion when this passes — it works.",
+                ?: "Add your Why when this passes. It works.",
             style = ScriptureStyle,
             color = BastionColors.TextPrimary,
             textAlign = TextAlign.Center,
@@ -309,7 +309,7 @@ private fun MoveStep(onNext: () -> Unit) {
         )
         Spacer(Modifier.height(14.dp))
         Text(
-            "Your body is where the urge lives. Move it and the thought loses its grip. Go — this screen will wait.",
+            "Go. This screen will wait.",
             style = MaterialTheme.typography.bodyMedium,
             color = BastionColors.TextSecondary,
             textAlign = TextAlign.Center,
@@ -346,8 +346,8 @@ private fun OutcomeStep(
         )
         Spacer(Modifier.height(10.dp))
         Text(
-            if (faithMode) "However this went, you are not condemned. Tell the truth and keep walking."
-            else "However this went, it is information, not a verdict. Tell the truth and keep walking.",
+            if (faithMode) "Either way, you're not condemned."
+            else "Either way, it's information, not a verdict.",
             style = MaterialTheme.typography.bodyMedium,
             color = BastionColors.TextSecondary,
             textAlign = TextAlign.Center,

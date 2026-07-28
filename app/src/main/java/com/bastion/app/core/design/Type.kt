@@ -47,6 +47,17 @@ val ScriptureStyle = TextStyle(
     letterSpacing = 0.1.sp,
 )
 
+/**
+ * Scripture inside a card on a dense screen. Same gravitas, less floor space —
+ * at full size a three-line verse swallowed the whole home screen.
+ */
+val ScriptureCompactStyle = TextStyle(
+    fontFamily = Display,
+    fontWeight = FontWeight.Normal,
+    fontSize = 17.sp,
+    lineHeight = 26.sp,
+)
+
 /** Small all-caps section markers. */
 val OvertureStyle = TextStyle(
     fontFamily = Body,

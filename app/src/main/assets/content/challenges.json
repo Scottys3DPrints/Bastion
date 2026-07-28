@@ -8,7 +8,7 @@
       "days": 7,
       "difficulty": "starter",
       "modes": ["faith", "discipline"],
-      "description": "A gentle first week. You are not trying to fix everything or prove anything — you are removing the easiest friction points and gathering honest information about your own patterns. Every task takes under thirty minutes. If a day goes sideways, pick up the next one; nothing here has to be done perfectly to work.",
+      "description": "A gentle first week of easy wins and honest observation, for anyone starting out or starting over.",
       "dailyTasks": [
         {
           "day": 1,
@@ -56,7 +56,7 @@
       "days": 30,
       "difficulty": "core",
       "modes": ["faith", "discipline"],
-      "description": "Thirty days of small, concrete construction: sleep, environment, movement, honesty, and something to do with your evenings. Weeks two and three are usually the hardest stretch — the novelty is gone and the results have not arrived yet. That is the normal shape of the curve, not a sign it is failing. Every task fits in under thirty minutes.",
+      "description": "A month of building the basics: sleep, environment, movement and honesty. For men ready to commit properly.",
       "dailyTasks": [
         { "day": 1, "task": "Write the one-sentence version of what you are building.", "detail": "Describe the man, not the ban. \"I am a man who sleeps properly and is honest with his friends\" works better than a list of things you will never do again." },
         { "day": 2, "task": "Set your fixed wake time for the whole month.", "detail": "Same time seven days a week. Write it down. This is the anchor everything else hangs on." },
@@ -99,7 +99,7 @@
       "days": 90,
       "difficulty": "advanced",
       "modes": ["faith", "discipline"],
-      "description": "Ninety days is not a biological deadline and nothing magic happens at day 91 — it is simply long enough for a season of life to change shape. This challenge runs on a repeating daily core plus a theme for each week. THE DAILY CORE, every day: (1) hold your fixed wake time, (2) phone charges outside the bedroom, (3) twenty minutes of movement, (4) three lines in your journal before bed. Each week adds one focus on top of that. Expect weeks two to four to be the hardest and the results to arrive late. That is the normal shape, not a failure of effort. This app is a support tool, not treatment — if the pattern will not shift, bring in a professional alongside it.",
+      "description": "A season of daily core habits and weekly themes. A support tool, not treatment; add a professional if needed.",
       "dailyTasks": [
         { "day": 1, "task": "Week 1 — Ground clearing.", "detail": "Set the daily core in place: fixed wake time, phone out of the bedroom, twenty minutes of movement, three lines before bed. This week, do a full device sweep and write your one-sentence reason. Each day, run the core and check the sweep held." },
         { "day": 8, "task": "Week 2 — Sleep.", "detail": "On top of the daily core: hard shutdown thirty minutes before bed, ten minutes of outdoor light within an hour of waking, caffeine cutoff by 2pm. This is usually the week the novelty wears off. Keep the core running and let the week be dull." },
@@ -125,7 +125,7 @@
       "days": 7,
       "difficulty": "starter",
       "modes": ["faith", "discipline"],
-      "description": "A week of early, consistent rising. This is not about being a morning person or grinding yourself down — it is that a fixed early wake time anchors your whole sleep rhythm, and a properly tired man at 11pm is a far safer man than a restless one. Adjust the hour if 6 does not fit your life; the consistency matters more than the number.",
+      "description": "A week of fixed early rising to anchor your sleep rhythm. Adjust the hour to fit your life.",
       "dailyTasks": [
         { "day": 1, "task": "Set the alarm for 6 and put it across the room.", "detail": "Tonight, lay out clothes and put the alarm somewhere you must stand up to reach. Remove every decision from the moment you wake." },
         { "day": 2, "task": "Up at 6. Outside within twenty minutes.", "detail": "Even two minutes of morning daylight helps set the clock. Do not check your phone before you have been outside." },
@@ -145,7 +145,7 @@
       "days": 7,
       "difficulty": "core",
       "modes": ["faith", "discipline"],
-      "description": "A week of building toward one full screen-light day. The aim is not a purity test — it is to discover what your attention does when nothing is competing for it, and to prove to yourself that the empty hours can be filled by something better. Each day here takes under thirty minutes except the sabbath itself, which is simply a day lived differently.",
+      "description": "A week building toward one full screen-light day, for men who want their attention back.",
       "dailyTasks": [
         { "day": 1, "task": "Check your actual screen time and write the number down.", "detail": "No commentary, no judgement. Most men are surprised. You cannot change a number you have never looked at." },
         { "day": 2, "task": "Turn off every non-essential notification.", "detail": "Fifteen minutes in settings. Keep calls and messages from real people. Everything else is someone selling your attention." },
@@ -165,7 +165,7 @@
       "days": 7,
       "difficulty": "starter",
       "modes": ["faith", "discipline"],
-      "description": "Bouncing the eyes is a small, practical skill: noticing the pull of a second look and redirecting within about two seconds, before the thought has time to build a story. This is not about pretending you did not see, treating attraction as shameful, or walking around ashamed of being a man with eyes. It is about deciding in advance where your attention goes, so it is not decided for you.",
+      "description": "A week training the two-second habit of redirecting a second look, before the thought builds a story.",
       "dailyTasks": [
         { "day": 1, "task": "Learn the two-second rule and say it out loud once.", "detail": "The first look is automatic. The second is a decision. Your job is only to redirect within two seconds — look at something else, and keep walking. No self-criticism attached, ever." },
         { "day": 2, "task": "Pick your redirect target in advance.", "detail": "Decide now where your eyes go instead: the horizon, the ground ten paces ahead, whatever you were doing. Having a destination makes redirecting far easier than trying to look at nothing." },
@@ -185,7 +185,7 @@
       "days": 14,
       "difficulty": "core",
       "modes": ["faith", "discipline"],
-      "description": "Cold water is a substitution and a training exercise, never a punishment. You are practising staying calm inside an uncomfortable state while it is happening, on your own terms, at a time you chose. That is exactly the skill an urge asks for. Never use a cold shower to punish yourself after a slip — that teaches the wrong lesson. Skip this challenge if you have a heart condition, Raynaud's, uncontrolled blood pressure, or are pregnant, and check with a doctor if you are unsure.",
+      "description": "Two weeks of cold-water practice in staying calm under discomfort. Not for you if you have a heart or circulation condition (including Raynaud's), uncontrolled blood pressure, or are pregnant. Check with a doctor if unsure.",
       "dailyTasks": [
         { "day": 1, "task": "Finish your normal shower with fifteen seconds cold.", "detail": "Warm shower as usual, then turn it cold for fifteen seconds at the end. Breathe out slowly rather than gasping. That is the whole session." },
         { "day": 2, "task": "Fifteen seconds cold, focus on the exhale.", "detail": "The instinct is to hold your breath and tense. The practice is a long, slow exhale. This is the same tool you will use in an urge." },
@@ -212,7 +212,7 @@
       "days": 14,
       "difficulty": "core",
       "modes": ["faith", "discipline"],
-      "description": "Two weeks pairing physical training with honest writing. The body work gives you something measurable that improves, and the writing keeps you from drifting through the change without noticing it. Each day is a short session — twenty minutes of training and five minutes of writing — well inside thirty minutes total. Scale the training to where you actually are, not where you wish you were.",
+      "description": "Two weeks pairing short training sessions with honest writing, for men who need something measurable to improve.",
       "dailyTasks": [
         { "day": 1, "task": "Twenty-minute session. Write your baseline.", "detail": "Train however you can. Then write down honestly where you are starting: what you can lift, run, or do, and how you feel about your body without insulting it." },
         { "day": 2, "task": "Twenty-minute walk. Write about last night.", "detail": "Walk without headphones. Then five lines on how yesterday evening actually went — the hour before bed in particular." },
