@@ -50,7 +50,7 @@ class BastionConverters {
         GuardChangeRequestEntity::class,
         AppUsageEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(BastionConverters::class)

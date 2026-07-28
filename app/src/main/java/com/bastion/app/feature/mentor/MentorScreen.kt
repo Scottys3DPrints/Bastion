@@ -2,12 +2,18 @@ package com.bastion.app.feature.mentor
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,10 +30,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,8 +46,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.BastionColors
@@ -48,7 +60,9 @@ import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.data.BastionGraph
 import com.bastion.app.data.content.MentorIntent
 import com.bastion.app.data.db.MentorMessageEntity
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 /**
  * The Mentor.
@@ -70,6 +84,8 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
     val history by graph.social.mentorHistory.collectAsStateWithLifecycle(initialValue = emptyList())
     var draft by remember { mutableStateOf("") }
     var prompts by remember { mutableStateOf<List<MentorIntent>>(emptyList()) }
+    var typing by remember { mutableStateOf(false) }
+    var confirmClear by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
     LaunchedEffect(faithMode) {
@@ -87,8 +103,9 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
         }
     }
 
-    LaunchedEffect(history.size) {
-        if (history.isNotEmpty()) listState.animateScrollToItem(history.lastIndex)
+    LaunchedEffect(history.size, typing) {
+        val last = history.size - if (typing) 0 else 1
+        if (last >= 0) listState.animateScrollToItem(last)
     }
 
     fun send(text: String) {
@@ -96,6 +113,13 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
         scope.launch {
             graph.social.say(text, fromUser = true)
             val reply = graph.social.reply(text, faithMode)
+            // A pause so the reply reads as answered rather than auto-completed.
+            // Never on the crisis path: safety text waits for nothing.
+            if (!reply.isCrisis) {
+                typing = true
+                delay(Random.nextLong(600, 900))
+                typing = false
+            }
             graph.social.say(reply.text, fromUser = false, intentId = reply.intentId)
         }
         draft = ""
@@ -123,12 +147,12 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
                         color = BastionColors.SageBright,
                     )
                 }
-                Text(
-                    "Close",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = BastionColors.TextMuted,
-                    modifier = Modifier.clickable(onClick = onBack),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (history.isNotEmpty()) {
+                        LinkButton("Start fresh", BastionColors.TextMuted) { confirmClear = true }
+                    }
+                    LinkButton("Close", BastionColors.TextMuted, onBack)
+                }
             }
 
             LazyColumn(
@@ -139,9 +163,13 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 items(history, key = { it.id }) { message -> MessageBubble(message) }
+                if (typing) item { TypingBubble() }
             }
 
-            if (prompts.isNotEmpty() && history.size <= 2) {
+            // The chips come back whenever the thread is resting on the Mentor's
+            // reply and nothing is half-typed — a man stuck for words at 1am is
+            // exactly who needed them, and they only ever showed at the start.
+            if (prompts.isNotEmpty() && !typing && draft.isBlank() && history.lastOrNull()?.fromUser != true) {
                 Row(
                     Modifier
                         .horizontalScroll(rememberScrollState())
@@ -154,7 +182,7 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
                                 .clip(RoundedCornerShape(18.dp))
                                 .background(BastionColors.Surface)
                                 .border(1.dp, BastionColors.Outline, RoundedCornerShape(18.dp))
-                                .clickable { send(intent.label) }
+                                .clickable(role = Role.Button) { send(intent.label) }
                                 .padding(horizontal = 14.dp, vertical = 9.dp)
                         ) {
                             Text(
@@ -192,6 +220,77 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
                 PrimaryButton("Send", { send(draft) }, enabled = draft.isNotBlank())
             }
         }
+    }
+
+    if (confirmClear) {
+        AlertDialog(
+            onDismissRequest = { confirmClear = false },
+            containerColor = BastionColors.Surface,
+            titleContentColor = BastionColors.TextPrimary,
+            textContentColor = BastionColors.TextSecondary,
+            title = { Text("Clear this conversation?", style = MaterialTheme.typography.titleMedium) },
+            text = {
+                Text(
+                    "The thread goes. Nothing else changes.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                LinkButton("Clear it", BastionColors.BronzeBright) {
+                    scope.launch {
+                        graph.social.clearMentorHistory()
+                        // An empty screen reads as broken, and the once-ever
+                        // opener flag stays set, so post a fresh one here.
+                        graph.social.say(graph.social.opener(faithMode), fromUser = false)
+                    }
+                    confirmClear = false
+                }
+            },
+            dismissButton = {
+                LinkButton("Not now", BastionColors.TextMuted) { confirmClear = false }
+            },
+        )
+    }
+}
+
+/** Text-styled actions that are still real buttons: 48dp target, button semantics. */
+@Composable
+private fun LinkButton(
+    label: String,
+    color: Color = BastionColors.BronzeBright,
+    onClick: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        colors = ButtonDefaults.textButtonColors(contentColor = color),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/** The beat before a scripted reply lands, so it reads as considered. */
+@Composable
+private fun TypingBubble() {
+    val transition = rememberInfiniteTransition(label = "typing")
+    val pulse by transition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(tween(700), RepeatMode.Reverse),
+        label = "pulse",
+    )
+    Box(
+        Modifier
+            .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp))
+            .background(BastionColors.Surface)
+            .padding(horizontal = 18.dp, vertical = 14.dp)
+    ) {
+        Text(
+            "• • •",
+            style = MaterialTheme.typography.bodyLarge,
+            color = BastionColors.TextMuted,
+            modifier = Modifier.alpha(pulse),
+        )
     }
 }
 

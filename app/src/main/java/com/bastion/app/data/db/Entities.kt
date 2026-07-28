@@ -16,7 +16,7 @@ import androidx.room.PrimaryKey
 
 enum class DayStatus { CLEAN, SLIP, UNLOGGED }
 
-@Entity(tableName = "day_log")
+@Entity(tableName = "day_log", indices = [Index("status")])
 data class DayLogEntity(
     @PrimaryKey val epochDay: Long,
     val status: DayStatus,
@@ -55,7 +55,13 @@ data class HabitEntity(
     val updatedAt: Long = System.currentTimeMillis(),
 )
 
-@Entity(tableName = "habit_completion", primaryKeys = ["habitId", "epochDay"])
+// The composite primary key leads with habitId, so a range scan over epochDay
+// (which is what the Becoming profile does every time it opens) could not use it.
+@Entity(
+    tableName = "habit_completion",
+    primaryKeys = ["habitId", "epochDay"],
+    indices = [Index("epochDay")],
+)
 data class HabitCompletionEntity(
     val habitId: String,
     val epochDay: Long,
@@ -136,17 +142,21 @@ data class FeedRuleEntity(
     val updatedAt: Long = System.currentTimeMillis(),
 )
 
-@Entity(tableName = "blocked_domain")
+// Indexed on `enabled`: this table is fully scanned by filterData() on the
+// Guard/VPN hot path.
+@Entity(tableName = "blocked_domain", indices = [Index("enabled")])
 data class BlockedDomainEntity(
     @PrimaryKey val domain: String,
     val userAdded: Boolean = false,
     val enabled: Boolean = true,
+    val updatedAt: Long = System.currentTimeMillis(),
 )
 
 /** Explicit allow-list, so "sussex" and "essex" never get caught by a keyword rule. */
 @Entity(tableName = "allowed_domain")
 data class AllowedDomainEntity(
     @PrimaryKey val domain: String,
+    val updatedAt: Long = System.currentTimeMillis(),
 )
 
 enum class VisionType { PHOTO, QUOTE, GOAL, VERSE }
@@ -167,6 +177,7 @@ data class BadgeEntity(
     @PrimaryKey val badgeId: String,
     val name: String,
     val earnedAt: Long,
+    val updatedAt: Long = System.currentTimeMillis(),
 )
 
 @Entity(tableName = "partner")
@@ -182,7 +193,7 @@ data class PartnerEntity(
     val updatedAt: Long = System.currentTimeMillis(),
 )
 
-@Entity(tableName = "check_in")
+@Entity(tableName = "check_in", indices = [Index("epochDay")])
 data class CheckInEntity(
     @PrimaryKey val id: String,
     val epochDay: Long,
@@ -205,6 +216,7 @@ data class MentorMessageEntity(
 data class LessonReadEntity(
     @PrimaryKey val lessonId: String,
     val readAt: Long,
+    val updatedAt: Long = System.currentTimeMillis(),
 )
 
 enum class ChangeStatus { PENDING, APPLIED, CANCELLED }
@@ -213,7 +225,10 @@ enum class ChangeStatus { PENDING, APPLIED, CANCELLED }
  * The cooling-off lock. Weakening a guard is never instant — the request sits
  * here until effectiveAt passes. This is the difference between a wish and a wall.
  */
-@Entity(tableName = "guard_change_request")
+@Entity(
+    tableName = "guard_change_request",
+    indices = [Index("status", "effectiveAt")],
+)
 data class GuardChangeRequestEntity(
     @PrimaryKey val id: String,
     val requestedAt: Long,
@@ -230,4 +245,5 @@ data class AppUsageEntity(
     val packageName: String,
     val epochDay: Long,
     val foregroundMillis: Long,
+    val updatedAt: Long = System.currentTimeMillis(),
 )

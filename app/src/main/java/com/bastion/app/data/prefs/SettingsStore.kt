@@ -12,6 +12,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "bastion_settings")
 
@@ -56,9 +57,27 @@ data class Settings(
 )
 
 /**
- * Small, non-relational state. Anything sensitive enough to want encrypting
- * lives in the Room database in app-private storage instead; this holds the
- * knobs, not the confessions.
+ * Small, non-relational state: the knobs, not the confessions.
+ *
+ * What follows is deliberately precise, because the previous version of this
+ * comment implied the database provided encryption and it does not.
+ *
+ * Encrypted at rest:
+ *   - the covenant signature, via [com.bastion.app.core.security.CovenantVault]
+ *     and an Android Keystore key.
+ *
+ * NOT encrypted, and honest about it:
+ *   - `bastion.db` is plain SQLite. The covenant text, slip history, urge logs
+ *     and mentor conversation are readable by anything that can reach the
+ *     filesystem — a rooted device, a recovery image, a forensic dump.
+ *   - the "why" video, which the camera app writes directly.
+ *   - this preferences file.
+ *
+ * They are protected by app-private storage and by `allowBackup=false`, which
+ * defeats other apps and Google's cloud backup but not physical access. Full
+ * database encryption means SQLCipher and a careful re-key of any existing
+ * install; it is worth doing, and it is not worth doing carelessly, because a
+ * botched migration would destroy exactly the journey it is meant to guard.
  */
 class SettingsStore(private val context: Context) {
 
@@ -101,7 +120,7 @@ class SettingsStore(private val context: Context) {
             coolingOffHours = p[Keys.COOLING_OFF] ?: 2,
             tamperLockEnabled = p[Keys.TAMPER_LOCK] ?: false,
             partnerLockEnabled = p[Keys.PARTNER_LOCK] ?: false,
-            triggers = p[Keys.TRIGGERS]?.split('|')?.filter { it.isNotBlank() } ?: emptyList(),
+            triggers = p[Keys.TRIGGERS].decodeTriggers(),
             baselineFrequency = p[Keys.BASELINE] ?: "",
             lastPanicAt = p[Keys.LAST_PANIC] ?: 0L,
             panicCount = p[Keys.PANIC_COUNT] ?: 0,
@@ -130,7 +149,9 @@ class SettingsStore(private val context: Context) {
     suspend fun setCoolingOffHours(value: Int) = edit { it[Keys.COOLING_OFF] = value }
     suspend fun setTamperLock(value: Boolean) = edit { it[Keys.TAMPER_LOCK] = value }
     suspend fun setPartnerLock(value: Boolean) = edit { it[Keys.PARTNER_LOCK] = value }
-    suspend fun setTriggers(values: List<String>) = edit { it[Keys.TRIGGERS] = values.joinToString("|") }
+    suspend fun setTriggers(values: List<String>) = edit {
+        it[Keys.TRIGGERS] = Json.encodeToString(values)
+    }
     suspend fun setBaseline(value: String) = edit { it[Keys.BASELINE] = value }
     suspend fun setUpstreamDns(value: String) = edit { it[Keys.UPSTREAM_DNS] = value }
     suspend fun setUpdateUrl(value: String) = edit { it[Keys.UPDATE_URL] = value.trim() }
@@ -146,5 +167,18 @@ class SettingsStore(private val context: Context) {
 
     private suspend fun edit(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.dataStore.edit(block)
+    }
+
+    private companion object {
+        /**
+         * Triggers were pipe-joined, so a trigger containing "|" silently split
+         * into two. JSON round-trips anything, and reads the old pipe format so
+         * an existing install does not lose its answers on upgrade.
+         */
+        fun String?.decodeTriggers(): List<String> {
+            if (this.isNullOrBlank()) return emptyList()
+            return runCatching { Json.decodeFromString<List<String>>(this) }
+                .getOrElse { split('|').filter { part -> part.isNotBlank() } }
+        }
     }
 }

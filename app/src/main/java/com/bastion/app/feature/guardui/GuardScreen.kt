@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,6 +22,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -28,6 +31,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,8 +44,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.BastionCard
 import com.bastion.app.core.design.BastionColors
@@ -51,6 +59,7 @@ import com.bastion.app.core.design.QuietButton
 import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.data.BastionGraph
 import com.bastion.app.data.db.BlockMode
+import com.bastion.app.data.db.FeedRuleEntity
 import com.bastion.app.data.db.GuardedAppEntity
 import com.bastion.app.data.prefs.Settings
 import com.bastion.app.guard.accessibility.BastionAccessibilityService
@@ -75,6 +84,12 @@ fun GuardScreen() {
 
     var showAppPicker by remember { mutableStateOf(false) }
     var showLearnMode by remember { mutableStateOf(false) }
+
+    // Every weakening is confirmed before it is enqueued. The cooling-off lock
+    // makes a mis-tap expensive to undo, so the tap has to be deliberate.
+    var confirmUnguard by remember { mutableStateOf<GuardedAppEntity?>(null) }
+    var confirmFilterOff by remember { mutableStateOf(false) }
+    var confirmRelax by remember { mutableStateOf<Pair<GuardedAppEntity, BlockMode>?>(null) }
 
     // A cooling-off timer that visibly never moves reads as broken, and this one
     // is the app's proof that the lock is real. Computed once at composition, it
@@ -167,12 +182,7 @@ fun GuardScreen() {
                                     scope.launch { graph.settings.setVpnEnabled(true) }
                                 }
                             } else {
-                                scope.launch {
-                                    graph.guard.requestWeakening(
-                                        "Turn off the content filter",
-                                        payload = "vpn:off",
-                                    )
-                                }
+                                confirmFilterOff = true
                             }
                         },
                         colors = switchColors(),
@@ -204,12 +214,7 @@ fun GuardScreen() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     SectionLabel("Guarded apps")
-                    Text(
-                        "Add →",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = BastionColors.BronzeBright,
-                        modifier = Modifier.clickable { showAppPicker = true },
-                    )
+                    LinkButton("Add →") { showAppPicker = true }
                 }
                 Spacer(Modifier.height(14.dp))
 
@@ -225,26 +230,21 @@ fun GuardScreen() {
                     GuardedAppRow(
                         app = app,
                         onModeChange = { mode ->
-                            scope.launch {
-                                // Loosening waits; tightening is instant.
-                                if (mode.isWeakerThan(app.mode)) {
-                                    graph.guard.requestWeakening(
-                                        "Relax ${app.label} to ${mode.label()}",
-                                        payload = "app:${app.packageName}:${mode.name}",
+                            // Loosening waits and is confirmed; tightening is
+                            // instant and needs no ceremony. Relaxing a mode is
+                            // the same kind of decision as removing the guard
+                            // altogether, so it gets the same dialog.
+                            if (mode.isWeakerThan(app.mode)) {
+                                confirmRelax = app to mode
+                            } else {
+                                scope.launch {
+                                    graph.guard.upsertApp(
+                                        app.copy(mode = mode, updatedAt = System.currentTimeMillis())
                                     )
-                                } else {
-                                    graph.guard.upsertApp(app.copy(mode = mode, updatedAt = System.currentTimeMillis()))
                                 }
                             }
                         },
-                        onRemove = {
-                            scope.launch {
-                                graph.guard.requestWeakening(
-                                    "Stop guarding ${app.label}",
-                                    payload = "remove:${app.packageName}",
-                                )
-                            }
-                        },
+                        onRemove = { confirmUnguard = app },
                     )
                     Spacer(Modifier.height(10.dp))
                 }
@@ -260,12 +260,7 @@ fun GuardScreen() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     SectionLabel("Feed rules · ${feedRules.count { it.enabled }} active")
-                    Text(
-                        "Learn →",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = BastionColors.BronzeBright,
-                        modifier = Modifier.clickable { showLearnMode = true },
-                    )
+                    LinkButton("Learn →") { showLearnMode = true }
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
@@ -276,7 +271,7 @@ fun GuardScreen() {
                 Spacer(Modifier.height(14.dp))
                 feedRules.groupBy { it.packageName }.forEach { (pkg, rules) ->
                     Text(
-                        rules.first().label.substringBefore(' '),
+                        feedGroupName(pkg, rules),
                         style = MaterialTheme.typography.titleSmall,
                         color = BastionColors.TextPrimary,
                     )
@@ -360,14 +355,9 @@ fun GuardScreen() {
                                     color = BastionColors.Amber,
                                 )
                             }
-                            Text(
-                                "Cancel",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = BastionColors.SageBright,
-                                modifier = Modifier.clickable {
-                                    scope.launch { graph.guard.cancelChange(change.id) }
-                                },
-                            )
+                            LinkButton("Cancel", BastionColors.SageBright) {
+                                scope.launch { graph.guard.cancelChange(change.id) }
+                            }
                         }
                     }
                 }
@@ -398,6 +388,60 @@ fun GuardScreen() {
         }
     }
 
+    confirmUnguard?.let { app ->
+        ConfirmDialog(
+            title = "Stop guarding ${app.label}?",
+            body = "This won't take effect for ${settings.coolingOffHours} hours. " +
+                "You can cancel it any time before then.",
+            confirmLabel = "Request it",
+            onConfirm = {
+                scope.launch {
+                    graph.guard.requestWeakening(
+                        "Stop guarding ${app.label}",
+                        payload = "remove:${app.packageName}",
+                    )
+                }
+            },
+            onDismiss = { confirmUnguard = null },
+        )
+    }
+
+    confirmRelax?.let { (app, mode) ->
+        ConfirmDialog(
+            title = "Relax ${app.label} to ${mode.label()}?",
+            body = "This won't take effect for ${settings.coolingOffHours} hours. " +
+                "You can cancel it any time before then.",
+            confirmLabel = "Request it",
+            onConfirm = {
+                scope.launch {
+                    graph.guard.requestWeakening(
+                        "Relax ${app.label} to ${mode.label()}",
+                        payload = "app:${app.packageName}:${mode.name}",
+                    )
+                }
+            },
+            onDismiss = { confirmRelax = null },
+        )
+    }
+
+    if (confirmFilterOff) {
+        ConfirmDialog(
+            title = "Turn the content filter off?",
+            body = "This won't take effect for ${settings.coolingOffHours} hours. " +
+                "You can cancel it any time before then.",
+            confirmLabel = "Request it",
+            onConfirm = {
+                scope.launch {
+                    graph.guard.requestWeakening(
+                        "Turn off the content filter",
+                        payload = "vpn:off",
+                    )
+                }
+            },
+            onDismiss = { confirmFilterOff = false },
+        )
+    }
+
     if (showLearnMode) {
         ModalBottomSheet(
             onDismissRequest = {
@@ -419,9 +463,23 @@ fun GuardScreen() {
 private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val hasPermission = remember {
-        context.checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) ==
+    val clipboard = LocalClipboardManager.current
+
+    // The grant lands over adb while this screen is open, so a value read once
+    // at composition left the fallback showing until the process was restarted.
+    var hasPermission by remember { mutableStateOf(false) }
+    LifecycleResumeEffect(Unit) {
+        hasPermission = context.checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) ==
             PackageManager.PERMISSION_GRANTED
+        onPauseOrDispose {}
+    }
+
+    var copied by remember { mutableStateOf(false) }
+    LaunchedEffect(copied) {
+        if (copied) {
+            kotlinx.coroutines.delay(1_800)
+            copied = false
+        }
     }
 
     BastionCard {
@@ -448,11 +506,22 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
         }
         if (!hasPermission) {
             Spacer(Modifier.height(10.dp))
-            Text(
-                "True grayscale needs one adb command:",
-                style = MaterialTheme.typography.bodySmall,
-                color = BastionColors.TextMuted,
-            )
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "True grayscale needs one adb command:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
+                    modifier = Modifier.weight(1f),
+                )
+                LinkButton(if (copied) "Copied" else "Copy") {
+                    clipboard.setText(AnnotatedString(ADB_GRANT_COMMAND))
+                    copied = true
+                }
+            }
             Spacer(Modifier.height(8.dp))
             Box(
                 Modifier
@@ -462,7 +531,7 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
                     .padding(12.dp)
             ) {
                 Text(
-                    "adb shell pm grant com.bastion.app android.permission.WRITE_SECURE_SETTINGS",
+                    ADB_GRANT_COMMAND,
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.SageBright,
                 )
@@ -475,6 +544,52 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
             )
         }
     }
+}
+
+/**
+ * Text-styled actions that are still real buttons. Guard is used one-handed in a
+ * bad moment, so every action carries button semantics and a 48dp target rather
+ * than being a clickable label.
+ */
+@Composable
+private fun LinkButton(
+    label: String,
+    color: Color = BastionColors.BronzeBright,
+    onClick: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        colors = ButtonDefaults.textButtonColors(contentColor = color),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/** Weakening is the direction that costs something, so a mis-tap must not start the clock. */
+@Composable
+private fun ConfirmDialog(
+    title: String,
+    body: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = BastionColors.Surface,
+        titleContentColor = BastionColors.TextPrimary,
+        textContentColor = BastionColors.TextSecondary,
+        title = { Text(title, style = MaterialTheme.typography.titleMedium) },
+        text = { Text(body, style = MaterialTheme.typography.bodyMedium) },
+        confirmButton = {
+            LinkButton(confirmLabel) {
+                onConfirm()
+                onDismiss()
+            }
+        },
+        dismissButton = { LinkButton("Not now", BastionColors.TextMuted, onDismiss) },
+    )
 }
 
 @Composable
@@ -506,12 +621,7 @@ private fun GuardedAppRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(app.label, style = MaterialTheme.typography.titleSmall, color = BastionColors.TextPrimary)
-            Text(
-                "Remove",
-                style = MaterialTheme.typography.labelSmall,
-                color = BastionColors.TextMuted,
-                modifier = Modifier.clickable(onClick = onRemove),
-            )
+            LinkButton("Remove", BastionColors.TextMuted, onRemove)
         }
         Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -717,6 +827,27 @@ private fun switchColors() = SwitchDefaults.colors(
     uncheckedTrackColor = BastionColors.SurfaceHigh,
     uncheckedBorderColor = BastionColors.Outline,
 )
+
+private const val ADB_GRANT_COMMAND =
+    "adb shell pm grant com.bastion.app android.permission.WRITE_SECURE_SETTINGS"
+
+/**
+ * Heading for a package's rules.
+ *
+ * Rule labels lead with the app ("Instagram Reels (viewer)"), so the first word
+ * was standing in for the app name — which turns a learned rule's one-token
+ * label into a heading reading "Learned". Take what the group's labels share,
+ * and fall back to a whole label rather than a fragment.
+ */
+private fun feedGroupName(packageName: String, rules: List<FeedRuleEntity>): String {
+    val labels = rules.map { it.label.substringBefore(" (").trim() }.filter { it.isNotBlank() }
+    val shared = labels.reduceOrNull { acc, label ->
+        acc.split(' ').zip(label.split(' ')).takeWhile { (a, b) -> a == b }.joinToString(" ") { it.first }
+    }
+    return shared?.takeIf { it.isNotBlank() }
+        ?: labels.firstOrNull()
+        ?: packageName.substringAfterLast('.')
+}
 
 private fun BlockMode.label(): String = when (this) {
     BlockMode.FULL -> "Fully blocked"

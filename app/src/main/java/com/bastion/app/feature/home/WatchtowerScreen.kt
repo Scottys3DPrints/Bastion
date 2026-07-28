@@ -162,13 +162,23 @@ fun WatchtowerScreen(
                             style = MaterialTheme.typography.titleMedium,
                             color = BastionColors.TextPrimary,
                         )
-                        Spacer(Modifier.height(10.dp))
-                        Text(
-                            "See the timeline →",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = BastionColors.TextMuted,
-                            modifier = Modifier.clickable(onClick = onOpenTrack),
-                        )
+                        Spacer(Modifier.height(4.dp))
+                        // A TextButton rather than clickable text: this is a real
+                        // action and needs button semantics and a 48dp target,
+                        // because the app gets used one-handed under stress.
+                        androidx.compose.material3.TextButton(
+                            onClick = onOpenTrack,
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                                horizontal = 4.dp,
+                                vertical = 8.dp,
+                            ),
+                        ) {
+                            Text(
+                                "See the timeline →",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = BastionColors.TextMuted,
+                            )
+                        }
                     }
                 }
 

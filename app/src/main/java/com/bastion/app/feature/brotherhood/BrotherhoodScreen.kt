@@ -2,11 +2,9 @@ package com.bastion.app.feature.brotherhood
 
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -24,6 +24,7 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -33,7 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -45,6 +46,10 @@ import com.bastion.app.core.design.QuietButton
 import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.data.BastionGraph
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
 /**
  * Brotherhood.
@@ -69,6 +74,8 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
     var shareGuard by remember { mutableStateOf(true) }
     var mood by remember { mutableFloatStateOf(3f) }
     var note by remember { mutableStateOf("") }
+    var confirmRemove by remember { mutableStateOf(false) }
+    val current = partner
 
     DawnBackground(intensity = 0.35f) {
         Column(
@@ -87,7 +94,6 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
             )
             Spacer(Modifier.height(20.dp))
 
-            val current = partner
             if (current == null) {
                 BastionCard {
                     SectionLabel("Your partner")
@@ -141,7 +147,7 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
                             }
                         },
                         Modifier.fillMaxWidth(),
-                        enabled = name.isNotBlank() && contact.isNotBlank(),
+                        enabled = name.isNotBlank() && contact.isTextable(),
                     )
                 }
             } else {
@@ -156,13 +162,15 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
                             {
                                 context.startActivity(
                                     Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${current.contact}"))
+                                        .putExtra("sms_body", "Got a minute? Could use a word.")
                                 )
                             },
                             Modifier.weight(1f),
+                            enabled = current.contact.isTextable(),
                         )
                         QuietButton(
                             "Remove",
-                            { scope.launch { graph.social.removePartner(current.id) } },
+                            { confirmRemove = true },
                             Modifier.weight(1f),
                         )
                     }
@@ -213,7 +221,7 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
                         },
                         Modifier.weight(1f),
                     )
-                    if (current != null) {
+                    if (current != null && current.contact.isTextable()) {
                         QuietButton(
                             "Send it",
                             {
@@ -266,7 +274,7 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
                             }
                         }
                         Text(
-                            java.time.LocalDate.ofEpochDay(entry.epochDay).toString(),
+                            checkInDate(entry.epochDay),
                             style = MaterialTheme.typography.labelSmall,
                             color = BastionColors.TextMuted,
                         )
@@ -284,14 +292,34 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
                     color = BastionColors.TextSecondary,
                 )
                 Spacer(Modifier.height(14.dp))
-                Text(
-                    "Talk to the Mentor →",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = BastionColors.SageBright,
-                    modifier = Modifier.clickable(onClick = onOpenMentor),
-                )
+                LinkButton("Talk to the Mentor →", BastionColors.SageBright, onOpenMentor)
             }
         }
+    }
+
+    if (confirmRemove && current != null) {
+        AlertDialog(
+            onDismissRequest = { confirmRemove = false },
+            containerColor = BastionColors.Surface,
+            titleContentColor = BastionColors.TextPrimary,
+            textContentColor = BastionColors.TextSecondary,
+            title = { Text("Remove ${current.name}?", style = MaterialTheme.typography.titleMedium) },
+            text = {
+                Text(
+                    "Your check-ins stay. You can add them back any time.",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            confirmButton = {
+                LinkButton("Remove", BastionColors.BronzeBright) {
+                    scope.launch { graph.social.removePartner(current.id) }
+                    confirmRemove = false
+                }
+            },
+            dismissButton = {
+                LinkButton("Not now", BastionColors.TextMuted) { confirmRemove = false }
+            },
+        )
     }
 }
 
@@ -316,6 +344,42 @@ private fun ShareToggle(label: String, checked: Boolean, onChange: (Boolean) -> 
                 uncheckedBorderColor = BastionColors.Outline,
             ),
         )
+    }
+}
+
+/**
+ * Text-styled actions that are still real buttons — button semantics and a 48dp
+ * target, because this screen gets used one-handed at the worst hour.
+ */
+@Composable
+private fun LinkButton(
+    label: String,
+    color: Color = BastionColors.BronzeBright,
+    onClick: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        colors = ButtonDefaults.textButtonColors(contentColor = color),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/**
+ * Permissive on purpose: people write numbers with spaces, dashes, brackets and
+ * a country code. Only the digit count says whether a `smsto:` can go anywhere.
+ */
+private fun String.isTextable(): Boolean = count(Char::isDigit) >= 6
+
+/** A date the man can place without doing arithmetic. */
+private fun checkInDate(epochDay: Long): String {
+    val date = LocalDate.ofEpochDay(epochDay)
+    return when (LocalDate.now().toEpochDay() - epochDay) {
+        0L -> "Today"
+        1L -> "Yesterday"
+        in 2L..6L -> date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
+        else -> date.format(DateTimeFormatter.ofPattern("d MMM"))
     }
 }
 

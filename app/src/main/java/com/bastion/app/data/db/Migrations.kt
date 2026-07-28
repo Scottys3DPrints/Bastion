@@ -36,6 +36,32 @@ object Migrations {
      * schema without an uninstall.
      */
     val ALL: Array<Migration> = arrayOf(
-        // v1 is the baseline shipped in Bastion 1.0. Nothing to migrate yet.
+        MIGRATION_1_2,
+    )
+}
+
+/**
+ * v1 → v2. Adds `updatedAt` to the five tables that were missing it, and the
+ * indices the hot paths were scanning without.
+ *
+ * Additive only: not a single existing row is rewritten, so a covenant signed
+ * on v1 survives exactly as it was. New columns default to 0 rather than the
+ * current time, which is honest — we do not know when those rows were written,
+ * and inventing a timestamp would corrupt any future sync reconciliation.
+ */
+private val MIGRATION_1_2 = Migration(1, 2) { db ->
+    listOf("blocked_domain", "allowed_domain", "badge", "lesson_read", "app_usage").forEach { table ->
+        db.execSQL("ALTER TABLE $table ADD COLUMN updatedAt INTEGER NOT NULL DEFAULT 0")
+    }
+
+    // Names must match Room's generated convention exactly, or validation fails
+    // on the next launch with a schema mismatch.
+    db.execSQL("CREATE INDEX IF NOT EXISTS index_day_log_status ON day_log(status)")
+    db.execSQL("CREATE INDEX IF NOT EXISTS index_habit_completion_epochDay ON habit_completion(epochDay)")
+    db.execSQL("CREATE INDEX IF NOT EXISTS index_blocked_domain_enabled ON blocked_domain(enabled)")
+    db.execSQL("CREATE INDEX IF NOT EXISTS index_check_in_epochDay ON check_in(epochDay)")
+    db.execSQL(
+        "CREATE INDEX IF NOT EXISTS index_guard_change_request_status_effectiveAt " +
+            "ON guard_change_request(status, effectiveAt)"
     )
 }

@@ -33,17 +33,39 @@ class GuardRepository(
     suspend fun upsertRule(rule: FeedRuleEntity) = guardDao.upsertRule(rule)
     suspend fun deleteRule(id: String) = guardDao.deleteRule(id)
 
-    suspend fun addUserDomain(domain: String) =
+    suspend fun addUserDomain(domain: String) {
         guardDao.upsertDomain(BlockedDomainEntity(domain.normaliseDomain(), userAdded = true))
+        invalidateFilterCache()
+    }
 
-    suspend fun removeUserDomain(domain: String) = guardDao.removeDomain(domain)
+    suspend fun removeUserDomain(domain: String) {
+        guardDao.removeDomain(domain)
+        invalidateFilterCache()
+    }
 
-    /** Loads the filter's working set: blocked suffixes, allow-list and keywords. */
-    suspend fun filterData(): FilterData = FilterData(
-        blocked = guardDao.enabledDomains().map { it.domain }.toSet(),
-        allowed = guardDao.allowedDomains().map { it.domain }.toSet(),
-        keywords = content.blocklist().keywords,
-    )
+    /**
+     * The filter's working set: blocked suffixes, allow-list and keywords.
+     *
+     * Cached because this is two full table scans over ~200 rows and it sits on
+     * the path the VPN and the browser both take. Invalidated explicitly on
+     * every domain write below, so a newly blocked site takes effect at once —
+     * a stale filter here would be a silent hole in the wall.
+     */
+    suspend fun filterData(): FilterData {
+        cachedFilterData?.let { return it }
+        return FilterData(
+            blocked = guardDao.enabledDomains().map { it.domain }.toSet(),
+            allowed = guardDao.allowedDomains().map { it.domain }.toSet(),
+            keywords = content.blocklist().keywords,
+        ).also { cachedFilterData = it }
+    }
+
+    @Volatile
+    private var cachedFilterData: FilterData? = null
+
+    private fun invalidateFilterCache() {
+        cachedFilterData = null
+    }
 
     data class FilterData(
         val blocked: Set<String>,
@@ -66,6 +88,7 @@ class GuardRepository(
             val list = content.blocklist()
             guardDao.upsertDomains(list.domains.map { BlockedDomainEntity(it.normaliseDomain()) })
             guardDao.upsertAllowed(list.allow.map { AllowedDomainEntity(it.normaliseDomain()) })
+            invalidateFilterCache()
         }
         if (guardDao.feedRuleCount() == 0) {
             guardDao.upsertRules(builtInFeedRules())

@@ -111,6 +111,13 @@ interface ProgressDao {
     @Upsert
     suspend fun awardBadge(badge: BadgeEntity)
 
+    /** Finishing a challenge and earning its badge are one event, so one write. */
+    @Transaction
+    suspend fun completeChallenge(progress: ChallengeProgressEntity, badge: BadgeEntity?) {
+        upsertChallenge(progress)
+        if (badge != null) awardBadge(badge)
+    }
+
     @Query("SELECT * FROM badge ORDER BY earnedAt DESC")
     fun badges(): Flow<List<BadgeEntity>>
 

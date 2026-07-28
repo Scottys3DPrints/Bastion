@@ -90,21 +90,23 @@ class GrowthRepository(
         val definition = challengeCatalogue().firstOrNull { it.id == challengeId }
         val finished = definition != null && days.size >= definition.days
 
-        progressDao.upsertChallenge(
-            progress.copy(
-                completedDaysCsv = days.joinToString(","),
-                // `&& progress.active`: logging a day on a challenge the user
-                // abandoned used to silently revive it.
-                active = progress.active && !finished,
-                completedAt = if (finished) System.currentTimeMillis() else null,
-                updatedAt = System.currentTimeMillis(),
-            )
+        val updated = progress.copy(
+            completedDaysCsv = days.joinToString(","),
+            // `&& progress.active`: logging a day on a challenge the user
+            // abandoned used to silently revive it.
+            active = progress.active && !finished,
+            completedAt = if (finished) System.currentTimeMillis() else null,
+            updatedAt = System.currentTimeMillis(),
         )
-        if (finished && definition != null && definition.badgeId.isNotBlank()) {
-            progressDao.awardBadge(
-                BadgeEntity(definition.badgeId, definition.badgeName.ifBlank { definition.name }, System.currentTimeMillis())
+        val badge = if (finished && definition != null && definition.badgeId.isNotBlank()) {
+            BadgeEntity(
+                definition.badgeId,
+                definition.badgeName.ifBlank { definition.name },
+                System.currentTimeMillis(),
             )
-        }
+        } else null
+
+        progressDao.completeChallenge(updated, badge)
     }
 
     suspend fun awardBadge(id: String, name: String) {

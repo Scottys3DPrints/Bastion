@@ -24,8 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import androidx.compose.ui.unit.dp
 import com.bastion.app.core.design.BastionColors
-import java.io.File
-import java.io.FileOutputStream
+import com.bastion.app.core.security.CovenantVault
 
 /** One continuous pen stroke. */
 typealias Stroke2D = MutableList<Offset>
@@ -158,9 +157,12 @@ suspend fun saveSignature(
         canvas.drawPath(path, paint)
     }
 
-    val file = File(context.filesDir, "covenant_signature.png")
-    runCatching {
-        FileOutputStream(file).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        file.absolutePath
-    }.getOrNull()
+    // Encrypted at rest rather than written straight to filesDir: private-by-
+    // permission does not protect a handwritten signature from anything holding
+    // the filesystem itself.
+    val png = java.io.ByteArrayOutputStream().use { stream ->
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        stream.toByteArray()
+    }
+    CovenantVault(context).write("covenant_signature.png", png)
 }

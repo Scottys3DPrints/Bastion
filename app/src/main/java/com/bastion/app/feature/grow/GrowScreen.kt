@@ -3,9 +3,11 @@ package com.bastion.app.feature.grow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,9 +19,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -32,7 +37,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.BastionCard
@@ -47,6 +54,7 @@ import com.bastion.app.data.content.Challenge
 import com.bastion.app.data.content.HabitDef
 import com.bastion.app.data.content.Lesson
 import com.bastion.app.data.db.ChallengeProgressEntity
+import com.bastion.app.data.db.HabitEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -86,7 +94,12 @@ fun GrowScreen(faithMode: Boolean) {
             Text("Grow", style = MaterialTheme.typography.displaySmall, color = BastionColors.TextPrimary)
             Spacer(Modifier.height(16.dp))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Scrollable: at the largest font scales four chips no longer fit a
+            // phone width, and the last one was being cut off rather than wrapped.
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 GrowTab.entries.forEach { entry ->
                     TabChip(entry.label, tab == entry) { tab = entry }
                 }
@@ -142,6 +155,7 @@ private fun RegimenTab(graph: BastionGraph, onAdd: () -> Unit) {
     val habits by graph.growth.activeHabits.collectAsStateWithLifecycle(initialValue = emptyList())
     val todayFlow = remember(graph) { graph.growth.completionsToday() }
     val today by todayFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    var confirmDrop by remember { mutableStateOf<HabitEntity?>(null) }
 
     Text(
         "Three kept beats ten intended.",
@@ -163,8 +177,8 @@ private fun RegimenTab(graph: BastionGraph, onAdd: () -> Unit) {
                     if (done) BastionColors.Sage else BastionColors.OutlineSoft,
                     RoundedCornerShape(14.dp),
                 )
-                .clickable { scope.launch2 { graph.growth.toggleHabit(habit.id, !done) } }
-                .padding(16.dp),
+                .clickable(role = Role.Button) { scope.launch2 { graph.growth.toggleHabit(habit.id, !done) } }
+                .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(habit.emoji, style = MaterialTheme.typography.titleLarge)
@@ -186,11 +200,24 @@ private fun RegimenTab(graph: BastionGraph, onAdd: () -> Unit) {
             ) {
                 if (done) Text("✓", color = BastionColors.MidnightDeep, style = MaterialTheme.typography.labelMedium)
             }
+            LinkButton("Drop", BastionColors.TextMuted) { confirmDrop = habit }
         }
     }
 
     Spacer(Modifier.height(14.dp))
     QuietButton("Add a habit", onAdd, Modifier.fillMaxWidth())
+
+    // Deactivated rather than deleted, so the four weeks of record behind the
+    // Becoming profile survive a habit leaving the regimen.
+    confirmDrop?.let { habit ->
+        ConfirmDialog(
+            title = "Drop ${habit.name}?",
+            body = "It leaves the regimen. What you've already done still counts.",
+            confirmLabel = "Drop it",
+            onConfirm = { scope.launch2 { graph.growth.setHabitActive(habit, false) } },
+            onDismiss = { confirmDrop = null },
+        )
+    }
 }
 
 @Composable
@@ -228,7 +255,9 @@ private fun ChallengeCard(
     val currentDay = progress?.let {
         ((LocalDate.now().toEpochDay() - it.startedEpochDay).toInt() + 1).coerceIn(1, challenge.days)
     } ?: 1
-    val doneDays = progress?.completedDaysCsv?.split(',')?.filter { it.isNotBlank() }?.size ?: 0
+    val done = progress?.completedDaysCsv?.split(',')?.filter { it.isNotBlank() }?.toSet().orEmpty()
+    val doneDays = done.size
+    val todayDone = currentDay.toString() in done
 
     BastionCard(accent = if (active) BastionColors.Bronze else null) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -270,7 +299,12 @@ private fun ChallengeCard(
                 }
             }
             Spacer(Modifier.height(12.dp))
-            PrimaryButton("Mark day $currentDay done", { onCompleteToday(currentDay) }, Modifier.fillMaxWidth())
+            PrimaryButton(
+                if (todayDone) "Day $currentDay done ✓" else "Mark day $currentDay done",
+                { onCompleteToday(currentDay) },
+                Modifier.fillMaxWidth(),
+                enabled = !todayDone,
+            )
         } else if (progress?.completedAt != null) {
             Spacer(Modifier.height(12.dp))
             Text("Completed ✓", style = MaterialTheme.typography.labelLarge, color = BastionColors.SageBright)
@@ -362,7 +396,7 @@ private fun LibraryTab(graph: BastionGraph, faithMode: Boolean, onOpen: (Lesson)
                     .padding(vertical = 5.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(BastionColors.Surface)
-                    .clickable { onOpen(lesson) }
+                    .clickable(role = Role.Button) { onOpen(lesson) }
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -451,7 +485,7 @@ private fun HabitPickerSheet(graph: BastionGraph, faithMode: Boolean, onPick: (H
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .clickable { onPick(def) }
+                            .clickable(role = Role.Button) { onPick(def) }
                             .padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
@@ -469,6 +503,47 @@ private fun HabitPickerSheet(graph: BastionGraph, faithMode: Boolean, onPick: (H
     }
 }
 
+/** Text-styled actions that are still real buttons: 48dp target, button semantics. */
+@Composable
+private fun LinkButton(
+    label: String,
+    color: Color = BastionColors.BronzeBright,
+    onClick: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        contentPadding = PaddingValues(horizontal = 8.dp),
+        colors = ButtonDefaults.textButtonColors(contentColor = color),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+@Composable
+private fun ConfirmDialog(
+    title: String,
+    body: String,
+    confirmLabel: String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = BastionColors.Surface,
+        titleContentColor = BastionColors.TextPrimary,
+        textContentColor = BastionColors.TextSecondary,
+        title = { Text(title, style = MaterialTheme.typography.titleMedium) },
+        text = { Text(body, style = MaterialTheme.typography.bodyMedium) },
+        confirmButton = {
+            LinkButton(confirmLabel) {
+                onConfirm()
+                onDismiss()
+            }
+        },
+        dismissButton = { LinkButton("Not now", BastionColors.TextMuted, onDismiss) },
+    )
+}
+
 @Composable
 private fun TabChip(label: String, selected: Boolean, onClick: () -> Unit) {
     Box(
@@ -480,7 +555,7 @@ private fun TabChip(label: String, selected: Boolean, onClick: () -> Unit) {
                 if (selected) BastionColors.Bronze else BastionColors.Outline,
                 RoundedCornerShape(18.dp),
             )
-            .clickable(onClick = onClick)
+            .clickable(role = Role.Tab, onClick = onClick)
             .padding(horizontal = 13.dp, vertical = 8.dp)
     ) {
         Text(
