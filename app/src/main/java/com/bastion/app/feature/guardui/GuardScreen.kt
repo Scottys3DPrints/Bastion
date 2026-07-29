@@ -119,15 +119,11 @@ fun GuardScreen() {
 
     LaunchedEffect(Unit) { graph.guard.seedIfEmpty() }
 
-    // Reconciled on every resume, which is the moment the user is most likely to
-    // be looking: switch Guard off in system settings, come back here, and the
-    // gap is stated rather than glossed over.
+    // Reads the breach; recording the intent happens app-wide in MainActivity,
+    // because it must not depend on this screen being the one in front.
     var guardBreached by remember { mutableStateOf(false) }
-    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
-        scope.launch {
-            com.bastion.app.guard.GuardWatchdog.reconcile(context)
-            guardBreached = com.bastion.app.guard.GuardWatchdog.isBreached(context)
-        }
+    androidx.lifecycle.compose.LifecycleResumeEffect(serviceRunning) {
+        scope.launch { guardBreached = com.bastion.app.guard.GuardWatchdog.isBreached(context) }
         onPauseOrDispose { }
     }
 

@@ -56,6 +56,7 @@ fun SettingsScreen(onBack: () -> Unit) {
     val graph = remember { BastionGraph.from(context) }
     val scope = rememberCoroutineScope()
     val settings by graph.settings.settings.collectAsStateWithLifecycle(initialValue = Settings())
+    val notifications = com.bastion.app.core.design.rememberNotificationPermission()
 
     DawnBackground(intensity = 0.3f) {
         Column(
@@ -121,6 +122,11 @@ fun SettingsScreen(onBack: () -> Unit) {
                     Switch(
                         checked = settings.briefEnabled,
                         onCheckedChange = { enabled ->
+                            // Ask for notification permission at the moment the
+                            // brief is switched on. Scheduling an alarm whose
+                            // notification the system will silently drop is the
+                            // kind of feature that looks fine and does nothing.
+                            if (enabled) notifications.requestIfNeeded()
                             scope.launch {
                                 graph.settings.setBriefEnabled(enabled)
                                 if (enabled) DailyBriefScheduler.schedule(context, settings.briefHour, settings.briefMinute)

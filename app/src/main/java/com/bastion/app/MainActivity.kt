@@ -46,6 +46,7 @@ import com.bastion.app.feature.mentor.MentorScreen
 import com.bastion.app.feature.onboarding.OnboardingFlow
 import com.bastion.app.feature.settings.SettingsScreen
 import com.bastion.app.feature.track.TrackScreen
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -100,6 +101,20 @@ private fun BastionRoot(openTarget: String? = null) {
     // could have tapped into it.
     val settings by graph.settings.settings
         .collectAsStateWithLifecycle<Settings?>(initialValue = null)
+
+    // Reconciled on every app resume, not on any one screen's.
+    //
+    // It lived on the Guard screen first, which turned out to be too narrow:
+    // enabling Guard in system settings and coming back to a different tab — or
+    // being on Guard already, where re-selecting the tab fires no new resume —
+    // left the intent unrecorded, and an unrecorded intent means no breach is
+    // ever detected. Whether Guard is running is app-level state.
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        kotlinx.coroutines.CoroutineScope(graph.applicationScope.coroutineContext).launch {
+            com.bastion.app.guard.GuardWatchdog.reconcile(context)
+        }
+        onPauseOrDispose { }
+    }
 
     val loaded = settings
     BastionTheme(faithMode = loaded?.faithMode ?: true) {

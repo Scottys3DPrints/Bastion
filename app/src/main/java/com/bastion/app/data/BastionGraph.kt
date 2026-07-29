@@ -21,6 +21,16 @@ class BastionGraph(context: Context) {
 
     private val appContext = context.applicationContext
 
+    /**
+     * For work that must outlive the composable that started it — the guard
+     * reconcile writes to DataStore and must not be cancelled by a rotation
+     * halfway through recording that Guard is on.
+     */
+    val applicationScope: kotlinx.coroutines.CoroutineScope =
+        kotlinx.coroutines.CoroutineScope(
+            kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default
+        )
+
     val database: BastionDatabase by lazy { BastionDatabase.build(appContext) }
     val settings: SettingsStore by lazy { SettingsStore(appContext) }
     val content: ContentRepository by lazy { ContentRepository(appContext) }

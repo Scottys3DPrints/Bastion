@@ -456,6 +456,7 @@ private fun CovenantStep(
 @Composable
 private fun GuardrailsStep() {
     val context = LocalContext.current
+    val notifications = com.bastion.app.core.design.rememberNotificationPermission()
     Column {
         SectionLabel("Your guards")
         Spacer(Modifier.height(12.dp))
@@ -477,6 +478,19 @@ private fun GuardrailsStep() {
             modifier = Modifier.fillMaxWidth(),
             accent = BastionColors.BronzeBright,
         )
+        // Requested here rather than silently declared. Without it every
+        // notification Bastion posts is dropped without a word — the daily brief
+        // and the warning that Guard is off both vanish.
+        if (notifications.needed && !notifications.granted) {
+            Spacer(Modifier.height(10.dp))
+            QuietButton(
+                text = "Allow the daily brief",
+                onClick = { notifications.requestIfNeeded() },
+                modifier = Modifier.fillMaxWidth(),
+                accent = BastionColors.SageBright,
+            )
+        }
+
         Spacer(Modifier.height(14.dp))
         Text(
             "Or set it up later in the Guard tab.",
