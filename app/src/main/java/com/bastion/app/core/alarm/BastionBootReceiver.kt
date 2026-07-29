@@ -36,6 +36,8 @@ class BastionBootReceiver : BroadcastReceiver() {
                 if (settings.vpnFilterEnabled && BastionVpnService.prepareIntent(appContext) == null) {
                     BastionVpnService.start(appContext)
                 }
+                // A reboot is a common moment for a guard to quietly not come back.
+                com.bastion.app.guard.GuardWatchdog.reconcile(appContext)
             } finally {
                 pending.finish()
             }

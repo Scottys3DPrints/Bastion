@@ -1,5 +1,6 @@
 package com.bastion.app.data.repo
 
+import com.bastion.app.core.security.PasscodeLock
 import com.bastion.app.data.content.ContentRepository
 import com.bastion.app.data.content.MentorFollowUp
 import com.bastion.app.data.content.MentorIntent
@@ -45,9 +46,17 @@ class SocialRepository(
 
     suspend fun removePartner(id: String) = socialDao.removePartner(id)
 
-    suspend fun setPartnerPasscode(hash: String?) {
-        socialDao.partnerOnce()?.let { socialDao.upsertPartner(it.copy(lockPasscodeHash = hash)) }
+    /** Pass the raw code; it is salted and slow-hashed before it is stored. */
+    suspend fun setPartnerPasscode(passcode: String?) {
+        val stored = passcode?.takeIf { it.isNotBlank() }?.let { PasscodeLock.hash(it) }
+        socialDao.partnerOnce()?.let { socialDao.upsertPartner(it.copy(lockPasscodeHash = stored)) }
     }
+
+    /** Whether a partner code is set, and therefore whether the lock can bite. */
+    suspend fun hasPasscode(): Boolean = socialDao.partnerOnce()?.lockPasscodeHash != null
+
+    suspend fun verifyPasscode(passcode: String): Boolean =
+        PasscodeLock.verify(passcode, socialDao.partnerOnce()?.lockPasscodeHash)
 
     // --- Mentor ----------------------------------------------------------
 

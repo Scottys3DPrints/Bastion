@@ -38,6 +38,10 @@ class BastionAlarmReceiver : BroadcastReceiver() {
                 // Cooling-off requests come due here rather than needing the app open.
                 graph.guard.maturedChanges().forEach { graph.guard.markApplied(it.id) }
 
+                // The daily sweep for Guard having been switched off behind the
+                // app's back. Not continuous by design — see GuardWatchdog.
+                com.bastion.app.guard.GuardWatchdog.reconcile(appContext)
+
                 DailyBriefScheduler.schedule(appContext, settings.briefHour, settings.briefMinute)
             } finally {
                 pending.finish()

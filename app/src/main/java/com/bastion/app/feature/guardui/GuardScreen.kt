@@ -91,6 +91,21 @@ fun GuardScreen() {
     var confirmFilterOff by remember { mutableStateOf(false) }
     var confirmRelax by remember { mutableStateOf<Pair<GuardedAppEntity, BlockMode>?>(null) }
 
+    // When the partner lock is armed, weakening anything needs the code the
+    // partner holds. `pendingWeakening` parks the confirmed action until it is
+    // entered — this is the difference between the lock existing in the schema
+    // and the lock actually being a wall.
+    var pendingWeakening by remember { mutableStateOf<(suspend () -> Unit)?>(null) }
+    var lockArmed by remember { mutableStateOf(false) }
+    LaunchedEffect(settings.partnerLockEnabled) {
+        lockArmed = settings.partnerLockEnabled && graph.social.hasPasscode()
+    }
+
+    /** Runs [action] now, or holds it behind the partner's code if the lock is armed. */
+    fun weaken(action: suspend () -> Unit) {
+        if (lockArmed) pendingWeakening = action else scope.launch { action() }
+    }
+
     // A cooling-off timer that visibly never moves reads as broken, and this one
     // is the app's proof that the lock is real. Computed once at composition, it
     // sat frozen until some unrelated state happened to recompose.
@@ -103,6 +118,18 @@ fun GuardScreen() {
     }
 
     LaunchedEffect(Unit) { graph.guard.seedIfEmpty() }
+
+    // Reconciled on every resume, which is the moment the user is most likely to
+    // be looking: switch Guard off in system settings, come back here, and the
+    // gap is stated rather than glossed over.
+    var guardBreached by remember { mutableStateOf(false) }
+    androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
+        scope.launch {
+            com.bastion.app.guard.GuardWatchdog.reconcile(context)
+            guardBreached = com.bastion.app.guard.GuardWatchdog.isBreached(context)
+        }
+        onPauseOrDispose { }
+    }
 
     val vpnConsent = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -123,6 +150,42 @@ fun GuardScreen() {
         ) {
             Text("Guard", style = MaterialTheme.typography.displaySmall, color = BastionColors.TextPrimary)
             Spacer(Modifier.height(18.dp))
+
+            if (guardBreached) {
+                BastionCard(accent = BastionColors.Amber) {
+                    Text(
+                        "You asked for Guard to be on",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = BastionColors.TextPrimary,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "It's off. Guarded feeds are open.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextMuted,
+                    )
+                    Spacer(Modifier.height(14.dp))
+                    PrimaryButton(
+                        "Turn it back on",
+                        { BastionAccessibilityService.openSettings(context) },
+                        Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    // Written, never sent — the same rule as the rest of Brotherhood.
+                    QuietButton(
+                        "Tell my partner",
+                        {
+                            scope.launch {
+                                com.bastion.app.guard.GuardWatchdog.partnerAlertIntent(context)
+                                    ?.let { context.startActivity(it) }
+                            }
+                        },
+                        Modifier.fillMaxWidth(),
+                        BastionColors.SageBright,
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+            }
 
             // --- Bastion Guard service ---
             BastionCard(accent = if (serviceRunning) BastionColors.Sage else BastionColors.Amber) {
@@ -395,7 +458,7 @@ fun GuardScreen() {
                 "You can cancel it any time before then.",
             confirmLabel = "Request it",
             onConfirm = {
-                scope.launch {
+                weaken {
                     graph.guard.requestWeakening(
                         "Stop guarding ${app.label}",
                         payload = "remove:${app.packageName}",
@@ -406,6 +469,17 @@ fun GuardScreen() {
         )
     }
 
+    pendingWeakening?.let { action ->
+        PasscodeDialog(
+            onVerify = { code -> graph.social.verifyPasscode(code) },
+            onUnlocked = {
+                scope.launch { action() }
+                pendingWeakening = null
+            },
+            onDismiss = { pendingWeakening = null },
+        )
+    }
+
     confirmRelax?.let { (app, mode) ->
         ConfirmDialog(
             title = "Relax ${app.label} to ${mode.label()}?",
@@ -413,7 +487,7 @@ fun GuardScreen() {
                 "You can cancel it any time before then.",
             confirmLabel = "Request it",
             onConfirm = {
-                scope.launch {
+                weaken {
                     graph.guard.requestWeakening(
                         "Relax ${app.label} to ${mode.label()}",
                         payload = "app:${app.packageName}:${mode.name}",
@@ -431,7 +505,7 @@ fun GuardScreen() {
                 "You can cancel it any time before then.",
             confirmLabel = "Request it",
             onConfirm = {
-                scope.launch {
+                weaken {
                     graph.guard.requestWeakening(
                         "Turn off the content filter",
                         payload = "vpn:off",
@@ -589,6 +663,89 @@ private fun ConfirmDialog(
             }
         },
         dismissButton = { LinkButton("Not now", BastionColors.TextMuted, onDismiss) },
+    )
+}
+
+/**
+ * Asks for the code the accountability partner holds.
+ *
+ * Deliberately offers no way past itself. There is no "forgot the code" escape,
+ * because an escape hatch is exactly what the weak-moment self would reach for —
+ * the way through is to phone the partner, which is the entire point of having
+ * handed him the code in the first place.
+ */
+@Composable
+private fun PasscodeDialog(
+    onVerify: suspend (String) -> Boolean,
+    onUnlocked: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    var code by remember { mutableStateOf("") }
+    var wrong by remember { mutableStateOf(false) }
+    var checking by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = BastionColors.Surface,
+        title = {
+            Text(
+                "Your partner's code",
+                style = MaterialTheme.typography.titleMedium,
+                color = BastionColors.TextPrimary,
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    "You asked him to hold this so tonight's version of you couldn't undo it alone.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BastionColors.TextSecondary,
+                )
+                Spacer(Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it; wrong = false },
+                    singleLine = true,
+                    visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword,
+                    ),
+                    isError = wrong,
+                    supportingText = if (wrong) {
+                        { Text("Not that one.", color = BastionColors.Amber) }
+                    } else null,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = BastionColors.Bronze,
+                        unfocusedBorderColor = BastionColors.Outline,
+                        focusedTextColor = BastionColors.TextPrimary,
+                        unfocusedTextColor = BastionColors.TextPrimary,
+                        cursorColor = BastionColors.Bronze,
+                    ),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = code.isNotBlank() && !checking,
+                onClick = {
+                    scope.launch {
+                        checking = true
+                        if (onVerify(code)) onUnlocked() else wrong = true
+                        checking = false
+                    }
+                },
+            ) {
+                Text("Unlock", color = BastionColors.BronzeBright)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Leave it locked", color = BastionColors.TextMuted)
+            }
+        },
     )
 }
 

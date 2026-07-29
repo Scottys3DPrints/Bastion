@@ -308,10 +308,49 @@ class BastionAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         running.value = false
         currentApp.value = null
+        // Announced before the scope dies, because the most likely reason this
+        // service is going away is that someone just switched it off in system
+        // settings — and a guard that disappears silently is worse than no guard
+        // at all, since the user goes on believing he is covered.
+        notifyGuardDown()
         shield.destroy()
         scope.cancel()
         job.cancel()
         super.onDestroy()
+    }
+
+    /**
+     * A quiet, persistent nudge that the wall is down.
+     *
+     * Not a punishment and not a nag loop — one notification that stays until
+     * it is dealt with, tapping through to the Guard screen. If the user has a
+     * partner set to hear about guard changes, the Guard screen is also where
+     * he is prompted to tell him.
+     */
+    private fun notifyGuardDown() {
+        runCatching {
+            val open = android.app.PendingIntent.getActivity(
+                this,
+                0,
+                Intent(this, com.bastion.app.MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                android.app.PendingIntent.FLAG_IMMUTABLE,
+            )
+            val notification = android.app.Notification.Builder(
+                this,
+                com.bastion.app.BastionApp.CHANNEL_PARTNER,
+            )
+                .setContentTitle("Bastion Guard is off")
+                .setContentText("Feeds are no longer guarded. Tap to turn it back on.")
+                .setSmallIcon(com.bastion.app.R.drawable.ic_shield)
+                .setContentIntent(open)
+                .setOngoing(false)
+                .setAutoCancel(true)
+                .build()
+
+            getSystemService(android.app.NotificationManager::class.java)
+                ?.notify(NOTIFICATION_GUARD_DOWN, notification)
+        }
     }
 
     data class LearnCapture(val packageName: String, val viewIds: List<String>)
@@ -320,6 +359,7 @@ class BastionAccessibilityService : AccessibilityService() {
         private const val SCAN_THROTTLE_MS = 350L
         private const val INTERRUPT_COOLDOWN_MS = 1_800L
         private const val MAX_NODES = 500
+        private const val NOTIFICATION_GUARD_DOWN = 4401
         private const val HALF_HOUR = 30 * 60 * 1000L
 
         private val SYSTEM_PACKAGES = setOf(

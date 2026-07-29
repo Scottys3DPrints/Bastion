@@ -61,6 +61,16 @@ data class Settings(
      * achievement — never triggers the ceremony.
      */
     val lastSeenRankTier: Int = 1,
+    /**
+     * Whether the user has ever had Bastion Guard switched on.
+     *
+     * The service cannot report its own death — once it is disabled in system
+     * settings it simply stops existing. Recording the intent is what lets
+     * Bastion notice the gap between what was asked for and what is running.
+     */
+    val guardIntendedOn: Boolean = false,
+    /** So the nag is a reminder, not a pestering. */
+    val guardOffNotifiedAt: Long = 0L,
 )
 
 /**
@@ -112,6 +122,8 @@ class SettingsStore(private val context: Context) {
         val MENTOR_OPENER_SENT = booleanPreferencesKey("mentor_opener_sent")
         val GUARD_SEEDED = booleanPreferencesKey("guard_seeded")
         val LAST_SEEN_RANK = intPreferencesKey("last_seen_rank_tier")
+        val GUARD_INTENDED_ON = booleanPreferencesKey("guard_intended_on")
+        val GUARD_OFF_NOTIFIED = longPreferencesKey("guard_off_notified_at")
     }
 
     val settings: Flow<Settings> = context.dataStore.data.map { p ->
@@ -139,6 +151,8 @@ class SettingsStore(private val context: Context) {
             mentorOpenerSent = p[Keys.MENTOR_OPENER_SENT] ?: false,
             guardSeeded = p[Keys.GUARD_SEEDED] ?: false,
             lastSeenRankTier = p[Keys.LAST_SEEN_RANK] ?: 1,
+            guardIntendedOn = p[Keys.GUARD_INTENDED_ON] ?: false,
+            guardOffNotifiedAt = p[Keys.GUARD_OFF_NOTIFIED] ?: 0L,
         )
     }
 
@@ -169,6 +183,8 @@ class SettingsStore(private val context: Context) {
     suspend fun setMentorOpenerSent(value: Boolean) = edit { it[Keys.MENTOR_OPENER_SENT] = value }
     suspend fun setGuardSeeded(value: Boolean) = edit { it[Keys.GUARD_SEEDED] = value }
     suspend fun setLastSeenRankTier(value: Int) = edit { it[Keys.LAST_SEEN_RANK] = value }
+    suspend fun setGuardIntendedOn(value: Boolean) = edit { it[Keys.GUARD_INTENDED_ON] = value }
+    suspend fun setGuardOffNotifiedAt(value: Long) = edit { it[Keys.GUARD_OFF_NOTIFIED] = value }
 
     suspend fun recordPanic() = edit {
         it[Keys.LAST_PANIC] = System.currentTimeMillis()

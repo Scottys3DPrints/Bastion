@@ -26,6 +26,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -177,6 +178,11 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
                 }
             }
 
+            if (current != null) {
+                Spacer(Modifier.height(14.dp))
+                PartnerLockCard(graph)
+            }
+
             Spacer(Modifier.height(14.dp))
 
             BastionCard {
@@ -320,6 +326,105 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
                 LinkButton("Not now", BastionColors.TextMuted) { confirmRemove = false }
             },
         )
+    }
+}
+
+/**
+ * Hands the partner a code that gates every weakening of a guard.
+ *
+ * The point is that the man setting it up should not be the man who can undo it
+ * alone at 1am. So the code is meant to be typed *by the partner*, on this
+ * phone, and not written down anywhere the user can reach — the screen says so
+ * plainly, because a lock the owner knows the combination to is just a delay.
+ */
+@Composable
+private fun PartnerLockCard(graph: BastionGraph) {
+    val scope = rememberCoroutineScope()
+    val settings by graph.settings.settings.collectAsStateWithLifecycle(
+        initialValue = com.bastion.app.data.prefs.Settings()
+    )
+    var hasCode by remember { mutableStateOf(false) }
+    var entering by remember { mutableStateOf(false) }
+    var code by remember { mutableStateOf("") }
+
+    LaunchedEffect(Unit) { hasCode = graph.social.hasPasscode() }
+
+    BastionCard(accent = if (settings.partnerLockEnabled && hasCode) BastionColors.Bronze else null) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Partner lock",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = BastionColors.TextPrimary,
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    if (hasCode) "Weakening a guard needs his code."
+                    else "Set a code only he knows.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
+                )
+            }
+            Switch(
+                checked = settings.partnerLockEnabled && hasCode,
+                onCheckedChange = { wanted ->
+                    if (wanted && !hasCode) entering = true
+                    else scope.launch { graph.settings.setPartnerLock(wanted) }
+                },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = BastionColors.MidnightDeep,
+                    checkedTrackColor = BastionColors.Bronze,
+                    uncheckedThumbColor = BastionColors.TextMuted,
+                    uncheckedTrackColor = BastionColors.SurfaceHigh,
+                    uncheckedBorderColor = BastionColors.Outline,
+                ),
+            )
+        }
+
+        if (entering) {
+            Spacer(Modifier.height(14.dp))
+            Text(
+                "Hand him the phone. What he types here, you shouldn't know.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.SageBright,
+            )
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(
+                value = code,
+                onValueChange = { code = it },
+                singleLine = true,
+                visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword,
+                ),
+                label = { Text("His code") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = fieldColors(),
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PrimaryButton(
+                    "Lock it",
+                    {
+                        scope.launch {
+                            graph.social.setPartnerPasscode(code)
+                            graph.settings.setPartnerLock(true)
+                            hasCode = true
+                            code = ""
+                            entering = false
+                        }
+                    },
+                    Modifier.weight(1f),
+                    enabled = code.length >= 4,
+                )
+                QuietButton("Cancel", { code = ""; entering = false }, Modifier.weight(1f))
+            }
+        }
     }
 }
 
