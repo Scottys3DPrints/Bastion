@@ -71,6 +71,16 @@ data class Settings(
     val guardIntendedOn: Boolean = false,
     /** So the nag is a reminder, not a pestering. */
     val guardOffNotifiedAt: Long = 0L,
+
+    // --- Lockdown: the break-glass plan ---------------------------------
+    /** How long a lockdown lasts once triggered. */
+    val lockdownHours: Int = 24,
+    /** Epoch millis the current lockdown ends. 0 when none is running. */
+    val lockdownUntil: Long = 0L,
+    val lockdownLockScreen: Boolean = true,
+    val lockdownFilter: Boolean = true,
+    val lockdownGrayscale: Boolean = true,
+    val lockdownTellPartner: Boolean = true,
 )
 
 /**
@@ -124,6 +134,12 @@ class SettingsStore(private val context: Context) {
         val LAST_SEEN_RANK = intPreferencesKey("last_seen_rank_tier")
         val GUARD_INTENDED_ON = booleanPreferencesKey("guard_intended_on")
         val GUARD_OFF_NOTIFIED = longPreferencesKey("guard_off_notified_at")
+        val LOCKDOWN_HOURS = intPreferencesKey("lockdown_hours")
+        val LOCKDOWN_UNTIL = longPreferencesKey("lockdown_until")
+        val LOCKDOWN_LOCK_SCREEN = booleanPreferencesKey("lockdown_lock_screen")
+        val LOCKDOWN_FILTER = booleanPreferencesKey("lockdown_filter")
+        val LOCKDOWN_GRAYSCALE = booleanPreferencesKey("lockdown_grayscale")
+        val LOCKDOWN_PARTNER = booleanPreferencesKey("lockdown_partner")
     }
 
     val settings: Flow<Settings> = context.dataStore.data.map { p ->
@@ -153,6 +169,12 @@ class SettingsStore(private val context: Context) {
             lastSeenRankTier = p[Keys.LAST_SEEN_RANK] ?: 1,
             guardIntendedOn = p[Keys.GUARD_INTENDED_ON] ?: false,
             guardOffNotifiedAt = p[Keys.GUARD_OFF_NOTIFIED] ?: 0L,
+            lockdownHours = p[Keys.LOCKDOWN_HOURS] ?: 24,
+            lockdownUntil = p[Keys.LOCKDOWN_UNTIL] ?: 0L,
+            lockdownLockScreen = p[Keys.LOCKDOWN_LOCK_SCREEN] ?: true,
+            lockdownFilter = p[Keys.LOCKDOWN_FILTER] ?: true,
+            lockdownGrayscale = p[Keys.LOCKDOWN_GRAYSCALE] ?: true,
+            lockdownTellPartner = p[Keys.LOCKDOWN_PARTNER] ?: true,
         )
     }
 
@@ -185,6 +207,12 @@ class SettingsStore(private val context: Context) {
     suspend fun setLastSeenRankTier(value: Int) = edit { it[Keys.LAST_SEEN_RANK] = value }
     suspend fun setGuardIntendedOn(value: Boolean) = edit { it[Keys.GUARD_INTENDED_ON] = value }
     suspend fun setGuardOffNotifiedAt(value: Long) = edit { it[Keys.GUARD_OFF_NOTIFIED] = value }
+    suspend fun setLockdownHours(value: Int) = edit { it[Keys.LOCKDOWN_HOURS] = value }
+    suspend fun setLockdownUntil(value: Long) = edit { it[Keys.LOCKDOWN_UNTIL] = value }
+    suspend fun setLockdownLockScreen(value: Boolean) = edit { it[Keys.LOCKDOWN_LOCK_SCREEN] = value }
+    suspend fun setLockdownFilter(value: Boolean) = edit { it[Keys.LOCKDOWN_FILTER] = value }
+    suspend fun setLockdownGrayscale(value: Boolean) = edit { it[Keys.LOCKDOWN_GRAYSCALE] = value }
+    suspend fun setLockdownTellPartner(value: Boolean) = edit { it[Keys.LOCKDOWN_PARTNER] = value }
 
     suspend fun recordPanic() = edit {
         it[Keys.LAST_PANIC] = System.currentTimeMillis()

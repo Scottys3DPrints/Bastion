@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The narrowest policy that achieves the goal. force-lock only: no wipe, no
+  password control, no monitoring. A recovery app asking for broad device power
+  would deserve suspicion, so it does not ask.
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies>
+        <force-lock />
+    </uses-policies>
+</device-admin>

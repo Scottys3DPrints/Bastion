@@ -152,6 +152,24 @@
             android:exported="false" />
 
         <!--
+          Device admin with a single policy: force-lock. Used only to lock the
+          screen when a lockdown is triggered. Android reserves powering the
+          device off for the OS itself, so this is the closest an installed app
+          can legitimately get.
+        -->
+        <receiver
+            android:name=".guard.lockdown.BastionDeviceAdmin"
+            android:exported="true"
+            android:permission="android.permission.BIND_DEVICE_ADMIN">
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+
+        <!--
           Hands the camera a private file to record the "Why" video into. The
           grant is per-URI and temporary; the file never leaves app storage.
         -->

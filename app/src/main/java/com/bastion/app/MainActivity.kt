@@ -112,6 +112,12 @@ private fun BastionRoot(openTarget: String? = null) {
     androidx.lifecycle.compose.LifecycleResumeEffect(Unit) {
         kotlinx.coroutines.CoroutineScope(graph.applicationScope.coroutineContext).launch {
             com.bastion.app.guard.GuardWatchdog.reconcile(context)
+            // Cooling-off requests also mature here, not only on the daily
+            // alarm — otherwise a change whose delay expired at noon could sit
+            // unapplied until the next morning's brief.
+            if (graph.guard.applyMaturedChanges()) {
+                com.bastion.app.guard.vpn.BastionVpnService.stop(context)
+            }
         }
         onPauseOrDispose { }
     }

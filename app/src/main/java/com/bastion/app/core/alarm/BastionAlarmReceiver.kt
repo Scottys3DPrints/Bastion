@@ -36,7 +36,9 @@ class BastionAlarmReceiver : BroadcastReceiver() {
                 }
 
                 // Cooling-off requests come due here rather than needing the app open.
-                graph.guard.maturedChanges().forEach { graph.guard.markApplied(it.id) }
+                if (graph.guard.applyMaturedChanges()) {
+                    com.bastion.app.guard.vpn.BastionVpnService.stop(appContext)
+                }
 
                 // The daily sweep for Guard having been switched off behind the
                 // app's back. Not continuous by design — see GuardWatchdog.

@@ -1,0 +1,244 @@
+package com.bastion.app.feature.guardui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import com.bastion.app.core.design.BastionCard
+import com.bastion.app.core.design.BastionColors
+import com.bastion.app.core.design.PrimaryButton
+import com.bastion.app.core.design.QuietButton
+import com.bastion.app.core.design.SectionLabel
+import com.bastion.app.data.BastionGraph
+import com.bastion.app.data.prefs.Settings
+import com.bastion.app.guard.lockdown.BastionDeviceAdmin
+import com.bastion.app.guard.lockdown.Lockdown
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+/**
+ * Break glass.
+ *
+ * A plan chosen calmly, in advance, so that pressing one button in a bad moment
+ * carries it out without asking a single question. Deciding anything at the
+ * moment of pressing is precisely what the man reaching for this cannot do.
+ *
+ * Amber rather than red, like everything else here — this is a decision he made
+ * for himself, not an emergency being declared over him.
+ */
+@Composable
+fun LockdownCard(settings: Settings, graph: BastionGraph) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var confirming by remember { mutableStateOf(false) }
+    var configuring by remember { mutableStateOf(false) }
+
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val active = settings.lockdownUntil > now
+    LaunchedEffect(settings.lockdownUntil) {
+        while (settings.lockdownUntil > System.currentTimeMillis()) {
+            now = System.currentTimeMillis()
+            delay(1_000)
+        }
+        now = System.currentTimeMillis()
+    }
+
+    BastionCard(accent = if (active) BastionColors.Amber else BastionColors.Bronze) {
+        if (active) {
+            SectionLabel("Lockdown running", color = BastionColors.Amber)
+            Spacer(Modifier.height(10.dp))
+            val minutes = Lockdown.remainingMinutes(settings)
+            Text(
+                if (minutes >= 60) "${minutes / 60}h ${minutes % 60}m left" else "${minutes}m left",
+                style = MaterialTheme.typography.headlineMedium,
+                color = BastionColors.TextPrimary,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                // Says plainly that it cannot be called off, because discovering
+                // that by trying would feel like a trap rather than a decision.
+                "Every guarded app is closed until it ends. It can't be called off — that's why it works.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
+            )
+        } else {
+            SectionLabel("Break glass")
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "One button. Runs your plan for ${settings.lockdownHours}h. No way back once it starts.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
+            )
+            Spacer(Modifier.height(14.dp))
+            PrimaryButton("Lock everything down", { confirming = true }, Modifier.fillMaxWidth())
+            Spacer(Modifier.height(8.dp))
+            QuietButton("Edit the plan", { configuring = true }, Modifier.fillMaxWidth())
+        }
+    }
+
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            containerColor = BastionColors.Surface,
+            title = { Text("Lock down for ${settings.lockdownHours} hours?", color = BastionColors.TextPrimary) },
+            text = {
+                Text(
+                    buildString {
+                        append("Every guarded app closes. ")
+                        if (settings.lockdownFilter) append("The filter comes on. ")
+                        if (settings.lockdownGrayscale) append("Colour goes. ")
+                        if (settings.lockdownLockScreen) append("Your screen locks. ")
+                        append("\n\nThis cannot be undone before it ends.")
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BastionColors.TextSecondary,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirming = false
+                    scope.launch {
+                        Lockdown.trigger(context)?.let { runCatching { context.startActivity(it) } }
+                    }
+                }) { Text("Do it", color = BastionColors.Amber) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) {
+                    Text("Not now", color = BastionColors.TextMuted)
+                }
+            },
+        )
+    }
+
+    if (configuring) {
+        AlertDialog(
+            onDismissRequest = { configuring = false },
+            containerColor = BastionColors.Surface,
+            title = { Text("Your plan", color = BastionColors.TextPrimary) },
+            text = {
+                Column {
+                    SectionLabel("How long")
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(1, 6, 24, 72).forEach { hours ->
+                            Box(
+                                Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(
+                                        if (settings.lockdownHours == hours) BastionColors.BronzeDeep
+                                        else BastionColors.SurfaceRaised
+                                    )
+                                    .clickable { scope.launch { graph.settings.setLockdownHours(hours) } }
+                                    .padding(horizontal = 14.dp, vertical = 8.dp)
+                            ) {
+                                Text(
+                                    "${hours}h",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = if (settings.lockdownHours == hours) BastionColors.BronzeBright
+                                    else BastionColors.TextMuted,
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+                    SectionLabel("What happens")
+                    PlanToggle("Close every guarded app", true, enabled = false) {}
+                    PlanToggle("Turn the filter on", settings.lockdownFilter) {
+                        scope.launch { graph.settings.setLockdownFilter(it) }
+                    }
+                    PlanToggle("Drain the colour", settings.lockdownGrayscale) {
+                        scope.launch { graph.settings.setLockdownGrayscale(it) }
+                    }
+                    PlanToggle("Lock the screen", settings.lockdownLockScreen) { wanted ->
+                        scope.launch { graph.settings.setLockdownLockScreen(wanted) }
+                        // Needs a system consent screen; asking at the moment the
+                        // option is chosen beats failing silently later.
+                        if (wanted && !BastionDeviceAdmin.isActive(context)) {
+                            runCatching { context.startActivity(BastionDeviceAdmin.activationIntent(context)) }
+                        }
+                    }
+                    PlanToggle("Tell my partner", settings.lockdownTellPartner) {
+                        scope.launch { graph.settings.setLockdownTellPartner(it) }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+                    Text(
+                        // The obvious wish, answered before it is asked.
+                        "Android won't let any app switch the phone off — that's reserved for the system. " +
+                            "Locking the screen is the closest there is.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextMuted,
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { configuring = false }) {
+                    Text("Done", color = BastionColors.BronzeBright)
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun PlanToggle(
+    label: String,
+    checked: Boolean,
+    enabled: Boolean = true,
+    onChange: (Boolean) -> Unit,
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (enabled) BastionColors.TextSecondary else BastionColors.TextMuted,
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onChange,
+            enabled = enabled,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = BastionColors.MidnightDeep,
+                checkedTrackColor = BastionColors.Bronze,
+                uncheckedThumbColor = BastionColors.TextMuted,
+                uncheckedTrackColor = BastionColors.SurfaceHigh,
+                uncheckedBorderColor = BastionColors.Outline,
+                disabledCheckedTrackColor = BastionColors.BronzeDeep,
+            ),
+        )
+    }
+}
+

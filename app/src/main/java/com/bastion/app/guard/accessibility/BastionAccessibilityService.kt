@@ -51,6 +51,9 @@ class BastionAccessibilityService : AccessibilityService() {
     @Volatile private var guardedApps: Map<String, GuardedAppEntity> = emptyMap()
     @Volatile private var rulesByPackage: Map<String, List<FeedRuleEntity>> = emptyMap()
 
+    /** Epoch millis a running lockdown ends; 0 when none. */
+    @Volatile private var lockdownUntil: Long = 0L
+
     private var lastScanAt = 0L
     private var lastInterruptAt = 0L
     private var foregroundPackage: String? = null
@@ -71,6 +74,9 @@ class BastionAccessibilityService : AccessibilityService() {
             graph.guard.feedRules.collect { rules ->
                 rulesByPackage = rules.filter { it.enabled }.groupBy { it.packageName }
             }
+        }
+        scope.launch {
+            graph.settings.settings.collect { lockdownUntil = it.lockdownUntil }
         }
     }
 
@@ -129,6 +135,16 @@ class BastionAccessibilityService : AccessibilityService() {
         }
 
         val guarded = guardedApps[pkg] ?: return
+
+        // During a lockdown every guarded app is fully closed, whatever its own
+        // mode says. A break-glass plan that still let the feed-only apps open
+        // would not be worth pressing.
+        if (System.currentTimeMillis() < lockdownUntil) {
+            val minutes = (lockdownUntil - System.currentTimeMillis()) / 60_000L
+            val remaining = if (minutes >= 60) "${minutes / 60}h ${minutes % 60}m" else "${minutes}m"
+            blockApp(guarded, "Lockdown. $remaining left.")
+            return
+        }
 
         when (guarded.mode) {
             BlockMode.FULL -> blockApp(guarded, "Closed for now.")

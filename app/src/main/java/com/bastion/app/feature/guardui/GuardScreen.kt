@@ -423,6 +423,9 @@ fun GuardScreen() {
             }
 
             Spacer(Modifier.height(12.dp))
+            LockdownCard(settings = settings, graph = graph)
+
+            Spacer(Modifier.height(12.dp))
             PrivateDnsCard()
 
             Spacer(Modifier.height(12.dp))

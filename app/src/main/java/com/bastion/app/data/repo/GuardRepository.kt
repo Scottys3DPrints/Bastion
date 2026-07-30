@@ -12,6 +12,7 @@ import com.bastion.app.data.db.GuardedAppEntity
 import com.bastion.app.data.db.MatchType
 import com.bastion.app.data.prefs.SettingsStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.util.UUID
 
 class GuardRepository(
@@ -121,6 +122,58 @@ class GuardRepository(
     suspend fun maturedChanges() = guardDao.maturedChanges(System.currentTimeMillis())
 
     suspend fun markApplied(id: String) = guardDao.setChangeStatus(id, ChangeStatus.APPLIED)
+
+    /**
+     * Carries out every request whose delay has run out.
+     *
+     * This is the other half of the cooling-off lock, and it was missing: the
+     * delay was enforced, the request was marked applied when it matured, and
+     * the change itself never happened. A man could ask to unblock something,
+     * wait the full twenty-four hours, and find it still blocked with nothing to
+     * show for the wait. Fail-safe, but broken — the lock has to open as
+     * reliably as it holds, or it stops being trusted.
+     *
+     * @return true if the content filter should now be stopped, which needs a
+     * Context the repository deliberately does not hold.
+     */
+    suspend fun applyMaturedChanges(): Boolean {
+        var stopFilter = false
+
+        maturedChanges().forEach { change ->
+            val parts = change.payload.split(':')
+            when (parts.firstOrNull()) {
+                "app" -> {
+                    val pkg = parts.getOrNull(1)
+                    val mode = parts.getOrNull(2)?.let { runCatching { BlockMode.valueOf(it) }.getOrNull() }
+                    if (pkg != null && mode != null) {
+                        guardDao.guardedApps().first().firstOrNull { it.packageName == pkg }?.let {
+                            guardDao.upsertApp(it.copy(mode = mode, updatedAt = System.currentTimeMillis()))
+                        }
+                    }
+                }
+                "remove" -> parts.getOrNull(1)?.let { guardDao.removeApp(it) }
+                "rule" -> {
+                    val id = parts.getOrNull(1)
+                    if (id != null) {
+                        guardDao.feedRules().first().firstOrNull { it.id == id }?.let {
+                            guardDao.upsertRule(it.copy(enabled = false, updatedAt = System.currentTimeMillis()))
+                        }
+                    }
+                }
+                "domain" -> parts.getOrNull(1)?.let {
+                    guardDao.removeDomain(it)
+                    invalidateFilterCache()
+                }
+                "cooloff" -> parts.getOrNull(1)?.toIntOrNull()?.let { settings.setCoolingOffHours(it) }
+                "vpn" -> {
+                    settings.setVpnEnabled(false)
+                    stopFilter = true
+                }
+            }
+            markApplied(change.id)
+        }
+        return stopFilter
+    }
 
     private fun String.normaliseDomain(): String =
         trim().lowercase().removePrefix("http://").removePrefix("https://")
