@@ -202,16 +202,6 @@ fun WatchtowerScreen(
                     }
                 }
 
-                // Break glass sits here, next to Hold the Line, because both are
-                // reached in the same state of mind and neither should need
-                // hunting for. Independent of the cooling-off lock entirely.
-                Spacer(Modifier.height(12.dp))
-                com.bastion.app.feature.guardui.LockdownCard(
-                    settings = settings,
-                    graph = graph,
-                    showPlanLink = false,
-                )
-
                 Spacer(Modifier.height(12.dp))
                 BastionCard {
                     Row(
@@ -257,15 +247,24 @@ fun WatchtowerScreen(
                     .padding(horizontal = 20.dp)
                     .padding(bottom = 20.dp),
             ) {
-                PrimaryButton(
-                    text = "Hold the Line",
-                    onClick = {
-                        context.startActivity(
-                            Intent(context, PanicActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    PrimaryButton(
+                        text = "Hold the Line",
+                        onClick = {
+                            context.startActivity(
+                                Intent(context, PanicActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        },
+                        modifier = Modifier.weight(1.6f),
+                    )
+                    com.bastion.app.feature.guardui.LockdownCompactButton(
+                        settings = settings,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
     }

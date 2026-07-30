@@ -142,6 +142,78 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
 }
 
 /**
+ * The trigger alone, sized to sit in the pinned row beside Hold the Line.
+ *
+ * It began life inside a card in the scrolling body, which meant scrolling past
+ * the brief, the habits and the benefit card to reach it — useless for a button
+ * whose entire value is being there the instant it is wanted. Pinned, it is
+ * always on screen, exactly like the panic button it sits next to.
+ */
+@Composable
+fun LockdownCompactButton(
+    settings: Settings,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var confirming by remember { mutableStateOf(false) }
+
+    var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
+    val active = settings.lockdownUntil > now
+    LaunchedEffect(settings.lockdownUntil) {
+        while (settings.lockdownUntil > System.currentTimeMillis()) {
+            now = System.currentTimeMillis()
+            delay(1_000)
+        }
+        now = System.currentTimeMillis()
+    }
+
+    QuietButton(
+        text = if (active) {
+            val m = Lockdown.remainingMinutes(settings)
+            if (m >= 60) "${m / 60}h left" else "${m}m left"
+        } else "Break glass",
+        onClick = { if (!active) confirming = true },
+        modifier = modifier,
+        accent = BastionColors.Amber,
+    )
+
+    if (confirming) {
+        AlertDialog(
+            onDismissRequest = { confirming = false },
+            containerColor = BastionColors.Surface,
+            title = { Text("Lock down for ${settings.lockdownHours} hours?", color = BastionColors.TextPrimary) },
+            text = {
+                Text(
+                    buildString {
+                        append("Every guarded app closes. ")
+                        if (settings.lockdownFilter) append("The filter comes on. ")
+                        if (settings.lockdownGrayscale) append("Colour goes. ")
+                        if (settings.lockdownLockScreen) append("Your screen locks. ")
+                        append("\n\nThis cannot be undone before it ends.")
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BastionColors.TextSecondary,
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirming = false
+                    scope.launch {
+                        Lockdown.trigger(context)?.let { runCatching { context.startActivity(it) } }
+                    }
+                }) { Text("Do it", color = BastionColors.Amber) }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirming = false }) {
+                    Text("Not now", color = BastionColors.TextMuted)
+                }
+            },
+        )
+    }
+}
+
+/**
  * The plan on its own, for the settings section.
  *
  * Split from the button deliberately. The trigger belongs where a man can reach
