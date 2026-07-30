@@ -202,6 +202,16 @@ fun WatchtowerScreen(
                     }
                 }
 
+                // Break glass sits here, next to Hold the Line, because both are
+                // reached in the same state of mind and neither should need
+                // hunting for. Independent of the cooling-off lock entirely.
+                Spacer(Modifier.height(12.dp))
+                com.bastion.app.feature.guardui.LockdownCard(
+                    settings = settings,
+                    graph = graph,
+                    showPlanLink = false,
+                )
+
                 Spacer(Modifier.height(12.dp))
                 BastionCard {
                     Row(

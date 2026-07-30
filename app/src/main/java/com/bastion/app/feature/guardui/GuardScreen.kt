@@ -91,6 +91,7 @@ fun GuardScreen() {
     var confirmFilterOff by remember { mutableStateOf(false) }
     var confirmRelax by remember { mutableStateOf<Pair<GuardedAppEntity, BlockMode>?>(null) }
     var confirmUnlock by remember { mutableStateOf(false) }
+    var blockedByLockdown by remember { mutableStateOf(false) }
 
     // When the partner lock is armed, weakening anything needs the code the
     // partner holds. `pendingWeakening` parks the confirmed action until it is
@@ -118,6 +119,15 @@ fun GuardScreen() {
      * not a tax on arriving at it.
      */
     fun weakenOrQueue(description: String, payload: String, immediate: suspend () -> Unit) {
+        // A running lockdown refuses every weakening outright, whether or not the
+        // cooling-off lock is on. The two are deliberately independent, and
+        // without this the danger button would be undone in seconds by simply
+        // deleting the guarded apps — which is exactly what a man in that state
+        // would think to try.
+        if (com.bastion.app.guard.lockdown.Lockdown.isActive(settings)) {
+            blockedByLockdown = true
+            return
+        }
         if (!settings.tamperLockEnabled) {
             weaken(immediate)
         } else {
@@ -470,8 +480,16 @@ fun GuardScreen() {
                 }
             }
 
+            // --- Settings ---
+            //
+            // Everything that is configured rather than acted on. The break-glass
+            // button itself lives on the home screen, where it can be reached
+            // without going looking; only its plan belongs here.
+            Spacer(Modifier.height(22.dp))
+            SectionLabel("Settings")
             Spacer(Modifier.height(12.dp))
-            LockdownCard(settings = settings, graph = graph)
+
+            LockdownPlanCard(settings = settings, graph = graph)
 
             Spacer(Modifier.height(12.dp))
             PrivateDnsCard()
@@ -549,6 +567,16 @@ fun GuardScreen() {
                 ) { graph.guard.upsertApp(app.copy(mode = mode, updatedAt = System.currentTimeMillis())) }
             },
             onDismiss = { confirmRelax = null },
+        )
+    }
+
+    if (blockedByLockdown) {
+        ConfirmDialog(
+            title = "Lockdown is running",
+            body = "Guards can't be weakened until it ends. That is the point of it.",
+            confirmLabel = "All right",
+            onConfirm = {},
+            onDismiss = { blockedByLockdown = false },
         )
     }
 

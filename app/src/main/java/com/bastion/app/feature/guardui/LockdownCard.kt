@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
  * for himself, not an emergency being declared over him.
  */
 @Composable
-fun LockdownCard(settings: Settings, graph: BastionGraph) {
+fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean = true) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var confirming by remember { mutableStateOf(false) }
@@ -97,8 +97,10 @@ fun LockdownCard(settings: Settings, graph: BastionGraph) {
             )
             Spacer(Modifier.height(14.dp))
             PrimaryButton("Lock everything down", { confirming = true }, Modifier.fillMaxWidth())
-            Spacer(Modifier.height(8.dp))
-            QuietButton("Edit the plan", { configuring = true }, Modifier.fillMaxWidth())
+            if (showPlanLink) {
+                Spacer(Modifier.height(8.dp))
+                QuietButton("Edit the plan", { configuring = true }, Modifier.fillMaxWidth())
+            }
         }
     }
 
@@ -136,75 +138,126 @@ fun LockdownCard(settings: Settings, graph: BastionGraph) {
         )
     }
 
-    if (configuring) {
-        AlertDialog(
-            onDismissRequest = { configuring = false },
-            containerColor = BastionColors.Surface,
-            title = { Text("Your plan", color = BastionColors.TextPrimary) },
-            text = {
-                Column {
-                    SectionLabel("How long")
-                    Spacer(Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(1, 6, 24, 72).forEach { hours ->
-                            Box(
-                                Modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .background(
-                                        if (settings.lockdownHours == hours) BastionColors.BronzeDeep
-                                        else BastionColors.SurfaceRaised
-                                    )
-                                    .clickable { scope.launch { graph.settings.setLockdownHours(hours) } }
-                                    .padding(horizontal = 14.dp, vertical = 8.dp)
-                            ) {
-                                Text(
-                                    "${hours}h",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (settings.lockdownHours == hours) BastionColors.BronzeBright
-                                    else BastionColors.TextMuted,
-                                )
-                            }
-                        }
-                    }
+    if (configuring) LockdownPlanDialog(settings, graph) { configuring = false }
+}
 
-                    Spacer(Modifier.height(16.dp))
-                    SectionLabel("What happens")
-                    PlanToggle("Close every guarded app", true, enabled = false) {}
-                    PlanToggle("Turn the filter on", settings.lockdownFilter) {
-                        scope.launch { graph.settings.setLockdownFilter(it) }
-                    }
-                    PlanToggle("Drain the colour", settings.lockdownGrayscale) {
-                        scope.launch { graph.settings.setLockdownGrayscale(it) }
-                    }
-                    PlanToggle("Lock the screen", settings.lockdownLockScreen) { wanted ->
-                        scope.launch { graph.settings.setLockdownLockScreen(wanted) }
-                        // Needs a system consent screen; asking at the moment the
-                        // option is chosen beats failing silently later.
-                        if (wanted && !BastionDeviceAdmin.isActive(context)) {
-                            runCatching { context.startActivity(BastionDeviceAdmin.activationIntent(context)) }
-                        }
-                    }
-                    PlanToggle("Tell my partner", settings.lockdownTellPartner) {
-                        scope.launch { graph.settings.setLockdownTellPartner(it) }
-                    }
+/**
+ * The plan on its own, for the settings section.
+ *
+ * Split from the button deliberately. The trigger belongs where a man can reach
+ * it without thinking; the plan belongs where he configures things calmly, and
+ * the two have no business sharing a screen position just because they share a
+ * feature name.
+ */
+@Composable
+fun LockdownPlanCard(settings: Settings, graph: BastionGraph) {
+    var configuring by remember { mutableStateOf(false) }
 
-                    Spacer(Modifier.height(12.dp))
-                    Text(
-                        // The obvious wish, answered before it is asked.
-                        "Android won't let any app switch the phone off — that's reserved for the system. " +
-                            "Locking the screen is the closest there is.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = BastionColors.TextMuted,
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { configuring = false }) {
-                    Text("Done", color = BastionColors.BronzeBright)
-                }
-            },
-        )
+    BastionCard {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                SectionLabel("Break-glass plan")
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "${settings.lockdownHours}h · ${planSummary(settings)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
+                )
+            }
+            QuietButton("Edit", { configuring = true })
+        }
     }
+
+    if (configuring) LockdownPlanDialog(settings, graph) { configuring = false }
+}
+
+private fun planSummary(settings: Settings): String = buildList {
+    add("apps closed")
+    if (settings.lockdownFilter) add("filter")
+    if (settings.lockdownGrayscale) add("greyscale")
+    if (settings.lockdownLockScreen) add("screen lock")
+    if (settings.lockdownTellPartner) add("partner told")
+}.joinToString(", ")
+
+@Composable
+private fun LockdownPlanDialog(
+    settings: Settings,
+    graph: BastionGraph,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = BastionColors.Surface,
+        title = { Text("Your plan", color = BastionColors.TextPrimary) },
+        text = {
+            Column {
+                SectionLabel("How long")
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(1, 6, 24, 72).forEach { hours ->
+                        Box(
+                            Modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(
+                                    if (settings.lockdownHours == hours) BastionColors.BronzeDeep
+                                    else BastionColors.SurfaceRaised
+                                )
+                                .clickable { scope.launch { graph.settings.setLockdownHours(hours) } }
+                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                        ) {
+                            Text(
+                                "${hours}h",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = if (settings.lockdownHours == hours) BastionColors.BronzeBright
+                                else BastionColors.TextMuted,
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+                SectionLabel("What happens")
+                PlanToggle("Close every guarded app", true, enabled = false) {}
+                PlanToggle("Turn the filter on", settings.lockdownFilter) {
+                    scope.launch { graph.settings.setLockdownFilter(it) }
+                }
+                PlanToggle("Drain the colour", settings.lockdownGrayscale) {
+                    scope.launch { graph.settings.setLockdownGrayscale(it) }
+                }
+                PlanToggle("Lock the screen", settings.lockdownLockScreen) { wanted ->
+                    scope.launch { graph.settings.setLockdownLockScreen(wanted) }
+                    // Needs a system consent screen; asking at the moment the
+                    // option is chosen beats failing silently later.
+                    if (wanted && !BastionDeviceAdmin.isActive(context)) {
+                        runCatching { context.startActivity(BastionDeviceAdmin.activationIntent(context)) }
+                    }
+                }
+                PlanToggle("Tell my partner", settings.lockdownTellPartner) {
+                    scope.launch { graph.settings.setLockdownTellPartner(it) }
+                }
+
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    // The obvious wish, answered before it is asked.
+                    "Android won't let any app switch the phone off — that's reserved for the system. " +
+                        "Locking the screen is the closest there is.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Done", color = BastionColors.BronzeBright)
+            }
+        },
+    )
 }
 
 @Composable
