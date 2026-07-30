@@ -46,6 +46,10 @@ import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.core.update.UpdateChecker
 import com.bastion.app.data.BastionGraph
 import com.bastion.app.data.prefs.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import java.io.File
 import java.time.LocalDate
@@ -168,6 +172,9 @@ fun SettingsScreen(onBack: () -> Unit) {
             }
 
             Spacer(Modifier.height(12.dp))
+            BackupCard(graph = graph)
+
+            Spacer(Modifier.height(12.dp))
             UpdateCard(settings = settings, graph = graph)
             Spacer(Modifier.height(12.dp))
 
@@ -224,6 +231,155 @@ fun SettingsScreen(onBack: () -> Unit) {
         }
     }
 }
+
+/**
+ * Backup, for the one risk a deliberately server-less app creates.
+ *
+ * Nothing here syncs anywhere, which is the right call for this data — but the
+ * cost is that a lost or reset phone takes the covenant, the streak and the
+ * whole journey with it. A file the user holds, sealed with a passphrase only he
+ * knows, is the answer that does not require trusting anyone.
+ */
+@Composable
+private fun BackupCard(graph: BastionGraph) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var mode by remember { mutableStateOf<BackupMode?>(null) }
+    var passphrase by remember { mutableStateOf("") }
+    var status by remember { mutableStateOf<String?>(null) }
+    var pending by remember { mutableStateOf<ByteArray?>(null) }
+
+    val createFile = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        val bytes = pending
+        pending = null
+        if (uri == null || bytes == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            status = runCatching {
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                }
+                "Saved. Keep the passphrase safe — it cannot be recovered."
+            }.getOrElse { "Could not write the file." }
+        }
+    }
+
+    val openFile = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val code = passphrase
+        scope.launch {
+            status = runCatching {
+                val bytes = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                } ?: error("empty")
+                val days = graph.backup.import(bytes, code)
+                "Restored. $days days of history are back."
+            }.getOrElse {
+                if (it is com.bastion.app.core.security.BackupCodec.WrongPassphrase) {
+                    "Wrong passphrase, or not a Bastion backup."
+                } else {
+                    "Could not read that file."
+                }
+            }
+            passphrase = ""
+        }
+    }
+
+    BastionCard {
+        SectionLabel("Backup")
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "An encrypted file you keep. Nothing is uploaded.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BastionColors.TextMuted,
+        )
+        Spacer(Modifier.height(14.dp))
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            QuietButton("Export", { mode = BackupMode.EXPORT; status = null }, Modifier.weight(1f))
+            QuietButton("Restore", { mode = BackupMode.IMPORT; status = null }, Modifier.weight(1f))
+        }
+
+        status?.let {
+            Spacer(Modifier.height(12.dp))
+            Text(it, style = MaterialTheme.typography.bodySmall, color = BastionColors.SageBright)
+        }
+    }
+
+    mode?.let { current ->
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { mode = null; passphrase = "" },
+            containerColor = BastionColors.Surface,
+            title = {
+                Text(
+                    if (current == BackupMode.EXPORT) "Choose a passphrase" else "Enter the passphrase",
+                    color = BastionColors.TextPrimary,
+                )
+            },
+            text = {
+                Column {
+                    Text(
+                        if (current == BackupMode.EXPORT)
+                            "Forget it and the backup is gone. There is no recovery — that is what keeps it private."
+                        else
+                            "The passphrase you chose when exporting.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextMuted,
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    OutlinedTextField(
+                        value = passphrase,
+                        onValueChange = { passphrase = it },
+                        singleLine = true,
+                        visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = BastionColors.Bronze,
+                            unfocusedBorderColor = BastionColors.Outline,
+                            focusedTextColor = BastionColors.TextPrimary,
+                            unfocusedTextColor = BastionColors.TextPrimary,
+                            cursorColor = BastionColors.Bronze,
+                        ),
+                    )
+                }
+            },
+            confirmButton = {
+                androidx.compose.material3.TextButton(
+                    enabled = com.bastion.app.core.security.BackupCodec.isAcceptable(passphrase),
+                    onClick = {
+                        val code = passphrase
+                        mode = null
+                        if (current == BackupMode.EXPORT) {
+                            scope.launch {
+                                pending = graph.backup.export(code)
+                                passphrase = ""
+                                createFile.launch(graph.backup.suggestedFileName())
+                            }
+                        } else {
+                            openFile.launch(arrayOf("*/*"))
+                        }
+                    },
+                ) {
+                    Text(
+                        if (current == BackupMode.EXPORT) "Export" else "Restore",
+                        color = BastionColors.BronzeBright,
+                    )
+                }
+            },
+            dismissButton = {
+                androidx.compose.material3.TextButton(onClick = { mode = null; passphrase = "" }) {
+                    Text("Cancel", color = BastionColors.TextMuted)
+                }
+            },
+        )
+    }
+}
+
+private enum class BackupMode { EXPORT, IMPORT }
 
 @Composable
 private fun UpdateCard(settings: Settings, graph: BastionGraph) {

@@ -423,6 +423,9 @@ fun GuardScreen() {
             }
 
             Spacer(Modifier.height(12.dp))
+            PrivateDnsCard()
+
+            Spacer(Modifier.height(12.dp))
             GrayscaleCard(settings = settings, graph = graph)
         }
     }
@@ -528,6 +531,94 @@ fun GuardScreen() {
         }
     }
 }
+
+/**
+ * Closes the biggest hole in the content filter.
+ *
+ * Bastion's own filter intercepts the system resolver, which an app shipping its
+ * own DNS-over-HTTPS simply walks around — that limitation is stated honestly
+ * elsewhere in this screen, but stating it is not the same as narrowing it.
+ *
+ * Android's Private DNS setting is enforced by the platform below the app layer,
+ * so pointing it at a filtering resolver covers ground the local VPN cannot.
+ * It is one field, typed once, and it survives Bastion being uninstalled — which
+ * is a feature rather than a flaw.
+ */
+@Composable
+private fun PrivateDnsCard() {
+    val context = LocalContext.current
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    var copied by remember { mutableStateOf(false) }
+
+    LaunchedEffect(copied) {
+        if (copied) {
+            kotlinx.coroutines.delay(1_800)
+            copied = false
+        }
+    }
+
+    BastionCard {
+        SectionLabel("Close the DNS-over-HTTPS gap")
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Set this as Private DNS. It filters below the app layer, where Bastion can't reach.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BastionColors.TextMuted,
+        )
+        Spacer(Modifier.height(12.dp))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(BastionColors.MidnightDeep)
+                .padding(12.dp)
+        ) {
+            Text(
+                PRIVATE_DNS_HOST,
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.SageBright,
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            QuietButton(
+                text = if (copied) "Copied" else "Copy",
+                onClick = {
+                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(PRIVATE_DNS_HOST))
+                    copied = true
+                },
+                modifier = Modifier.weight(1f),
+                accent = BastionColors.SageBright,
+            )
+            QuietButton(
+                text = "Open settings",
+                onClick = {
+                    // Falls back to the top-level settings screen: the Private DNS
+                    // action is not present on every OEM build, and a dead button
+                    // would be worse than one extra tap.
+                    val opened = runCatching {
+                        context.startActivity(
+                            Intent("android.settings.WIRELESS_SETTINGS")
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    }.isSuccess
+                    if (!opened) {
+                        runCatching {
+                            context.startActivity(
+                                Intent(android.provider.Settings.ACTION_SETTINGS)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+/** Cloudflare's family resolver: blocks adult content at the resolver itself. */
+private const val PRIVATE_DNS_HOST = "family.cloudflare-dns.com"
 
 @Composable
 private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {

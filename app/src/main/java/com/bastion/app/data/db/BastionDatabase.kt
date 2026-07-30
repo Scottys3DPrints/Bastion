@@ -62,6 +62,7 @@ abstract class BastionDatabase : RoomDatabase() {
     abstract fun covenantDao(): CovenantDao
     abstract fun guardDao(): GuardDao
     abstract fun socialDao(): SocialDao
+    abstract fun backupDao(): BackupDao
 
     companion object {
         /**

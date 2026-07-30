@@ -3,6 +3,7 @@ package com.bastion.app.data.db
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /*
  * Local-first storage. Two conventions make a future sync backend a bolt-on
@@ -17,6 +18,7 @@ import androidx.room.PrimaryKey
 enum class DayStatus { CLEAN, SLIP, UNLOGGED }
 
 @Entity(tableName = "day_log", indices = [Index("status")])
+@Serializable
 data class DayLogEntity(
     @PrimaryKey val epochDay: Long,
     val status: DayStatus,
@@ -25,6 +27,7 @@ data class DayLogEntity(
 )
 
 @Entity(tableName = "urge_log", indices = [Index("timestamp")])
+@Serializable
 data class UrgeLogEntity(
     @PrimaryKey val id: String,
     val timestamp: Long,
@@ -43,6 +46,7 @@ data class UrgeLogEntity(
 )
 
 @Entity(tableName = "habit")
+@Serializable
 data class HabitEntity(
     @PrimaryKey val id: String,
     val name: String,
@@ -62,6 +66,7 @@ data class HabitEntity(
     primaryKeys = ["habitId", "epochDay"],
     indices = [Index("epochDay")],
 )
+@Serializable
 data class HabitCompletionEntity(
     val habitId: String,
     val epochDay: Long,
@@ -69,6 +74,7 @@ data class HabitCompletionEntity(
 )
 
 @Entity(tableName = "challenge_progress")
+@Serializable
 data class ChallengeProgressEntity(
     @PrimaryKey val challengeId: String,
     val startedEpochDay: Long,
@@ -80,6 +86,7 @@ data class ChallengeProgressEntity(
 
 /** Exactly one row, id = 1. The oath a man signed, and the reason he signed it. */
 @Entity(tableName = "covenant")
+@Serializable
 data class CovenantEntity(
     @PrimaryKey val id: Int = 1,
     val oathText: String,
@@ -107,6 +114,7 @@ enum class BlockMode {
 }
 
 @Entity(tableName = "guarded_app")
+@Serializable
 data class GuardedAppEntity(
     @PrimaryKey val packageName: String,
     val label: String,
@@ -131,6 +139,7 @@ enum class MatchType { VIEW_ID, TEXT, CONTENT_DESC }
  * Learn Mode), not shipping a new APK.
  */
 @Entity(tableName = "feed_rule", indices = [Index("packageName")])
+@Serializable
 data class FeedRuleEntity(
     @PrimaryKey val id: String,
     val packageName: String,
@@ -145,6 +154,7 @@ data class FeedRuleEntity(
 // Indexed on `enabled`: this table is fully scanned by filterData() on the
 // Guard/VPN hot path.
 @Entity(tableName = "blocked_domain", indices = [Index("enabled")])
+@Serializable
 data class BlockedDomainEntity(
     @PrimaryKey val domain: String,
     val userAdded: Boolean = false,
@@ -162,6 +172,7 @@ data class AllowedDomainEntity(
 enum class VisionType { PHOTO, QUOTE, GOAL, VERSE }
 
 @Entity(tableName = "vision_item")
+@Serializable
 data class VisionItemEntity(
     @PrimaryKey val id: String,
     val type: VisionType,
@@ -173,6 +184,7 @@ data class VisionItemEntity(
 )
 
 @Entity(tableName = "badge")
+@Serializable
 data class BadgeEntity(
     @PrimaryKey val badgeId: String,
     val name: String,
@@ -181,6 +193,7 @@ data class BadgeEntity(
 )
 
 @Entity(tableName = "partner")
+@Serializable
 data class PartnerEntity(
     @PrimaryKey val id: String,
     val name: String,
@@ -194,6 +207,7 @@ data class PartnerEntity(
 )
 
 @Entity(tableName = "check_in", indices = [Index("epochDay")])
+@Serializable
 data class CheckInEntity(
     @PrimaryKey val id: String,
     val epochDay: Long,
@@ -213,6 +227,7 @@ data class MentorMessageEntity(
 )
 
 @Entity(tableName = "lesson_read")
+@Serializable
 data class LessonReadEntity(
     @PrimaryKey val lessonId: String,
     val readAt: Long,

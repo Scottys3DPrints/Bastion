@@ -61,6 +61,14 @@ class BastionGraph(context: Context) {
         )
     }
 
+    val backup: com.bastion.app.data.repo.BackupRepository by lazy {
+        com.bastion.app.data.repo.BackupRepository(
+            backupDao = database.backupDao(),
+            covenantDao = database.covenantDao(),
+            socialDao = database.socialDao(),
+        )
+    }
+
     val social: SocialRepository by lazy {
         SocialRepository(
             socialDao = database.socialDao(),
