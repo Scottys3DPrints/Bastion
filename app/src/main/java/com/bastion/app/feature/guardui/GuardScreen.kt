@@ -90,6 +90,7 @@ fun GuardScreen() {
     var confirmUnguard by remember { mutableStateOf<GuardedAppEntity?>(null) }
     var confirmFilterOff by remember { mutableStateOf(false) }
     var confirmRelax by remember { mutableStateOf<Pair<GuardedAppEntity, BlockMode>?>(null) }
+    var confirmUnlock by remember { mutableStateOf(false) }
 
     // When the partner lock is armed, weakening anything needs the code the
     // partner holds. `pendingWeakening` parks the confirmed action until it is
@@ -104,6 +105,24 @@ fun GuardScreen() {
     /** Runs [action] now, or holds it behind the partner's code if the lock is armed. */
     fun weaken(action: suspend () -> Unit) {
         if (lockArmed) pendingWeakening = action else scope.launch { action() }
+    }
+
+    /**
+     * Queues a weakening behind the cooling-off delay, but ONLY once the user has
+     * locked in.
+     *
+     * Before that, every change is instant. Setting the guards up means adding
+     * the wrong app, changing your mind about a mode, removing something you
+     * added by mistake — and a delay on all of that made the app feel broken
+     * rather than firm. The lock is a decision you make when the setup is right,
+     * not a tax on arriving at it.
+     */
+    fun weakenOrQueue(description: String, payload: String, immediate: suspend () -> Unit) {
+        if (!settings.tamperLockEnabled) {
+            weaken(immediate)
+        } else {
+            weaken { graph.guard.requestWeakening(description, payload) }
+        }
     }
 
     // A cooling-off timer that visibly never moves reads as broken, and this one
@@ -353,7 +372,9 @@ fun GuardScreen() {
                                 onCheckedChange = { enabled ->
                                     scope.launch {
                                         if (enabled) graph.guard.upsertRule(rule.copy(enabled = true))
-                                        else graph.guard.requestWeakening(
+                                        else if (!settings.tamperLockEnabled) {
+                                            graph.guard.upsertRule(rule.copy(enabled = false))
+                                        } else graph.guard.requestWeakening(
                                             "Disable rule ${rule.label}",
                                             payload = "rule:${rule.id}:off",
                                         )
@@ -371,21 +392,48 @@ fun GuardScreen() {
 
             // --- Tamper resistance ---
             BastionCard(accent = BastionColors.Bronze) {
-                SectionLabel("Cooling-off lock")
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Tightening is instant. Weakening waits ${settings.coolingOffHours}h.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        SectionLabel("Cooling-off lock")
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            // The two states are named plainly, because the whole
+                            // point is knowing which one you are in before you
+                            // change something.
+                            if (settings.tamperLockEnabled)
+                                "Locked in. Weakening waits ${settings.coolingOffHours}h."
+                            else
+                                "Not locked in. Every change is instant.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (settings.tamperLockEnabled) BastionColors.BronzeBright
+                            else BastionColors.TextMuted,
+                        )
+                    }
+                    Switch(
+                        checked = settings.tamperLockEnabled,
+                        onCheckedChange = { wanted ->
+                            // Locking in is instant; unlocking is itself a
+                            // weakening and waits, or the lock would be a button
+                            // that turns itself off.
+                            if (wanted) scope.launch { graph.settings.setTamperLock(true) }
+                            else confirmUnlock = true
+                        },
+                        colors = switchColors(),
+                    )
+                }
                 Spacer(Modifier.height(14.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     listOf(1, 2, 6, 24).forEach { hours ->
                         HourChip(hours, settings.coolingOffHours == hours) {
                             scope.launch {
                                 // Lengthening the delay is a tightening; shortening waits its own delay.
-                                if (hours >= settings.coolingOffHours) graph.settings.setCoolingOffHours(hours)
-                                else graph.guard.requestWeakening(
+                                if (hours >= settings.coolingOffHours || !settings.tamperLockEnabled) {
+                                    graph.settings.setCoolingOffHours(hours)
+                                } else graph.guard.requestWeakening(
                                     "Shorten the cooling-off delay to ${hours}h",
                                     payload = "cooloff:$hours",
                                 )
@@ -456,16 +504,18 @@ fun GuardScreen() {
     confirmUnguard?.let { app ->
         ConfirmDialog(
             title = "Stop guarding ${app.label}?",
-            body = "This won't take effect for ${settings.coolingOffHours} hours. " +
-                "You can cancel it any time before then.",
+            body = if (settings.tamperLockEnabled) {
+                "This won't take effect for ${settings.coolingOffHours} hours. " +
+                    "You can cancel it any time before then."
+            } else {
+                "You haven't locked in, so this happens straight away."
+            },
             confirmLabel = "Request it",
             onConfirm = {
-                weaken {
-                    graph.guard.requestWeakening(
-                        "Stop guarding ${app.label}",
-                        payload = "remove:${app.packageName}",
-                    )
-                }
+                weakenOrQueue(
+                    "Stop guarding ${app.label}",
+                    "remove:${app.packageName}",
+                ) { graph.guard.removeApp(app.packageName) }
             },
             onDismiss = { confirmUnguard = null },
         )
@@ -485,33 +535,50 @@ fun GuardScreen() {
     confirmRelax?.let { (app, mode) ->
         ConfirmDialog(
             title = "Relax ${app.label} to ${mode.label()}?",
-            body = "This won't take effect for ${settings.coolingOffHours} hours. " +
-                "You can cancel it any time before then.",
+            body = if (settings.tamperLockEnabled) {
+                "This won't take effect for ${settings.coolingOffHours} hours. " +
+                    "You can cancel it any time before then."
+            } else {
+                "You haven't locked in, so this happens straight away."
+            },
             confirmLabel = "Request it",
             onConfirm = {
-                weaken {
-                    graph.guard.requestWeakening(
-                        "Relax ${app.label} to ${mode.label()}",
-                        payload = "app:${app.packageName}:${mode.name}",
-                    )
-                }
+                weakenOrQueue(
+                    "Relax ${app.label} to ${mode.label()}",
+                    "app:${app.packageName}:${mode.name}",
+                ) { graph.guard.upsertApp(app.copy(mode = mode, updatedAt = System.currentTimeMillis())) }
             },
             onDismiss = { confirmRelax = null },
+        )
+    }
+
+    if (confirmUnlock) {
+        ConfirmDialog(
+            title = "Unlock the guards?",
+            body = "Unlocking waits ${settings.coolingOffHours} hours, like any other weakening. " +
+                "Until then everything stays as it is.",
+            confirmLabel = "Request it",
+            onConfirm = {
+                weaken { graph.guard.requestWeakening("Unlock the guards", "unlock") }
+            },
+            onDismiss = { confirmUnlock = false },
         )
     }
 
     if (confirmFilterOff) {
         ConfirmDialog(
             title = "Turn the content filter off?",
-            body = "This won't take effect for ${settings.coolingOffHours} hours. " +
-                "You can cancel it any time before then.",
+            body = if (settings.tamperLockEnabled) {
+                "This won't take effect for ${settings.coolingOffHours} hours. " +
+                    "You can cancel it any time before then."
+            } else {
+                "You haven't locked in, so this happens straight away."
+            },
             confirmLabel = "Request it",
             onConfirm = {
-                weaken {
-                    graph.guard.requestWeakening(
-                        "Turn off the content filter",
-                        payload = "vpn:off",
-                    )
+                weakenOrQueue("Turn off the content filter", "vpn:off") {
+                    graph.settings.setVpnEnabled(false)
+                    BastionVpnService.stop(context)
                 }
             },
             onDismiss = { confirmFilterOff = false },

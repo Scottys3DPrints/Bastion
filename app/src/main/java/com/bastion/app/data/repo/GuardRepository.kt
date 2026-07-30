@@ -165,6 +165,9 @@ class GuardRepository(
                     invalidateFilterCache()
                 }
                 "cooloff" -> parts.getOrNull(1)?.toIntOrNull()?.let { settings.setCoolingOffHours(it) }
+                // Unlocking is itself a weakening and serves the same delay,
+                // otherwise the lock would be a switch that turns itself off.
+                "unlock" -> settings.setTamperLock(false)
                 "vpn" -> {
                     settings.setVpnEnabled(false)
                     stopFilter = true
@@ -191,16 +194,22 @@ class GuardRepository(
          * a new build.
          */
         fun builtInFeedRules(): List<FeedRuleEntity> = listOf(
+            // Only rules that identify the feed *viewer* itself.
+            //
+            // The tab buttons were matched here once, by content description
+            // ("Reels", "Shorts"). That was wrong in a way that only shows up on
+            // a real phone: those buttons live in the bottom navigation bar and
+            // are therefore present on every screen of the app, so the rule
+            // fired the moment Instagram opened and feed-only became a total
+            // block. A rule has to name the destination, never the signpost.
             // Instagram Reels
             rule("com.instagram.android", "Instagram Reels", MatchType.VIEW_ID, "clips_viewer"),
             rule("com.instagram.android", "Instagram Reels (viewer)", MatchType.VIEW_ID, "reel_viewer"),
-            rule("com.instagram.android", "Instagram Reels (tab)", MatchType.CONTENT_DESC, "Reels"),
 
             // YouTube Shorts
             rule("com.google.android.youtube", "YouTube Shorts", MatchType.VIEW_ID, "reel_recycler"),
             rule("com.google.android.youtube", "YouTube Shorts (player)", MatchType.VIEW_ID, "reel_player_page_container"),
             rule("com.google.android.youtube", "YouTube Shorts (root)", MatchType.VIEW_ID, "reel_watch_fragment_root"),
-            rule("com.google.android.youtube", "YouTube Shorts (tab)", MatchType.CONTENT_DESC, "Shorts"),
 
             // TikTok — both the global and the regional package names
             rule("com.zhiliaoapp.musically", "TikTok For You", MatchType.VIEW_ID, "feed_tab_view"),
@@ -209,7 +218,6 @@ class GuardRepository(
 
             // Facebook Reels
             rule("com.facebook.katana", "Facebook Reels", MatchType.VIEW_ID, "video_home"),
-            rule("com.facebook.katana", "Facebook Reels (tab)", MatchType.CONTENT_DESC, "Reels"),
 
             // Snapchat Spotlight
             rule("com.snapchat.android", "Snapchat Spotlight", MatchType.VIEW_ID, "spotlight"),

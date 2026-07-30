@@ -37,7 +37,25 @@ object Migrations {
      */
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
+        MIGRATION_2_3,
     )
+}
+
+/**
+ * v2 -> v3. Deletes the built-in rules that matched a feed *tab* rather than the
+ * feed itself.
+ *
+ * Those rules keyed on the content description of the Reels and Shorts buttons,
+ * which live in the bottom navigation bar and are therefore on screen the whole
+ * time an app is open. Feed-only silently became a total block: Instagram could
+ * not be opened at all. Shipping a corrected seed fixes new installs; existing
+ * ones already hold the bad rows, so they have to be removed here.
+ *
+ * Scoped to builtIn = 1 so a rule the user captured with Learn Mode is never
+ * touched, even if it happens to match on a description.
+ */
+private val MIGRATION_2_3 = Migration(2, 3) { db ->
+    db.execSQL("DELETE FROM feed_rule WHERE builtIn = 1 AND matchType = 'CONTENT_DESC'")
 }
 
 /**
