@@ -151,6 +151,15 @@
             android:name=".core.alarm.BastionAlarmReceiver"
             android:exported="false" />
 
+        <!-- Outcome of a self-install session; see SelfInstaller. -->
+        <receiver
+            android:name=".core.update.SelfInstaller$ResultReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.bastion.app.INSTALL_RESULT" />
+            </intent-filter>
+        </receiver>
+
         <!--
           Device admin with a single policy: force-lock. Used only to lock the
           screen when a lockdown is triggered. Android reserves powering the

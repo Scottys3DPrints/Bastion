@@ -237,6 +237,17 @@ fun GuardScreen() {
                         { BastionAccessibilityService.openSettings(context) },
                         Modifier.fillMaxWidth(),
                     )
+                    Spacer(Modifier.height(8.dp))
+                    // Android 13 hides accessibility behind "restricted settings"
+                    // for sideloaded apps, and the option to lift it is buried in
+                    // App info under the overflow menu. Updates install through a
+                    // PackageInstaller session now, which should stop it coming
+                    // back — but when a build re-gates anyway, this is the door.
+                    QuietButton(
+                        "Greyed out? Open App info",
+                        { com.bastion.app.core.update.SelfInstaller.openAppInfo(context) },
+                        Modifier.fillMaxWidth(),
+                    )
                 }
             }
 

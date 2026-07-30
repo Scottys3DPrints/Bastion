@@ -105,15 +105,20 @@ class UpdateChecker(private val context: Context) {
             }
         }
 
-    /** Hands the verified APK to the system installer. */
+    /**
+     * Hands the verified APK to the installer.
+     *
+     * Prefers a PackageInstaller session so Bastion becomes its own installer of
+     * record — that is what stops Android 13 re-gating accessibility behind
+     * "restricted settings" on every update. Falls back to the intent path if a
+     * session cannot be opened, which still installs, just without the benefit.
+     */
     fun install(apk: File) {
-        val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", apk)
-        context.startActivity(
-            Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "application/vnd.android.package-archive")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-        )
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val failure = SelfInstaller.install(context, apk)
+            if (failure == null) return
+        }
+        SelfInstaller.installByIntent(context, apk)
     }
 
     /** Android requires explicit consent before one app may install another. */
