@@ -5,16 +5,22 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -70,22 +76,29 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * Tab labels are short, plain words rather than the app's thematic names.
+ * Four tabs, each genuinely distinct.
  *
- * "Watchtower" and "Brotherhood" overflowed the bar and clipped off-screen at
- * five tabs, and a navigation label's only job is to be understood instantly.
- * The thematic names still head their screens, where there is room for them.
+ * There were five, and two of them — Home and Track — overlapped so heavily
+ * that streak, clean days, rank and the benefit cards all rendered twice. When
+ * every screen tries to be a dashboard, nothing is clearly *the* place for
+ * anything. The line drawn instead: **Today is what about right now, Progress
+ * is how it is going over time.**
+ *
+ * Partner and Mentor left the bar entirely. Neither is a daily-visit
+ * destination, both were pushing the labels to clip — which is why the tabs had
+ * already been renamed away from their thematic names — and accountability
+ * belongs next to the settings that configure it. They live in the profile hub,
+ * one tap from the top bar of every screen.
  */
 private enum class Destination(
     val route: String,
     val label: String,
     val icon: ImageVector,
 ) {
-    WATCHTOWER("watchtower", "Home", Icons.Filled.Shield),
-    TRACK("track", "Track", Icons.Filled.Insights),
+    TODAY("watchtower", "Today", Icons.Filled.Shield),
+    PROGRESS("track", "Progress", Icons.Filled.Insights),
     GUARD("guard", "Guard", Icons.Filled.Security),
-    GROW("grow", "Grow", Icons.Filled.TrendingUp),
-    BROTHERHOOD("brotherhood", "Partner", Icons.Filled.Forum),
+    GROW("grow", "Grow", Icons.AutoMirrored.Filled.TrendingUp),
 }
 
 @Composable
@@ -150,7 +163,7 @@ private fun BastionRoot(openTarget: String? = null) {
 }
 
 /**
- * Switches to a tab from anywhere, including from Settings or the Mentor.
+ * Switches to a tab from anywhere, including from the profile hub or the Mentor.
  *
  * Deliberately without saveState/restoreState. The usual pattern assumes each
  * tab owns a nested graph; this graph is flat, and on a flat graph the pair
@@ -163,7 +176,7 @@ private fun BastionRoot(openTarget: String? = null) {
  *     just been saved against it, so Home landed on Track.
  *
  * Dropping both costs per-tab scroll position and buys navigation that always
- * goes where it says. For five shallow tabs that is unambiguously the better
+ * goes where it says. For four shallow tabs that is unambiguously the better
  * trade — the whole complaint was that the bar could not be trusted.
  */
 private fun androidx.navigation.NavHostController.toTab(route: String) {
@@ -182,35 +195,47 @@ private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
     // Arriving from the Panic screen's "Talk it through", which used to be a
     // dead button on the one screen where a dead button is least forgivable.
     androidx.compose.runtime.LaunchedEffect(openTarget) {
-        if (openTarget == MainActivity.OPEN_MENTOR) navController.navigate("mentor")
+        if (openTarget == MainActivity.OPEN_MENTOR) navController.navigate(ROUTE_MENTOR)
+    }
+
+    val onTabs = Destination.entries.any { d ->
+        currentDestination?.hierarchy?.any { it.route == d.route } == true
     }
 
     Scaffold(
         containerColor = BastionColors.Midnight,
         contentColor = BastionColors.TextPrimary,
         bottomBar = {
-            NavigationBar(containerColor = BastionColors.MidnightDeep, tonalElevation = 0.dp) {
-                Destination.entries.forEach { destination ->
-                    val selected = currentDestination?.hierarchy?.any { it.route == destination.route } == true
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = { navController.toTab(destination.route) },
-                        icon = { Icon(destination.icon, contentDescription = destination.label) },
-                        label = {
-                            Text(
-                                destination.label,
-                                style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1,
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = BastionColors.MidnightDeep,
-                            selectedTextColor = BastionColors.BronzeBright,
-                            indicatorColor = BastionColors.Bronze,
-                            unselectedIconColor = BastionColors.TextMuted,
-                            unselectedTextColor = BastionColors.TextMuted,
-                        ),
-                    )
+            // Hidden on pushed routes. The bar is for switching between the
+            // four homes; showing it under a detail screen invites a tap that
+            // silently discards whatever is being edited there.
+            if (onTabs) {
+                NavigationBar(containerColor = BastionColors.MidnightDeep, tonalElevation = 0.dp) {
+                    Destination.entries.forEach { destination ->
+                        val selected =
+                            currentDestination?.hierarchy?.any { it.route == destination.route } == true
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = { navController.toTab(destination.route) },
+                            icon = {
+                                Icon(destination.icon, contentDescription = destination.label)
+                            },
+                            label = {
+                                Text(
+                                    destination.label,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1,
+                                )
+                            },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = BastionColors.MidnightDeep,
+                                selectedTextColor = BastionColors.BronzeBright,
+                                indicatorColor = BastionColors.Bronze,
+                                unselectedIconColor = BastionColors.TextMuted,
+                                unselectedTextColor = BastionColors.TextMuted,
+                            ),
+                        )
+                    }
                 }
             }
         },
@@ -222,29 +247,73 @@ private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
         ) {
             NavHost(
                 navController = navController,
-                startDestination = Destination.WATCHTOWER.route,
+                startDestination = Destination.TODAY.route,
+                // One transition system, chosen once and applied globally:
+                // tabs cross-fade because they are siblings with no spatial
+                // relationship, and pushed routes slide because they sit on
+                // top of what you came from. Mixing the two — or leaving the
+                // defaults — is most of why navigation felt arbitrary.
+                enterTransition = { fadeIn(tween(180)) },
+                exitTransition = { fadeOut(tween(180)) },
             ) {
-                composable(Destination.WATCHTOWER.route) {
+                composable(Destination.TODAY.route) {
                     WatchtowerScreen(
                         faithMode = faithMode,
-                        onOpenMentor = { navController.navigate("mentor") },
-                        onOpenTrack = { navController.toTab(Destination.TRACK.route) },
-                        onOpenSettings = { navController.navigate("settings") },
+                        onOpenProgress = { navController.toTab(Destination.PROGRESS.route) },
+                        onOpenProfile = { navController.navigate(ROUTE_PROFILE) },
                     )
                 }
-                composable(Destination.TRACK.route) { TrackScreen(faithMode = faithMode) }
-                composable(Destination.GUARD.route) { GuardScreen() }
-                composable(Destination.GROW.route) { GrowScreen(faithMode = faithMode) }
-                composable(Destination.BROTHERHOOD.route) {
-                    BrotherhoodScreen(onOpenMentor = { navController.navigate("mentor") })
+                composable(Destination.PROGRESS.route) {
+                    TrackScreen(
+                        faithMode = faithMode,
+                        onOpenProfile = { navController.navigate(ROUTE_PROFILE) },
+                    )
                 }
-                composable("mentor") {
+                composable(Destination.GUARD.route) {
+                    GuardScreen(onOpenProfile = { navController.navigate(ROUTE_PROFILE) })
+                }
+                composable(Destination.GROW.route) {
+                    GrowScreen(
+                        faithMode = faithMode,
+                        onOpenProfile = { navController.navigate(ROUTE_PROFILE) },
+                    )
+                }
+
+                pushed(ROUTE_MENTOR) {
                     MentorScreen(faithMode = faithMode, onBack = { navController.popBackStack() })
                 }
-                composable("settings") {
-                    SettingsScreen(onBack = { navController.popBackStack() })
+                pushed(ROUTE_PARTNER) {
+                    BrotherhoodScreen(
+                        onOpenMentor = { navController.navigate(ROUTE_MENTOR) },
+                        onBack = { navController.popBackStack() },
+                    )
+                }
+                pushed(ROUTE_PROFILE) {
+                    SettingsScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenPartner = { navController.navigate(ROUTE_PARTNER) },
+                        onOpenMentor = { navController.navigate(ROUTE_MENTOR) },
+                    )
                 }
             }
         }
     }
+}
+
+const val ROUTE_MENTOR = "mentor"
+const val ROUTE_PARTNER = "partner"
+const val ROUTE_PROFILE = "profile"
+
+/** A route that sits on top of a tab: slides in from the right, back out to it. */
+private fun androidx.navigation.NavGraphBuilder.pushed(
+    route: String,
+    content: @Composable () -> Unit,
+) {
+    composable(
+        route = route,
+        enterTransition = { slideInHorizontally(tween(220)) { it / 4 } + fadeIn(tween(220)) },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = { slideOutHorizontally(tween(200)) { it / 4 } + fadeOut(tween(200)) },
+    ) { content() }
 }

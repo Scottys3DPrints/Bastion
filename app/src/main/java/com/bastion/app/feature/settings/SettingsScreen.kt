@@ -39,7 +39,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.alarm.DailyBriefScheduler
 import com.bastion.app.core.design.BastionCard
 import com.bastion.app.core.design.BastionColors
-import com.bastion.app.core.design.DawnBackground
+import com.bastion.app.core.design.ChoiceRow
+import com.bastion.app.core.design.BastionRow
+import com.bastion.app.core.design.BastionScaffold
+import com.bastion.app.core.design.RowDivider
+import com.bastion.app.core.design.Section
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.QuietButton
 import com.bastion.app.core.design.SectionLabel
@@ -55,179 +59,182 @@ import java.io.File
 import java.time.LocalDate
 
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(
+    onBack: () -> Unit,
+    onOpenPartner: () -> Unit,
+    onOpenMentor: () -> Unit,
+) {
     val context = LocalContext.current
     val graph = remember { BastionGraph.from(context) }
     val scope = rememberCoroutineScope()
     val settings by graph.settings.settings.collectAsStateWithLifecycle(initialValue = Settings())
     val notifications = com.bastion.app.core.design.rememberNotificationPermission()
 
-    DawnBackground(intensity = 0.3f) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(top = 52.dp, bottom = 32.dp)
-        ) {
+    BastionScaffold(
+        title = "You",
+        dawnIntensity = 0.3f,
+        onBack = onBack,
+    ) {
+        // The two things that left the tab bar. Neither is a daily
+        // destination, and both belong beside the settings that configure
+        // them — a partner you can reach and a mentor you can talk to are
+        // part of who is holding you to this, not a place you visit.
+        Section("Accountability") {
+        BastionRow(
+            title = "Your partner",
+            subtitle = "Who hears about it",
+            trailing = { Text("→", color = BastionColors.SageBright) },
+            onClick = onOpenPartner,
+        )
+        RowDivider()
+        BastionRow(
+            title = "The Mentor",
+            subtitle = "Any hour · offline",
+            trailing = { Text("→", color = BastionColors.SageBright) },
+            onClick = onOpenMentor,
+        )
+        }
+
+        // --- Mode ---
+        Column(Modifier.fillMaxWidth()) {
+            SectionLabel("Mode")
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Changes the writing, not your progress.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
+            )
+            Spacer(Modifier.height(16.dp))
+            ChoiceRow(
+                options = listOf(true, false),
+                selected = settings.faithMode,
+                label = { if (it) "Faith" else "Discipline" },
+                onSelect = { faith -> scope.launch { graph.settings.setFaithMode(faith) } },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+
+        // --- Daily brief ---
+        Column(Modifier.fillMaxWidth()) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Settings", style = MaterialTheme.typography.displaySmall, color = BastionColors.TextPrimary)
-                Text(
-                    "Close",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = BastionColors.TextMuted,
-                    modifier = Modifier.clickable(onClick = onBack),
-                )
-            }
-            Spacer(Modifier.height(20.dp))
-
-            // --- Mode ---
-            BastionCard {
-                SectionLabel("Mode")
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Changes the writing, not your progress.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
-                Spacer(Modifier.height(16.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    ModeButton("Faith", settings.faithMode) {
-                        scope.launch { graph.settings.setFaithMode(true) }
-                    }
-                    ModeButton("Discipline", !settings.faithMode) {
-                        scope.launch { graph.settings.setFaithMode(false) }
-                    }
+                Column(Modifier.weight(1f)) {
+                    Text("Daily brief", style = MaterialTheme.typography.titleMedium, color = BastionColors.TextPrimary)
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "An anchor and one thing to do.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextMuted,
+                    )
                 }
+                Switch(
+                    checked = settings.briefEnabled,
+                    onCheckedChange = { enabled ->
+                        // Ask for notification permission at the moment the
+                        // brief is switched on. Scheduling an alarm whose
+                        // notification the system will silently drop is the
+                        // kind of feature that looks fine and does nothing.
+                        if (enabled) notifications.requestIfNeeded()
+                        scope.launch {
+                            graph.settings.setBriefEnabled(enabled)
+                            if (enabled) DailyBriefScheduler.schedule(context, settings.briefHour, settings.briefMinute)
+                            else DailyBriefScheduler.cancel(context)
+                        }
+                    },
+                    colors = switchColors(),
+                )
             }
-
-            Spacer(Modifier.height(12.dp))
-
-            // --- Daily brief ---
-            BastionCard {
+            if (settings.briefEnabled) {
+                Spacer(Modifier.height(14.dp))
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Daily brief", style = MaterialTheme.typography.titleMedium, color = BastionColors.TextPrimary)
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "An anchor and one thing to do.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = BastionColors.TextMuted,
-                        )
-                    }
-                    Switch(
-                        checked = settings.briefEnabled,
-                        onCheckedChange = { enabled ->
-                            // Ask for notification permission at the moment the
-                            // brief is switched on. Scheduling an alarm whose
-                            // notification the system will silently drop is the
-                            // kind of feature that looks fine and does nothing.
-                            if (enabled) notifications.requestIfNeeded()
-                            scope.launch {
-                                graph.settings.setBriefEnabled(enabled)
-                                if (enabled) DailyBriefScheduler.schedule(context, settings.briefHour, settings.briefMinute)
-                                else DailyBriefScheduler.cancel(context)
-                            }
+                    Text("Arrives at", style = MaterialTheme.typography.bodyMedium, color = BastionColors.TextSecondary)
+                    // A button, not tappable text: the time is the control
+                    // here, and nothing about a plain label says so.
+                    androidx.compose.material3.TextButton(
+                        onClick = {
+                            TimePickerDialog(
+                                context,
+                                { _, hour, minute ->
+                                    scope.launch {
+                                        graph.settings.setBriefTime(hour, minute)
+                                        DailyBriefScheduler.schedule(context, hour, minute)
+                                    }
+                                },
+                                settings.briefHour,
+                                settings.briefMinute,
+                                true,
+                            ).show()
                         },
-                        colors = switchColors(),
-                    )
-                }
-                if (settings.briefEnabled) {
-                    Spacer(Modifier.height(14.dp))
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Arrives at", style = MaterialTheme.typography.bodyMedium, color = BastionColors.TextSecondary)
                         Text(
                             "%02d:%02d".format(settings.briefHour, settings.briefMinute),
                             style = MaterialTheme.typography.headlineSmall,
                             color = BastionColors.BronzeBright,
-                            modifier = Modifier.clickable {
-                                TimePickerDialog(
-                                    context,
-                                    { _, hour, minute ->
-                                        scope.launch {
-                                            graph.settings.setBriefTime(hour, minute)
-                                            DailyBriefScheduler.schedule(context, hour, minute)
-                                        }
-                                    },
-                                    settings.briefHour,
-                                    settings.briefMinute,
-                                    true,
-                                ).show()
-                            },
                         )
                     }
                 }
             }
+        }
 
+        BackupCard(graph = graph)
+
+        UpdateCard(settings = settings, graph = graph)
+
+        // --- Journey ---
+        Column(Modifier.fillMaxWidth()) {
+            SectionLabel("Your journey")
+            Spacer(Modifier.height(10.dp))
+            val start = settings.journeyStartEpochDay
+            Text(
+                if (start > 0) "Started ${LocalDate.ofEpochDay(start)}" else "Not started",
+                style = MaterialTheme.typography.bodyMedium,
+                color = BastionColors.TextSecondary,
+            )
+        }
+
+
+        // --- Privacy ---
+        BastionCard(accent = BastionColors.Sage) {
+            SectionLabel("Privacy", color = BastionColors.SageBright)
             Spacer(Modifier.height(12.dp))
-            BackupCard(graph = graph)
-
-            Spacer(Modifier.height(12.dp))
-            UpdateCard(settings = settings, graph = graph)
-            Spacer(Modifier.height(12.dp))
-
-            // --- Journey ---
-            BastionCard {
-                SectionLabel("Your journey")
-                Spacer(Modifier.height(10.dp))
-                val start = settings.journeyStartEpochDay
-                Text(
-                    if (start > 0) "Started ${LocalDate.ofEpochDay(start)}" else "Not started",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = BastionColors.TextSecondary,
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // --- Privacy ---
-            BastionCard(accent = BastionColors.Sage) {
-                SectionLabel("Privacy", color = BastionColors.SageBright)
-                Spacer(Modifier.height(12.dp))
-                listOf(
-                    "No account, no analytics, no telemetry",
-                    "Everything stays in private storage, cloud backup off",
-                    "Guard reads which screen is open — never its contents",
-                    "Network use: DNS lookups, and update checks you trigger",
-                ).forEach { line ->
-                    Row(Modifier.padding(vertical = 4.dp)) {
-                        Text("·  ", style = MaterialTheme.typography.bodyMedium, color = BastionColors.SageBright)
-                        Text(
-                            line,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = BastionColors.TextSecondary,
-                        )
-                    }
+            listOf(
+                "No account, no analytics, no telemetry",
+                "Everything stays in private storage, cloud backup off",
+                "Guard reads which screen is open — never its contents",
+                "Network use: DNS lookups, and update checks you trigger",
+            ).forEach { line ->
+                Row(Modifier.padding(vertical = 4.dp)) {
+                    Text("·  ", style = MaterialTheme.typography.bodyMedium, color = BastionColors.SageBright)
+                    Text(
+                        line,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = BastionColors.TextSecondary,
+                    )
                 }
             }
+        }
 
-            Spacer(Modifier.height(12.dp))
-            BastionCard {
-                Text(
-                    "A support tool, not treatment. Anything heavier deserves a real clinician — " +
-                        "asking is not a failure of will.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "Version ${UpdateChecker.currentVersion}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = BastionColors.TextMuted,
-                )
-            }
+        Column(Modifier.fillMaxWidth()) {
+            Text(
+                "A support tool, not treatment. Anything heavier deserves a real clinician — " +
+                    "asking is not a failure of will.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Version ${UpdateChecker.currentVersion}",
+                style = MaterialTheme.typography.labelSmall,
+                color = BastionColors.TextMuted,
+            )
         }
     }
 }
@@ -288,7 +295,7 @@ private fun BackupCard(graph: BastionGraph) {
         }
     }
 
-    BastionCard {
+    Column(Modifier.fillMaxWidth()) {
         SectionLabel("Backup")
         Spacer(Modifier.height(6.dp))
         Text(
@@ -553,27 +560,6 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
     }
 }
 
-@Composable
-private fun ModeButton(label: String, selected: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .clip(RoundedCornerShape(14.dp))
-            .background(if (selected) BastionColors.BronzeDeep else BastionColors.SurfaceRaised)
-            .border(
-                if (selected) 1.5.dp else 1.dp,
-                if (selected) BastionColors.Bronze else BastionColors.Outline,
-                RoundedCornerShape(14.dp),
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 22.dp, vertical = 12.dp)
-    ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelLarge,
-            color = if (selected) BastionColors.BronzeBright else BastionColors.TextMuted,
-        )
-    }
-}
 
 @Composable
 private fun switchColors() = SwitchDefaults.colors(

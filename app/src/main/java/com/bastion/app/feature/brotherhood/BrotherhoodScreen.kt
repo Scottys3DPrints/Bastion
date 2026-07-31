@@ -41,7 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.BastionCard
 import com.bastion.app.core.design.BastionColors
-import com.bastion.app.core.design.DawnBackground
+import com.bastion.app.core.design.LinkButton
+import com.bastion.app.core.design.BastionScaffold
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.QuietButton
 import com.bastion.app.core.design.SectionLabel
@@ -61,7 +62,7 @@ import java.util.Locale
  * different and far more fraught product than a partner you are walking with.
  */
 @Composable
-fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
+fun BrotherhoodScreen(onOpenMentor: () -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
     val graph = remember { BastionGraph.from(context) }
     val scope = rememberCoroutineScope()
@@ -89,228 +90,218 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
     LaunchedEffect(settings.partnerLockEnabled) { lockHasCode = graph.social.hasPasscode() }
     val removalLocked = settings.partnerLockEnabled && lockHasCode
 
-    DawnBackground(intensity = 0.35f) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(top = 52.dp, bottom = 32.dp)
-        ) {
-            Text("Brotherhood", style = MaterialTheme.typography.displaySmall, color = BastionColors.TextPrimary)
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "One person who knows beats any blocker.",
-                style = MaterialTheme.typography.bodySmall,
-                color = BastionColors.TextMuted,
-            )
-            Spacer(Modifier.height(20.dp))
+    BastionScaffold(
+        title = "Brotherhood",
+        dawnIntensity = 0.35f,
+        onBack = onBack,
+    ) {
+        Text(
+        "One person who knows beats any blocker.",
+        style = MaterialTheme.typography.bodySmall,
+        color = BastionColors.TextMuted,
+        )
 
-            if (current == null) {
-                BastionCard {
-                    SectionLabel("Your partner")
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        "Someone who'll take a message at midnight.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = BastionColors.TextMuted,
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        label = { Text("Their name") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = fieldColors(),
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    OutlinedTextField(
-                        value = contact,
-                        onValueChange = { contact = it },
-                        label = { Text("Phone number") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = fieldColors(),
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    ShareToggle("Tell them when I slip", shareSlips) { shareSlips = it }
-                    ShareToggle("Tell them if I weaken a guard", shareGuard) { shareGuard = it }
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Bastion writes the message. You press send.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = BastionColors.TextMuted,
-                    )
-                    Spacer(Modifier.height(16.dp))
-                    PrimaryButton(
-                        "Save",
-                        {
-                            scope.launch {
-                                graph.social.savePartner(
-                                    name = name.trim(),
-                                    contact = contact.trim(),
-                                    shareCheckIns = true,
-                                    shareSlips = shareSlips,
-                                    shareGuardChanges = shareGuard,
-                                )
-                            }
-                        },
-                        Modifier.fillMaxWidth(),
-                        enabled = name.isNotBlank() && contact.isTextable(),
-                    )
-                }
-            } else {
-                BastionCard(accent = BastionColors.Sage) {
-                    SectionLabel("Walking with you")
-                    Spacer(Modifier.height(8.dp))
-                    Text(current.name, style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-                    Spacer(Modifier.height(14.dp))
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        PrimaryButton(
-                            "Message",
-                            {
-                                context.startActivity(
-                                    Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${current.contact}"))
-                                        .putExtra("sms_body", "Got a minute? Could use a word.")
-                                )
-                            },
-                            Modifier.weight(1f),
-                            enabled = current.contact.isTextable(),
-                        )
-                        QuietButton(
-                            "Remove",
-                            { confirmRemove = true },
-                            Modifier.weight(1f),
-                        )
-                    }
-                }
-            }
-
-            if (current != null) {
-                Spacer(Modifier.height(14.dp))
-                PartnerLockCard(graph)
-            }
-
-            Spacer(Modifier.height(14.dp))
-
+        if (current == null) {
             BastionCard {
-                SectionLabel("Today's check-in")
-                Spacer(Modifier.height(10.dp))
-                Slider(
-                    value = mood,
-                    onValueChange = { mood = it },
-                    valueRange = 1f..5f,
-                    steps = 3,
-                    colors = SliderDefaults.colors(
-                        thumbColor = BastionColors.Bronze,
-                        activeTrackColor = BastionColors.Bronze,
-                        inactiveTrackColor = BastionColors.SurfaceHigh,
-                    ),
-                )
+                SectionLabel("Your partner")
+                Spacer(Modifier.height(6.dp))
                 Text(
-                    moodLabel(mood.toInt()),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = BastionColors.BronzeBright,
+                    "Someone who'll take a message at midnight.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(16.dp))
                 OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text("Anything you want to say") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(110.dp),
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Their name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = fieldColors(),
                 )
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = contact,
+                    onValueChange = { contact = it },
+                    label = { Text("Phone number") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = fieldColors(),
+                )
+                Spacer(Modifier.height(16.dp))
+                ShareToggle("Tell them when I slip", shareSlips) { shareSlips = it }
+                ShareToggle("Tell them if I weaken a guard", shareGuard) { shareGuard = it }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Bastion writes the message. You press send.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
+                )
+                Spacer(Modifier.height(16.dp))
+                PrimaryButton(
+                    "Save",
+                    {
+                        scope.launch {
+                            graph.social.savePartner(
+                                name = name.trim(),
+                                contact = contact.trim(),
+                                shareCheckIns = true,
+                                shareSlips = shareSlips,
+                                shareGuardChanges = shareGuard,
+                            )
+                        }
+                    },
+                    Modifier.fillMaxWidth(),
+                    enabled = name.isNotBlank() && contact.isTextable(),
+                )
+            }
+        } else {
+            BastionCard(accent = BastionColors.Sage) {
+                SectionLabel("Walking with you")
+                Spacer(Modifier.height(8.dp))
+                Text(current.name, style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
                 Spacer(Modifier.height(14.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     PrimaryButton(
-                        "Log it",
+                        "Message",
+                        {
+                            context.startActivity(
+                                Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${current.contact}"))
+                                    .putExtra("sms_body", "Got a minute? Could use a word.")
+                            )
+                        },
+                        Modifier.weight(1f),
+                        enabled = current.contact.isTextable(),
+                    )
+                    QuietButton(
+                        "Remove",
+                        { confirmRemove = true },
+                        Modifier.weight(1f),
+                    )
+                }
+            }
+        }
+
+        if (current != null) {
+            Spacer(Modifier.height(14.dp))
+            PartnerLockCard(graph)
+        }
+
+
+        BastionCard {
+            SectionLabel("Today's check-in")
+            Spacer(Modifier.height(10.dp))
+            Slider(
+                value = mood,
+                onValueChange = { mood = it },
+                valueRange = 1f..5f,
+                steps = 3,
+                colors = SliderDefaults.colors(
+                    thumbColor = BastionColors.Bronze,
+                    activeTrackColor = BastionColors.Bronze,
+                    inactiveTrackColor = BastionColors.SurfaceHigh,
+                ),
+            )
+            Text(
+                moodLabel(mood.toInt()),
+                style = MaterialTheme.typography.labelMedium,
+                color = BastionColors.BronzeBright,
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                label = { Text("Anything you want to say") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(110.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = fieldColors(),
+            )
+            Spacer(Modifier.height(14.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PrimaryButton(
+                    "Log it",
+                    {
+                        scope.launch {
+                            graph.journey.checkIn(mood.toInt(), note.takeIf { it.isNotBlank() })
+                            note = ""
+                        }
+                    },
+                    Modifier.weight(1f),
+                )
+                if (current != null && current.contact.isTextable()) {
+                    QuietButton(
+                        "Send it",
                         {
                             scope.launch {
                                 graph.journey.checkIn(mood.toInt(), note.takeIf { it.isNotBlank() })
-                                note = ""
                             }
+                            context.startActivity(
+                                Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${current.contact}"))
+                                    .putExtra(
+                                        "sms_body",
+                                        "Check-in: ${moodLabel(mood.toInt()).lowercase()}." +
+                                            if (note.isNotBlank()) " $note" else "",
+                                    )
+                            )
+                            note = ""
                         },
                         Modifier.weight(1f),
+                        BastionColors.SageBright,
                     )
-                    if (current != null && current.contact.isTextable()) {
-                        QuietButton(
-                            "Send it",
-                            {
-                                scope.launch {
-                                    graph.journey.checkIn(mood.toInt(), note.takeIf { it.isNotBlank() })
-                                }
-                                context.startActivity(
-                                    Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${current.contact}"))
-                                        .putExtra(
-                                            "sms_body",
-                                            "Check-in: ${moodLabel(mood.toInt()).lowercase()}." +
-                                                if (note.isNotBlank()) " $note" else "",
-                                        )
-                                )
-                                note = ""
-                            },
-                            Modifier.weight(1f),
-                            BastionColors.SageBright,
-                        )
-                    }
                 }
             }
+        }
 
-            Spacer(Modifier.height(14.dp))
-            BastionCard {
-                SectionLabel("Recent check-ins")
-                Spacer(Modifier.height(12.dp))
-                if (checkIns.isEmpty()) {
+        BastionCard {
+            SectionLabel("Recent check-ins")
+            Spacer(Modifier.height(12.dp))
+            if (checkIns.isEmpty()) {
+                Text(
+                    "None yet.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
+                )
+            }
+            checkIns.take(10).forEach { entry ->
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 7.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            moodLabel(entry.mood),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = BastionColors.TextPrimary,
+                        )
+                        entry.note?.let {
+                            Text(it, style = MaterialTheme.typography.bodySmall, color = BastionColors.TextMuted)
+                        }
+                    }
                     Text(
-                        "None yet.",
-                        style = MaterialTheme.typography.bodySmall,
+                        checkInDate(entry.epochDay),
+                        style = MaterialTheme.typography.labelSmall,
                         color = BastionColors.TextMuted,
                     )
                 }
-                checkIns.take(10).forEach { entry ->
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 7.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                moodLabel(entry.mood),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = BastionColors.TextPrimary,
-                            )
-                            entry.note?.let {
-                                Text(it, style = MaterialTheme.typography.bodySmall, color = BastionColors.TextMuted)
-                            }
-                        }
-                        Text(
-                            checkInDate(entry.epochDay),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = BastionColors.TextMuted,
-                        )
-                    }
-                }
             }
+        }
 
+        BastionCard {
+            SectionLabel("No one to tell yet?")
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "That's its own kind of hard, and worth naming. The Mentor is here meanwhile.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = BastionColors.TextSecondary,
+            )
             Spacer(Modifier.height(14.dp))
-            BastionCard {
-                SectionLabel("No one to tell yet?")
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "That's its own kind of hard, and worth naming. The Mentor is here meanwhile.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = BastionColors.TextSecondary,
-                )
-                Spacer(Modifier.height(14.dp))
-                LinkButton("Talk to the Mentor →", BastionColors.SageBright, onOpenMentor)
-            }
+            LinkButton("Talk to the Mentor →", BastionColors.SageBright, onOpenMentor)
         }
     }
 
@@ -508,20 +499,6 @@ private fun ShareToggle(label: String, checked: Boolean, onChange: (Boolean) -> 
  * Text-styled actions that are still real buttons — button semantics and a 48dp
  * target, because this screen gets used one-handed at the worst hour.
  */
-@Composable
-private fun LinkButton(
-    label: String,
-    color: Color = BastionColors.BronzeBright,
-    onClick: () -> Unit,
-) {
-    TextButton(
-        onClick = onClick,
-        contentPadding = PaddingValues(horizontal = 8.dp),
-        colors = ButtonDefaults.textButtonColors(contentColor = color),
-    ) {
-        Text(label, style = MaterialTheme.typography.labelLarge)
-    }
-}
 
 /**
  * Permissive on purpose: people write numbers with spaces, dashes, brackets and

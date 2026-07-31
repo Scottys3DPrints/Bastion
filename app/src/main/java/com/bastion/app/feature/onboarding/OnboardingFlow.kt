@@ -440,12 +440,10 @@ private fun CovenantStep(
         SignaturePad(strokes = strokes, modifier = Modifier.onSizeChanged(onPadSized))
         Spacer(Modifier.height(10.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            Text(
+            com.bastion.app.core.design.LinkButton(
                 "Clear",
-                style = MaterialTheme.typography.labelMedium,
-                color = BastionColors.TextMuted,
-                modifier = Modifier.clickable { strokes.clear() },
-            )
+                BastionColors.TextMuted,
+            ) { strokes.clear() }
         }
         // The oath is long enough to fill the scroll area exactly, which left
         // "Clear" half-cut against the button row. Buy it some room.

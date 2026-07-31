@@ -31,6 +31,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.bastion.app.core.design.BastionCard
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.QuietButton
@@ -59,10 +61,14 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
     var confirming by remember { mutableStateOf(false) }
     var configuring by remember { mutableStateOf(false) }
 
+    // Asks Lockdown, rather than comparing the wall clock itself. Once the
+    // countdown gained a monotonic anchor, a lockdown could be running by the
+    // elapsed clock while `lockdownUntil` had already passed — and this button
+    // would have offered to start a new one on top of it.
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
-    val active = settings.lockdownUntil > now
-    LaunchedEffect(settings.lockdownUntil) {
-        while (settings.lockdownUntil > System.currentTimeMillis()) {
+    val active = remember(settings, now) { Lockdown.isActive(settings) }
+    LaunchedEffect(settings.lockdownUntil, settings.lockdownEndElapsed) {
+        while (Lockdown.isActive(settings)) {
             now = System.currentTimeMillis()
             delay(1_000)
         }
@@ -169,15 +175,30 @@ fun LockdownCompactButton(
         now = System.currentTimeMillis()
     }
 
-    QuietButton(
-        text = if (active) {
-            val m = Lockdown.remainingMinutes(settings)
-            if (m >= 60) "${m / 60}h left" else "${m}m left"
-        } else "Break glass",
+    // A small FAB, not a full-width outlined button. In the pinned action slot
+    // it sat as a wide rectangle across the content behind it and read as a
+    // stray card rather than a control; the mini-FAB is the standard shape for
+    // a secondary action attached to a primary one, and it takes a corner
+    // rather than a whole row.
+    androidx.compose.material3.SmallFloatingActionButton(
         onClick = { if (!active) confirming = true },
         modifier = modifier,
-        accent = BastionColors.Amber,
-    )
+        containerColor = BastionColors.Surface,
+        contentColor = BastionColors.Amber,
+    ) {
+        if (active) {
+            val m = Lockdown.remainingMinutes(settings)
+            Text(
+                if (m >= 60) "${m / 60}h" else "${m}m",
+                style = MaterialTheme.typography.labelMedium,
+            )
+        } else {
+            androidx.compose.material3.Icon(
+                Icons.Filled.Lock,
+                contentDescription = "Break glass — lock down now",
+            )
+        }
+    }
 
     if (confirming) {
         AlertDialog(

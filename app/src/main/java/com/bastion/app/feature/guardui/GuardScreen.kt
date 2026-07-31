@@ -25,15 +25,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,7 +56,13 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.BastionCard
 import com.bastion.app.core.design.BastionColors
-import com.bastion.app.core.design.DawnBackground
+import com.bastion.app.core.design.ChoiceRow
+import com.bastion.app.core.design.LinkButton
+import com.bastion.app.core.design.BastionBottomSheet
+import com.bastion.app.core.design.BastionRow
+import com.bastion.app.core.design.BastionScaffold
+import com.bastion.app.core.design.Section
+import com.bastion.app.core.design.Space
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.QuietButton
 import com.bastion.app.core.design.SectionLabel
@@ -71,7 +79,7 @@ import kotlinx.coroutines.launch
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun GuardScreen() {
+fun GuardScreen(onOpenProfile: () -> Unit) {
     val context = LocalContext.current
     val graph = remember { BastionGraph.from(context) }
     val scope = rememberCoroutineScope()
@@ -178,457 +186,445 @@ fun GuardScreen() {
         }
     }
 
-    DawnBackground(intensity = 0.4f) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(top = 52.dp, bottom = 32.dp)
-        ) {
-            Text("Guard", style = MaterialTheme.typography.displaySmall, color = BastionColors.TextPrimary)
-            Spacer(Modifier.height(18.dp))
+    BastionScaffold(
+        title = "Guard",
+        dawnIntensity = 0.4f,
+        action = {
+            IconButton(onClick = onOpenProfile) {
+                Icon(
+                    Icons.Filled.AccountCircle,
+                    contentDescription = "You, partner and settings",
+                    tint = BastionColors.TextMuted,
+                )
+            }
+        },
+    ) {
 
-            if (guardBreached) {
-                BastionCard(accent = BastionColors.Amber) {
+        if (guardBreached) {
+            BastionCard(accent = BastionColors.Amber) {
+                Text(
+                    "You asked for Guard to be on",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = BastionColors.TextPrimary,
+                )
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    // How long matters more than the fact: "since just now"
+                    // is a slip, "for 3 days" is a decision.
+                    "It's off. Guarded feeds have been open $breachedFor.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
+                )
+                Spacer(Modifier.height(14.dp))
+                PrimaryButton(
+                    "Turn it back on",
+                    { BastionAccessibilityService.openSettings(context) },
+                    Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                // Written, never sent — the same rule as the rest of Brotherhood.
+                QuietButton(
+                    "Tell my partner",
+                    {
+                        scope.launch {
+                            com.bastion.app.guard.GuardWatchdog.partnerAlertIntent(context)
+                                ?.let { context.startActivity(it) }
+                        }
+                    },
+                    Modifier.fillMaxWidth(),
+                    BastionColors.SageBright,
+                )
+                Spacer(Modifier.height(4.dp))
+                // The honest exit. Without it the only way to stop the
+                // six-hourly nag was to clear the app's data, which takes
+                // the whole journey with it.
+                LinkButton("I'm done with Guard") { confirmStandDown = true }
+            }
+        }
+
+        // --- Guard strength: what is actually armed -------------------
+        //
+        // Pinned above everything else because it is the question the
+        // screen exists to answer. Each unarmed row is its own one-tap
+        // route to the system screen that arms it, which is what turns a
+        // status display into the setup checklist as well.
+        val layers = rememberGuardLayers(settings)
+        GuardStrengthCard(
+            layers = layers,
+            onArm = { layer ->
+                when (layer) {
+                    GuardLayer.FEED_GUARD -> BastionAccessibilityService.openSettings(context)
+                    GuardLayer.CONTENT_FILTER -> {
+                        val consent = BastionVpnService.prepareIntent(context)
+                        if (consent != null) {
+                            vpnConsent.launch(consent)
+                        } else {
+                            BastionVpnService.start(context)
+                            scope.launch { graph.settings.setVpnEnabled(true) }
+                        }
+                    }
+                    GuardLayer.PRIVATE_DNS -> openPrivateDnsSettings(context)
+                    GuardLayer.SCREEN_LOCK -> runCatching {
+                        context.startActivity(
+                            BastionDeviceAdmin.activationIntent(context)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        )
+                    }
+                    GuardLayer.GRAYSCALE -> {
+                        // Turning the feature on is a tap; upgrading the
+                        // veil to true grayscale needs a command from a
+                        // computer, so those are two different answers.
+                        if (!settings.grayscaleEnabled) {
+                            scope.launch { graph.settings.setGrayscale(true) }
+                        } else {
+                            clipboard.setText(
+                                androidx.compose.ui.text.AnnotatedString(ADB_GRANT_COMMAND)
+                            )
+                            showAdbHint = true
+                        }
+                    }
+                    GuardLayer.NOTIFICATIONS -> openNotificationSettings(context)
+                }
+            },
+        )
+
+
+        // --- Bastion Guard service ---
+        BastionCard(accent = if (serviceRunning) BastionColors.Sage else BastionColors.Amber) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                StatusDot(serviceRunning)
+                Spacer(Modifier.size(10.dp))
+                Text(
+                    if (serviceRunning) "Bastion Guard is on" else "Bastion Guard is off",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = BastionColors.TextPrimary,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                if (serviceRunning) "Apps open. Guarded feeds don't."
+                else "Blocks Reels, Shorts and For You while the app stays usable.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
+            )
+            if (!serviceRunning) {
+                Spacer(Modifier.height(14.dp))
+                PrimaryButton(
+                    "Turn on in Settings",
+                    { BastionAccessibilityService.openSettings(context) },
+                    Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                // Android 13 hides accessibility behind "restricted settings"
+                // for sideloaded apps, and the option to lift it is buried in
+                // App info under the overflow menu. Updates install through a
+                // PackageInstaller session now, which should stop it coming
+                // back — but when a build re-gates anyway, this is the door.
+                QuietButton(
+                    "Greyed out? Open App info",
+                    { com.bastion.app.core.update.SelfInstaller.openAppInfo(context) },
+                    Modifier.fillMaxWidth(),
+                )
+            }
+        }
+
+
+        // --- Content filter ---
+        BastionCard(accent = if (filterRunning) BastionColors.Sage else null) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Content filter", style = MaterialTheme.typography.titleMedium, color = BastionColors.TextPrimary)
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        "You asked for Guard to be on",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = BastionColors.TextPrimary,
-                    )
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        // How long matters more than the fact: "since just now"
-                        // is a slip, "for 3 days" is a decision.
-                        "It's off. Guarded feeds have been open $breachedFor.",
+                        if (filterRunning) "On · $blockedCount lookups blocked"
+                        else "Blocks adult domains across every app and browser",
                         style = MaterialTheme.typography.bodySmall,
                         color = BastionColors.TextMuted,
                     )
-                    Spacer(Modifier.height(14.dp))
-                    PrimaryButton(
-                        "Turn it back on",
-                        { BastionAccessibilityService.openSettings(context) },
-                        Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    // Written, never sent — the same rule as the rest of Brotherhood.
-                    QuietButton(
-                        "Tell my partner",
-                        {
-                            scope.launch {
-                                com.bastion.app.guard.GuardWatchdog.partnerAlertIntent(context)
-                                    ?.let { context.startActivity(it) }
-                            }
-                        },
-                        Modifier.fillMaxWidth(),
-                        BastionColors.SageBright,
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    // The honest exit. Without it the only way to stop the
-                    // six-hourly nag was to clear the app's data, which takes
-                    // the whole journey with it.
-                    LinkButton("I'm done with Guard") { confirmStandDown = true }
                 }
-                Spacer(Modifier.height(12.dp))
-            }
-
-            // --- Guard strength: what is actually armed -------------------
-            //
-            // Pinned above everything else because it is the question the
-            // screen exists to answer. Each unarmed row is its own one-tap
-            // route to the system screen that arms it, which is what turns a
-            // status display into the setup checklist as well.
-            val layers = rememberGuardLayers(settings)
-            GuardStrengthCard(
-                layers = layers,
-                onArm = { layer ->
-                    when (layer) {
-                        GuardLayer.FEED_GUARD -> BastionAccessibilityService.openSettings(context)
-                        GuardLayer.CONTENT_FILTER -> {
+                Switch(
+                    checked = filterRunning,
+                    onCheckedChange = { wanted ->
+                        if (wanted) {
                             val consent = BastionVpnService.prepareIntent(context)
-                            if (consent != null) {
-                                vpnConsent.launch(consent)
-                            } else {
+                            if (consent != null) vpnConsent.launch(consent)
+                            else {
                                 BastionVpnService.start(context)
                                 scope.launch { graph.settings.setVpnEnabled(true) }
                             }
+                        } else {
+                            confirmFilterOff = true
                         }
-                        GuardLayer.PRIVATE_DNS -> openPrivateDnsSettings(context)
-                        GuardLayer.SCREEN_LOCK -> runCatching {
-                            context.startActivity(
-                                BastionDeviceAdmin.activationIntent(context)
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            )
-                        }
-                        GuardLayer.GRAYSCALE -> {
-                            // Turning the feature on is a tap; upgrading the
-                            // veil to true grayscale needs a command from a
-                            // computer, so those are two different answers.
-                            if (!settings.grayscaleEnabled) {
-                                scope.launch { graph.settings.setGrayscale(true) }
-                            } else {
-                                clipboard.setText(
-                                    androidx.compose.ui.text.AnnotatedString(ADB_GRANT_COMMAND)
-                                )
-                                showAdbHint = true
-                            }
-                        }
-                        GuardLayer.NOTIFICATIONS -> openNotificationSettings(context)
-                    }
-                },
-            )
-
-            Spacer(Modifier.height(12.dp))
-
-            // --- Bastion Guard service ---
-            BastionCard(accent = if (serviceRunning) BastionColors.Sage else BastionColors.Amber) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    StatusDot(serviceRunning)
-                    Spacer(Modifier.size(10.dp))
-                    Text(
-                        if (serviceRunning) "Bastion Guard is on" else "Bastion Guard is off",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = BastionColors.TextPrimary,
-                    )
-                }
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    if (serviceRunning) "Apps open. Guarded feeds don't."
-                    else "Blocks Reels, Shorts and For You while the app stays usable.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
-                if (!serviceRunning) {
-                    Spacer(Modifier.height(14.dp))
-                    PrimaryButton(
-                        "Turn on in Settings",
-                        { BastionAccessibilityService.openSettings(context) },
-                        Modifier.fillMaxWidth(),
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    // Android 13 hides accessibility behind "restricted settings"
-                    // for sideloaded apps, and the option to lift it is buried in
-                    // App info under the overflow menu. Updates install through a
-                    // PackageInstaller session now, which should stop it coming
-                    // back — but when a build re-gates anyway, this is the door.
-                    QuietButton(
-                        "Greyed out? Open App info",
-                        { com.bastion.app.core.update.SelfInstaller.openAppInfo(context) },
-                        Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // --- Content filter ---
-            BastionCard(accent = if (filterRunning) BastionColors.Sage else null) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("Content filter", style = MaterialTheme.typography.titleMedium, color = BastionColors.TextPrimary)
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            if (filterRunning) "On · $blockedCount lookups blocked"
-                            else "Blocks adult domains across every app and browser",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = BastionColors.TextMuted,
-                        )
-                    }
-                    Switch(
-                        checked = filterRunning,
-                        onCheckedChange = { wanted ->
-                            if (wanted) {
-                                val consent = BastionVpnService.prepareIntent(context)
-                                if (consent != null) vpnConsent.launch(consent)
-                                else {
-                                    BastionVpnService.start(context)
-                                    scope.launch { graph.settings.setVpnEnabled(true) }
-                                }
-                            } else {
-                                confirmFilterOff = true
-                            }
-                        },
-                        colors = switchColors(),
-                    )
-                }
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "Apps with their own encrypted DNS can route around this. One layer of three.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
-                Spacer(Modifier.height(12.dp))
-                QuietButton(
-                    "Open Bastion browser",
-                    {
-                        context.startActivity(Intent(context, FilteredBrowserActivity::class.java))
                     },
-                    Modifier.fillMaxWidth(),
+                    colors = switchColors(),
                 )
             }
-
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Apps with their own encrypted DNS can route around this. One layer of three.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
+            )
             Spacer(Modifier.height(12.dp))
+            QuietButton(
+                "Open Bastion browser",
+                {
+                    context.startActivity(Intent(context, FilteredBrowserActivity::class.java))
+                },
+                Modifier.fillMaxWidth(),
+            )
+        }
 
-            // --- Guarded apps ---
-            BastionCard {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SectionLabel("Guarded apps")
-                    LinkButton("Add →") { showAppPicker = true }
-                }
-                Spacer(Modifier.height(14.dp))
 
-                if (guardedApps.isEmpty()) {
-                    Text(
-                        "Nothing guarded yet. Instagram and YouTube are the usual first two.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = BastionColors.TextMuted,
-                    )
-                }
-
-                guardedApps.forEach { app ->
-                    GuardedAppRow(
-                        app = app,
-                        onModeChange = { mode ->
-                            // Loosening waits and is confirmed; tightening is
-                            // instant and needs no ceremony. Relaxing a mode is
-                            // the same kind of decision as removing the guard
-                            // altogether, so it gets the same dialog.
-                            if (mode.isWeakerThan(app.mode)) {
-                                confirmRelax = app to mode
-                            } else {
-                                scope.launch {
-                                    graph.guard.upsertApp(
-                                        app.copy(mode = mode, updatedAt = System.currentTimeMillis())
-                                    )
-                                }
-                            }
-                        },
-                        onRemove = { confirmUnguard = app },
-                    )
-                    Spacer(Modifier.height(10.dp))
-                }
+        // --- Guarded apps ---
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SectionLabel("Guarded apps")
+                LinkButton("Add →") { showAppPicker = true }
             }
+            Spacer(Modifier.height(14.dp))
 
-            Spacer(Modifier.height(12.dp))
-
-            // --- Feed rules ---
-            BastionCard {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SectionLabel("Feed rules · ${feedRules.count { it.enabled }} active")
-                    LinkButton("Learn →") { showLearnMode = true }
-                }
-                Spacer(Modifier.height(8.dp))
-                // Collapsed by default. Two dozen rows of matcher internals is
-                // the single densest thing on this screen and almost never what
-                // someone came here to change — the summary answers "is it
-                // covered", and the list is one tap away when a rule breaks.
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable { rulesExpanded = !rulesExpanded }
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        feedRuleSummary(feedRules),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = BastionColors.TextMuted,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        if (rulesExpanded) "Hide" else "Show",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = BastionColors.BronzeBright,
-                    )
-                }
-                if (rulesExpanded) {
-                Spacer(Modifier.height(14.dp))
+            if (guardedApps.isEmpty()) {
                 Text(
-                    "A rule stopped firing? Learn it again in seconds.",
+                    "Nothing guarded yet. Instagram and YouTube are the usual first two.",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
-                Spacer(Modifier.height(14.dp))
-                feedRules.groupBy { it.packageName }.forEach { (pkg, rules) ->
-                    Text(
-                        feedGroupName(pkg, rules),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = BastionColors.TextPrimary,
-                    )
-                    rules.forEach { rule ->
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            // The label, not the matcher. "view_id ·
-                            // com.instagram.android:id/clips_viewer" is what
-                            // the rule is made of; "Instagram Reels" is what it
-                            // does, and a non-technical reader took the former
-                            // for breakage. The internals stay one tap away for
-                            // when a rule needs re-learning.
-                            Column(
-                                Modifier
-                                    .weight(1f)
-                                    .clickable { detailRuleId = if (detailRuleId == rule.id) null else rule.id }
-                            ) {
-                                Text(
-                                    rule.label,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = BastionColors.TextSecondary,
+            }
+
+            guardedApps.forEach { app ->
+                GuardedAppRow(
+                    app = app,
+                    onModeChange = { mode ->
+                        // Loosening waits and is confirmed; tightening is
+                        // instant and needs no ceremony. Relaxing a mode is
+                        // the same kind of decision as removing the guard
+                        // altogether, so it gets the same dialog.
+                        if (mode.isWeakerThan(app.mode)) {
+                            confirmRelax = app to mode
+                        } else {
+                            scope.launch {
+                                graph.guard.upsertApp(
+                                    app.copy(mode = mode, updatedAt = System.currentTimeMillis())
                                 )
-                                if (detailRuleId == rule.id) {
-                                    Text(
-                                        "${rule.matchType.name.lowercase()} · ${rule.matchValue}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = BastionColors.TextMuted,
+                            }
+                        }
+                    },
+                    onRemove = { confirmUnguard = app },
+                )
+                Spacer(Modifier.height(10.dp))
+            }
+        }
+
+
+        // --- Feed rules ---
+        Column(Modifier.fillMaxWidth()) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SectionLabel("Feed rules · ${feedRules.count { it.enabled }} active")
+                LinkButton("Learn →") { showLearnMode = true }
+            }
+            Spacer(Modifier.height(8.dp))
+            // Collapsed by default. Two dozen rows of matcher internals is
+            // the single densest thing on this screen and almost never what
+            // someone came here to change — the summary answers "is it
+            // covered", and the list is one tap away when a rule breaks.
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { rulesExpanded = !rulesExpanded }
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    feedRuleSummary(feedRules),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    if (rulesExpanded) "Hide" else "Show",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = BastionColors.BronzeBright,
+                )
+            }
+            if (rulesExpanded) {
+            Spacer(Modifier.height(14.dp))
+            Text(
+                "A rule stopped firing? Learn it again in seconds.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
+            )
+            Spacer(Modifier.height(14.dp))
+            feedRules.groupBy { it.packageName }.forEach { (pkg, rules) ->
+                Text(
+                    feedGroupName(pkg, rules),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = BastionColors.TextPrimary,
+                )
+                rules.forEach { rule ->
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // The label, not the matcher. "view_id ·
+                        // com.instagram.android:id/clips_viewer" is what
+                        // the rule is made of; "Instagram Reels" is what it
+                        // does, and a non-technical reader took the former
+                        // for breakage. The internals stay one tap away for
+                        // when a rule needs re-learning.
+                        Column(
+                            Modifier
+                                .weight(1f)
+                                .clickable { detailRuleId = if (detailRuleId == rule.id) null else rule.id }
+                        ) {
+                            Text(
+                                rule.label,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = BastionColors.TextSecondary,
+                            )
+                            if (detailRuleId == rule.id) {
+                                Text(
+                                    "${rule.matchType.name.lowercase()} · ${rule.matchValue}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = BastionColors.TextMuted,
+                                )
+                            }
+                        }
+                        Switch(
+                            checked = rule.enabled,
+                            onCheckedChange = { enabled ->
+                                scope.launch {
+                                    if (enabled) graph.guard.upsertRule(rule.copy(enabled = true))
+                                    else if (!settings.tamperLockEnabled) {
+                                        graph.guard.upsertRule(rule.copy(enabled = false))
+                                    } else graph.guard.requestWeakening(
+                                        "Disable rule ${rule.label}",
+                                        payload = "rule:${rule.id}:off",
                                     )
                                 }
-                            }
-                            Switch(
-                                checked = rule.enabled,
-                                onCheckedChange = { enabled ->
-                                    scope.launch {
-                                        if (enabled) graph.guard.upsertRule(rule.copy(enabled = true))
-                                        else if (!settings.tamperLockEnabled) {
-                                            graph.guard.upsertRule(rule.copy(enabled = false))
-                                        } else graph.guard.requestWeakening(
-                                            "Disable rule ${rule.label}",
-                                            payload = "rule:${rule.id}:off",
-                                        )
-                                    }
-                                },
-                                colors = switchColors(),
+                            },
+                            colors = switchColors(),
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+            }
+        }
+
+
+        // --- Tamper resistance ---
+        BastionCard(accent = BastionColors.Bronze) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    SectionLabel("Cooling-off lock")
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        // The two states are named plainly, because the whole
+                        // point is knowing which one you are in before you
+                        // change something.
+                        if (settings.tamperLockEnabled)
+                            "Locked in. Weakening waits ${settings.coolingOffHours}h."
+                        else
+                            "Not locked in. Every change is instant.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (settings.tamperLockEnabled) BastionColors.BronzeBright
+                        else BastionColors.TextMuted,
+                    )
+                }
+                Switch(
+                    checked = settings.tamperLockEnabled,
+                    onCheckedChange = { wanted ->
+                        // Locking in is instant; unlocking is itself a
+                        // weakening and waits, or the lock would be a button
+                        // that turns itself off.
+                        if (wanted) scope.launch { graph.settings.setTamperLock(true) }
+                        else confirmUnlock = true
+                    },
+                    colors = switchColors(),
+                )
+            }
+            Spacer(Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(1, 2, 6, 24).forEach { hours ->
+                    HourChip(hours, settings.coolingOffHours == hours) {
+                        scope.launch {
+                            // Lengthening the delay is a tightening; shortening waits its own delay.
+                            if (hours >= settings.coolingOffHours || !settings.tamperLockEnabled) {
+                                graph.settings.setCoolingOffHours(hours)
+                            } else graph.guard.requestWeakening(
+                                "Shorten the cooling-off delay to ${hours}h",
+                                payload = "cooloff:$hours",
                             )
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
-                }
                 }
             }
 
-            Spacer(Modifier.height(12.dp))
-
-            // --- Tamper resistance ---
-            BastionCard(accent = BastionColors.Bronze) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        SectionLabel("Cooling-off lock")
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            // The two states are named plainly, because the whole
-                            // point is knowing which one you are in before you
-                            // change something.
-                            if (settings.tamperLockEnabled)
-                                "Locked in. Weakening waits ${settings.coolingOffHours}h."
-                            else
-                                "Not locked in. Every change is instant.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = if (settings.tamperLockEnabled) BastionColors.BronzeBright
-                            else BastionColors.TextMuted,
-                        )
-                    }
-                    Switch(
-                        checked = settings.tamperLockEnabled,
-                        onCheckedChange = { wanted ->
-                            // Locking in is instant; unlocking is itself a
-                            // weakening and waits, or the lock would be a button
-                            // that turns itself off.
-                            if (wanted) scope.launch { graph.settings.setTamperLock(true) }
-                            else confirmUnlock = true
-                        },
-                        colors = switchColors(),
-                    )
-                }
-                Spacer(Modifier.height(14.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(1, 2, 6, 24).forEach { hours ->
-                        HourChip(hours, settings.coolingOffHours == hours) {
-                            scope.launch {
-                                // Lengthening the delay is a tightening; shortening waits its own delay.
-                                if (hours >= settings.coolingOffHours || !settings.tamperLockEnabled) {
-                                    graph.settings.setCoolingOffHours(hours)
-                                } else graph.guard.requestWeakening(
-                                    "Shorten the cooling-off delay to ${hours}h",
-                                    payload = "cooloff:$hours",
-                                )
-                            }
+            if (pendingChanges.isNotEmpty()) {
+                Spacer(Modifier.height(16.dp))
+                SectionLabel("Waiting", color = BastionColors.Amber)
+                Spacer(Modifier.height(8.dp))
+                pendingChanges.forEach { change ->
+                    val remaining = ((change.effectiveAt - now) / 60_000L).coerceAtLeast(0)
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(change.description, style = MaterialTheme.typography.bodyMedium, color = BastionColors.TextPrimary)
+                            Text(
+                                if (remaining > 60) "in ${remaining / 60}h ${remaining % 60}m" else "in ${remaining}m",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = BastionColors.Amber,
+                            )
                         }
-                    }
-                }
-
-                if (pendingChanges.isNotEmpty()) {
-                    Spacer(Modifier.height(16.dp))
-                    SectionLabel("Waiting", color = BastionColors.Amber)
-                    Spacer(Modifier.height(8.dp))
-                    pendingChanges.forEach { change ->
-                        val remaining = ((change.effectiveAt - now) / 60_000L).coerceAtLeast(0)
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Column(Modifier.weight(1f)) {
-                                Text(change.description, style = MaterialTheme.typography.bodyMedium, color = BastionColors.TextPrimary)
-                                Text(
-                                    if (remaining > 60) "in ${remaining / 60}h ${remaining % 60}m" else "in ${remaining}m",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = BastionColors.Amber,
-                                )
-                            }
-                            LinkButton("Cancel", BastionColors.SageBright) {
-                                scope.launch { graph.guard.cancelChange(change.id) }
-                            }
+                        LinkButton("Cancel", BastionColors.SageBright) {
+                            scope.launch { graph.guard.cancelChange(change.id) }
                         }
                     }
                 }
             }
-
-            // --- Settings ---
-            //
-            // Everything that is configured rather than acted on. The break-glass
-            // button itself lives on the home screen, where it can be reached
-            // without going looking; only its plan belongs here.
-            Spacer(Modifier.height(22.dp))
-            SectionLabel("Settings")
-            Spacer(Modifier.height(12.dp))
-
-            LockdownPlanCard(settings = settings, graph = graph)
-
-            Spacer(Modifier.height(12.dp))
-            PrivateDnsCard()
-
-            Spacer(Modifier.height(12.dp))
-            GrayscaleCard(settings = settings, graph = graph)
         }
+
+        // --- Settings ---
+        //
+        // Everything that is configured rather than acted on. The break-glass
+        // button itself lives on the home screen, where it can be reached
+        // without going looking; only its plan belongs here.
+        SectionLabel("Settings")
+
+        LockdownPlanCard(settings = settings, graph = graph)
+
+        PrivateDnsCard()
+
+        GrayscaleCard(settings = settings, graph = graph)
     }
 
     if (showAppPicker) {
-        ModalBottomSheet(
-            onDismissRequest = { showAppPicker = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = BastionColors.Surface,
-        ) {
+        BastionBottomSheet(onDismiss = { showAppPicker = false }) {
             AppPickerSheet(
                 alreadyGuarded = guardedApps.map { it.packageName }.toSet(),
                 onPick = { pkg, label, mode ->
@@ -775,13 +771,11 @@ fun GuardScreen() {
     }
 
     if (showLearnMode) {
-        ModalBottomSheet(
-            onDismissRequest = {
+        BastionBottomSheet(
+            onDismiss = {
                 showLearnMode = false
                 BastionAccessibilityService.learnMode.value = false
             },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = BastionColors.Surface,
         ) {
             LearnModeSheet(onClose = {
                 showLearnMode = false
@@ -816,7 +810,7 @@ private fun PrivateDnsCard() {
         }
     }
 
-    BastionCard {
+    Column(Modifier.fillMaxWidth()) {
         SectionLabel("Close the DNS-over-HTTPS gap")
         Spacer(Modifier.height(8.dp))
         Text(
@@ -902,7 +896,7 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
         }
     }
 
-    BastionCard {
+    Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -971,20 +965,6 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
  * bad moment, so every action carries button semantics and a 48dp target rather
  * than being a clickable label.
  */
-@Composable
-private fun LinkButton(
-    label: String,
-    color: Color = BastionColors.BronzeBright,
-    onClick: () -> Unit,
-) {
-    TextButton(
-        onClick = onClick,
-        contentPadding = PaddingValues(horizontal = 8.dp),
-        colors = ButtonDefaults.textButtonColors(contentColor = color),
-    ) {
-        Text(label, style = MaterialTheme.typography.labelLarge)
-    }
-}
 
 /** Weakening is the direction that costs something, so a mis-tap must not start the clock. */
 @Composable
@@ -1163,47 +1143,29 @@ private fun GuardedAppRow(
             LinkButton("Remove", BastionColors.TextMuted, onRemove)
         }
         Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            // SCHEDULE and TIME_LIMIT are deliberately absent.
-            //
-            // Both need a parameter — a window, or a number of minutes — and
-            // there is nowhere to set either, so choosing them silently applied
-            // defaults of 00:00–00:00 and a fixed cap. The chips looked like
-            // features and behaved like dead ends, which is worse than not
-            // offering them. They come back when their editors do.
-            listOf(BlockMode.FEED_ONLY, BlockMode.FULL).forEach { mode ->
-                ModeChip(mode, app.mode == mode) { onModeChange(mode) }
-            }
-            if (app.mode == BlockMode.SCHEDULE || app.mode == BlockMode.TIME_LIMIT) {
-                // Shown only if an older build already set one, so the row still
-                // tells the truth about what is running.
-                ModeChip(app.mode, true) {}
-            }
+        // SCHEDULE and TIME_LIMIT are deliberately absent.
+        //
+        // Both need a parameter — a window, or a number of minutes — and there
+        // is nowhere to set either, so choosing them silently applied defaults
+        // of 00:00-00:00 and a fixed cap. The options looked like features and
+        // behaved like dead ends, which is worse than not offering them. They
+        // come back when their editors do. A mode an older build already set
+        // stays listed, so the row keeps telling the truth about what is running.
+        val modes = buildList {
+            add(BlockMode.FEED_ONLY)
+            add(BlockMode.FULL)
+            if (app.mode !in this) add(app.mode)
         }
-    }
-}
-
-@Composable
-private fun ModeChip(mode: BlockMode, selected: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(if (selected) BastionColors.BronzeDeep else BastionColors.Surface)
-            .border(
-                1.dp,
-                if (selected) BastionColors.Bronze else BastionColors.Outline,
-                RoundedCornerShape(16.dp),
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 7.dp)
-    ) {
-        Text(
-            mode.label(),
-            style = MaterialTheme.typography.labelSmall,
-            color = if (selected) BastionColors.BronzeBright else BastionColors.TextMuted,
+        ChoiceRow(
+            options = modes,
+            selected = app.mode,
+            label = { it.label() },
+            onSelect = onModeChange,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
+
 
 @Composable
 private fun HourChip(hours: Int, selected: Boolean, onClick: () -> Unit) {

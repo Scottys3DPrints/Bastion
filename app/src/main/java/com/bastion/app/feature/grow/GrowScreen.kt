@@ -21,6 +21,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -44,7 +48,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.BastionCard
 import com.bastion.app.core.design.BastionColors
-import com.bastion.app.core.design.DawnBackground
+import com.bastion.app.core.design.ChoiceRow
+import com.bastion.app.core.design.LinkButton
+import com.bastion.app.core.design.BastionBottomSheet
+import com.bastion.app.core.design.BastionScaffold
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.ProportionBar
 import com.bastion.app.core.design.QuietButton
@@ -75,7 +82,7 @@ private enum class GrowTab(val label: String) {
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun GrowScreen(faithMode: Boolean) {
+fun GrowScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
     val context = LocalContext.current
     val graph = remember { BastionGraph.from(context) }
     val scope = rememberCoroutineScope()
@@ -84,50 +91,37 @@ fun GrowScreen(faithMode: Boolean) {
     var showHabitPicker by remember { mutableStateOf(false) }
     var openLesson by remember { mutableStateOf<Lesson?>(null) }
 
-    DawnBackground(intensity = 0.35f) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .padding(horizontal = 20.dp)
-                .padding(top = 52.dp)
-        ) {
-            Text("Grow", style = MaterialTheme.typography.displaySmall, color = BastionColors.TextPrimary)
-            Spacer(Modifier.height(16.dp))
-
-            // Scrollable: at the largest font scales four chips no longer fit a
-            // phone width, and the last one was being cut off rather than wrapped.
-            Row(
-                Modifier.horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                GrowTab.entries.forEach { entry ->
-                    TabChip(entry.label, tab == entry) { tab = entry }
-                }
+    BastionScaffold(
+        title = "Grow",
+        dawnIntensity = 0.35f,
+        action = {
+            IconButton(onClick = onOpenProfile) {
+                Icon(
+                    Icons.Filled.AccountCircle,
+                    contentDescription = "You, partner and settings",
+                    tint = BastionColors.TextMuted,
+                )
             }
-            Spacer(Modifier.height(18.dp))
+        },
+    ) {
+        ChoiceRow(
+            options = GrowTab.entries,
+            selected = tab,
+            label = { it.label },
+            onSelect = { tab = it },
+            modifier = Modifier.fillMaxWidth(),
+        )
 
-            Column(
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(bottom = 32.dp)
-            ) {
-                when (tab) {
-                    GrowTab.REGIMEN -> RegimenTab(graph, onAdd = { showHabitPicker = true })
-                    GrowTab.CHALLENGES -> ChallengesTab(graph, faithMode)
-                    GrowTab.BECOMING -> BecomingTab(graph)
-                    GrowTab.LIBRARY -> LibraryTab(graph, faithMode) { openLesson = it }
-                }
-            }
+        when (tab) {
+            GrowTab.REGIMEN -> RegimenTab(graph, onAdd = { showHabitPicker = true })
+            GrowTab.CHALLENGES -> ChallengesTab(graph, faithMode)
+            GrowTab.BECOMING -> BecomingTab(graph)
+            GrowTab.LIBRARY -> LibraryTab(graph, faithMode) { openLesson = it }
         }
     }
 
     if (showHabitPicker) {
-        ModalBottomSheet(
-            onDismissRequest = { showHabitPicker = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = BastionColors.Surface,
-        ) {
+        BastionBottomSheet(onDismiss = { showHabitPicker = false }) {
             HabitPickerSheet(graph, faithMode) { def ->
                 scope.launch2 { graph.growth.adoptHabit(def, 99) }
                 showHabitPicker = false
@@ -136,11 +130,7 @@ fun GrowScreen(faithMode: Boolean) {
     }
 
     openLesson?.let { lesson ->
-        ModalBottomSheet(
-            onDismissRequest = { openLesson = null },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = BastionColors.Surface,
-        ) {
+        BastionBottomSheet(onDismiss = { openLesson = null }) {
             LessonSheet(lesson) {
                 scope.launch2 { graph.journey.markLessonRead(lesson.id) }
                 openLesson = null
@@ -504,20 +494,6 @@ private fun HabitPickerSheet(graph: BastionGraph, faithMode: Boolean, onPick: (H
 }
 
 /** Text-styled actions that are still real buttons: 48dp target, button semantics. */
-@Composable
-private fun LinkButton(
-    label: String,
-    color: Color = BastionColors.BronzeBright,
-    onClick: () -> Unit,
-) {
-    TextButton(
-        onClick = onClick,
-        contentPadding = PaddingValues(horizontal = 8.dp),
-        colors = ButtonDefaults.textButtonColors(contentColor = color),
-    ) {
-        Text(label, style = MaterialTheme.typography.labelLarge)
-    }
-}
 
 @Composable
 private fun ConfirmDialog(
@@ -544,27 +520,6 @@ private fun ConfirmDialog(
     )
 }
 
-@Composable
-private fun TabChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(if (selected) BastionColors.BronzeDeep else BastionColors.Surface)
-            .border(
-                1.dp,
-                if (selected) BastionColors.Bronze else BastionColors.Outline,
-                RoundedCornerShape(18.dp),
-            )
-            .clickable(role = Role.Tab, onClick = onClick)
-            .padding(horizontal = 13.dp, vertical = 8.dp)
-    ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (selected) BastionColors.BronzeBright else BastionColors.TextMuted,
-        )
-    }
-}
 
 /** Small helper so tab bodies stay readable rather than nesting scope plumbing. */
 private fun CoroutineScope.launch2(block: suspend () -> Unit) {

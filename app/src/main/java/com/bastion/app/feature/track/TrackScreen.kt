@@ -19,17 +19,18 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -47,8 +48,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.Bar
 import com.bastion.app.core.design.BarChart
+import com.bastion.app.core.design.BastionBottomSheet
 import com.bastion.app.core.design.BastionCard
+import com.bastion.app.core.design.BastionScaffold
 import com.bastion.app.core.design.BastionColors
+import com.bastion.app.core.design.BastionFilterChip
 import com.bastion.app.core.design.CalendarLegend
 import com.bastion.app.core.design.CalendarMonth
 import com.bastion.app.core.design.ChartColors
@@ -57,7 +61,10 @@ import com.bastion.app.core.design.DayMark
 import com.bastion.app.core.design.MetricTile
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.QuietButton
+import com.bastion.app.core.design.EmptyState
+import com.bastion.app.core.design.Section
 import com.bastion.app.core.design.SectionLabel
+import com.bastion.app.core.design.Space
 import com.bastion.app.core.design.StreakRing
 import com.bastion.app.data.BastionGraph
 import com.bastion.app.data.content.BenefitCard
@@ -85,7 +92,7 @@ private val MILESTONES = listOf(7, 14, 30, 60, 90, 180, 365)
     androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
 )
 @Composable
-fun TrackScreen(faithMode: Boolean) {
+fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
     val context = LocalContext.current
     val graph = remember { BastionGraph.from(context) }
     val scope = rememberCoroutineScope()
@@ -99,6 +106,7 @@ fun TrackScreen(faithMode: Boolean) {
     var benefits by remember { mutableStateOf<List<BenefitCard>>(emptyList()) }
     var showLogSheet by remember { mutableStateOf(false) }
     var showRecovery by remember { mutableStateOf(false) }
+    var showLogChoice by remember { mutableStateOf(false) }
     var editingDay by remember { mutableStateOf<LocalDate?>(null) }
 
     LaunchedEffect(state.currentStreak) {
@@ -116,35 +124,46 @@ fun TrackScreen(faithMode: Boolean) {
     }
     val insights = remember(urges) { Analytics.insights(urges).take(2) }
 
-    DawnBackground(intensity = 0.45f) {
-        Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(top = 44.dp, bottom = 28.dp)
-        ) {
-            // --- Hero -------------------------------------------------------
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                StreakRing(
-                    days = state.currentStreak,
-                    caption = if (state.currentStreak == 1) "DAY" else "DAYS",
-                    progress = nextMilestone?.let { state.currentStreak.toFloat() / it } ?: 1f,
+    BastionScaffold(
+        title = "Progress",
+        dawnIntensity = 0.45f,
+        action = {
+            IconButton(onClick = onOpenProfile) {
+                Icon(
+                    Icons.Filled.AccountCircle,
+                    contentDescription = "You, partner and settings",
+                    tint = BastionColors.TextMuted,
                 )
             }
-            Spacer(Modifier.height(10.dp))
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text(
-                    nextMilestone?.let {
-                        val left = it - state.currentStreak
-                        "${left} ${if (left == 1) "day" else "days"} to $it"
-                    } ?: "Beyond every milestone",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = BastionColors.TextMuted,
-                )
-            }
-
-            Spacer(Modifier.height(22.dp))
+        },
+        floatingAction = {
+            // One action, one place. There were two inline buttons competing
+            // mid-scroll ("Log urge" and "Log slip"), which asked the user to
+            // classify what happened before they had said anything at all.
+            ExtendedFloatingActionButton(
+                onClick = { showLogChoice = true },
+                containerColor = BastionColors.Bronze,
+                contentColor = BastionColors.MidnightDeep,
+            ) { Text("Log", style = MaterialTheme.typography.labelLarge) }
+        },
+    ) {
+        // The hero, and the only one here.
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            StreakRing(
+                days = state.currentStreak,
+                caption = if (state.currentStreak == 1) "DAY" else "DAYS",
+                progress = nextMilestone?.let { state.currentStreak.toFloat() / it } ?: 1f,
+            )
+            Spacer(Modifier.height(Space.md))
+            Text(
+                nextMilestone?.let {
+                    val left = it - state.currentStreak
+                    "$left ${if (left == 1) "day" else "days"} to $it"
+                } ?: "Beyond every milestone",
+                style = MaterialTheme.typography.labelMedium,
+                color = BastionColors.TextMuted,
+            )
+            Spacer(Modifier.height(Space.lg))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 MetricTile("${state.longestStreak}", "BEST", accent = BastionColors.BronzeBright)
                 MetricTile("${state.totalCleanDays}", "CLEAN", accent = ChartColors.Clean)
@@ -154,91 +173,79 @@ fun TrackScreen(faithMode: Boolean) {
                 )
                 MetricTile("${state.rank.tier}", "RANK", accent = BastionColors.BronzeBright)
             }
+        }
 
-            Spacer(Modifier.height(20.dp))
-
-            // --- Calendar ---------------------------------------------------
-            BastionCard {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        Icons.Filled.ChevronLeft,
-                        contentDescription = "Previous month",
-                        tint = BastionColors.TextMuted,
-                        modifier = Modifier.clickable { month = month.minusMonths(1) },
-                    )
+        // --- Your month -------------------------------------------------
+        Section(
+            label = "Your month",
+            trailing = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { month = month.minusMonths(1) }) {
+                        Icon(
+                            Icons.Filled.ChevronLeft,
+                            contentDescription = "Previous month",
+                            tint = BastionColors.TextMuted,
+                        )
+                    }
                     Text(
-                        month.format(DateTimeFormatter.ofPattern("MMMM yyyy")),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = BastionColors.TextPrimary,
+                        month.format(DateTimeFormatter.ofPattern("MMM yyyy")),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = BastionColors.TextSecondary,
                     )
-                    Icon(
-                        Icons.Filled.ChevronRight,
-                        contentDescription = "Next month",
-                        tint = if (month < YearMonth.now()) BastionColors.TextMuted else BastionColors.Outline,
-                        modifier = Modifier.clickable {
-                            if (month < YearMonth.now()) month = month.plusMonths(1)
-                        },
-                    )
+                    IconButton(
+                        onClick = { if (month < YearMonth.now()) month = month.plusMonths(1) },
+                        enabled = month < YearMonth.now(),
+                    ) {
+                        Icon(
+                            Icons.Filled.ChevronRight,
+                            contentDescription = "Next month",
+                            tint = BastionColors.TextMuted,
+                        )
+                    }
                 }
-                Spacer(Modifier.height(16.dp))
-                CalendarMonth(
-                    month = month,
-                    marks = marks,
-                    onDayClick = { editingDay = it },
+            },
+        ) {
+            // The hint sits above the calendar, not beside the legend: the Log
+            // button floats over the bottom-right of this section and was
+            // clipping it to "Tap...".
+            Text(
+                "Tap a day to log it.",
+                style = MaterialTheme.typography.labelSmall,
+                color = BastionColors.TextMuted,
+            )
+            Spacer(Modifier.height(Space.md))
+            CalendarMonth(month = month, marks = marks, onDayClick = { editingDay = it })
+            Spacer(Modifier.height(Space.md))
+            CalendarLegend()
+        }
+
+        // --- Patterns ---------------------------------------------------
+        //
+        // Two charts and up to two insights were four separate bordered cards.
+        // They answer one question between them, so they are one section.
+        Section("Patterns") {
+            if (urges.isEmpty()) {
+                EmptyState(
+                    text = "Log an urge and Bastion starts finding the hours and days it hits hardest.",
                 )
-                Spacer(Modifier.height(10.dp))
-                Text(
-                    "Tap a day to log it.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = BastionColors.TextMuted,
-                )
-                Spacer(Modifier.height(10.dp))
-                CalendarLegend()
-            }
+            } else {
+                SectionLabel("When urges hit")
+                Spacer(Modifier.height(Space.md))
+                BarChart(bars = hourBuckets(urges), labelEvery = 1)
+                Spacer(Modifier.height(Space.section))
+                SectionLabel("Hardest days")
+                Spacer(Modifier.height(Space.md))
+                BarChart(bars = weekdayBars(urges), labelEvery = 1)
 
-            Spacer(Modifier.height(12.dp))
-
-            // --- Log actions ------------------------------------------------
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PrimaryButton("Log urge", { showLogSheet = true }, Modifier.weight(1f))
-                QuietButton("Log slip", { showRecovery = true }, Modifier.weight(1f), BastionColors.Amber)
-            }
-
-            Spacer(Modifier.height(20.dp))
-
-            // --- When urges hit ---------------------------------------------
-            if (urges.isNotEmpty()) {
-                BastionCard {
-                    SectionLabel("When urges hit")
-                    Spacer(Modifier.height(16.dp))
-                    BarChart(bars = hourBuckets(urges), labelEvery = 1)
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                BastionCard {
-                    SectionLabel("Hardest days")
-                    Spacer(Modifier.height(16.dp))
-                    BarChart(bars = weekdayBars(urges), labelEvery = 1)
-                }
-
-                Spacer(Modifier.height(12.dp))
-            }
-
-            // --- Insights, one line each ------------------------------------
-            insights.forEach { insight ->
-                BastionCard {
+                insights.forEach { insight ->
+                    Spacer(Modifier.height(Space.section))
                     Text(
                         insight.headline,
                         style = MaterialTheme.typography.titleSmall,
                         color = BastionColors.TextPrimary,
                     )
                     insight.defence?.let {
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(Space.xs))
                         Text(
                             when (it) {
                                 is Analytics.Defence.TightenAtHour -> "Tighten guards before then →"
@@ -250,28 +257,27 @@ fun TrackScreen(faithMode: Boolean) {
                         )
                     }
                 }
-                Spacer(Modifier.height(10.dp))
             }
+        }
 
-            // --- Benefits, compact ------------------------------------------
-            if (benefits.isNotEmpty()) {
-                Spacer(Modifier.height(4.dp))
-                SectionLabel("Unlocked")
-                Spacer(Modifier.height(12.dp))
-                benefits.take(6).forEach { card ->
-                    BenefitRow(card)
-                    Spacer(Modifier.height(8.dp))
-                }
+        // --- Unlocked ---------------------------------------------------
+        if (benefits.isNotEmpty()) {
+            Section("Unlocked") {
+                benefits.take(6).forEach { card -> BenefitRow(card) }
             }
         }
     }
 
+    if (showLogChoice) {
+        LogChoiceSheet(
+            onResisted = { showLogChoice = false; showLogSheet = true },
+            onSlipped = { showLogChoice = false; showRecovery = true },
+            onDismiss = { showLogChoice = false },
+        )
+    }
+
     if (showLogSheet) {
-        ModalBottomSheet(
-            onDismissRequest = { showLogSheet = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = BastionColors.Surface,
-        ) {
+        BastionBottomSheet(onDismiss = { showLogSheet = false }) {
             UrgeLogSheet(
                 onSave = { intensity, trigger, note ->
                     scope.launch {
@@ -297,11 +303,7 @@ fun TrackScreen(faithMode: Boolean) {
         val existing = remember(days, date) {
             days.firstOrNull { it.epochDay == date.toEpochDay() }
         }
-        ModalBottomSheet(
-            onDismissRequest = { editingDay = null },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = BastionColors.Surface,
-        ) {
+        BastionBottomSheet(onDismiss = { editingDay = null }) {
             DayLogSheet(
                 date = date,
                 status = existing?.status,
@@ -323,11 +325,7 @@ fun TrackScreen(faithMode: Boolean) {
     }
 
     if (showRecovery) {
-        ModalBottomSheet(
-            onDismissRequest = { showRecovery = false },
-            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-            containerColor = BastionColors.Surface,
-        ) {
+        BastionBottomSheet(onDismiss = { showRecovery = false }) {
             RecoveryFlow(
                 faithMode = faithMode,
                 rankName = state.rank.displayName(faithMode),
@@ -374,7 +372,7 @@ private fun DayLogSheet(
     val isSlip = status == DayStatus.SLIP
     val today = LocalDate.now()
 
-    Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 32.dp)) {
+    Column {
         Text(
             when (date) {
                 today -> "Today"
@@ -432,6 +430,27 @@ private fun DayLogSheet(
     }
 }
 
+/**
+ * The one question the Log action has to ask.
+ *
+ * Two inline buttons used to sit mid-scroll — "Log urge" and "Log slip" — which
+ * made the user classify the night before saying anything about it, in the
+ * exact typography as everything else on the screen. Asking once, in a sheet,
+ * both simplifies the page and puts the harder answer behind a beat of thought.
+ */
+@Composable
+private fun LogChoiceSheet(
+    onResisted: () -> Unit,
+    onSlipped: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    BastionBottomSheet(onDismiss = onDismiss, title = "What happened?") {
+        PrimaryButton("I felt it and held", onResisted, Modifier.fillMaxWidth())
+        Spacer(Modifier.height(Space.md))
+        QuietButton("I slipped", onSlipped, Modifier.fillMaxWidth(), BastionColors.Amber)
+    }
+}
+
 // --- data shaping ----------------------------------------------------------
 
 private fun buildMarks(
@@ -484,11 +503,14 @@ private fun weekdayBars(urges: List<UrgeLogEntity>): List<Bar> {
 @Composable
 private fun BenefitRow(card: BenefitCard) {
     var expanded by remember { mutableStateOf(false) }
-    BastionCard {
+    // A row, not a card. Six of these stacked as bordered surfaces was half the
+    // reason this screen read as a wall of boxes.
+    Column(Modifier.fillMaxWidth()) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .clickable { expanded = !expanded },
+                .clickable { expanded = !expanded }
+                .padding(vertical = Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(
@@ -554,7 +576,7 @@ private fun UrgeLogSheet(
     var trigger by remember { mutableStateOf<String?>(null) }
     var note by remember { mutableStateOf("") }
 
-    Column(Modifier.padding(horizontal = 22.dp).padding(bottom = 34.dp)) {
+    Column {
         Text("You resisted", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
         Spacer(Modifier.height(18.dp))
 
@@ -576,7 +598,11 @@ private fun UrgeLogSheet(
         Spacer(Modifier.height(10.dp))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             TRIGGERS.forEach { option ->
-                SelectChip(option, trigger == option) { trigger = if (trigger == option) null else option }
+                BastionFilterChip(
+                    label = option,
+                    selected = trigger == option,
+                    onClick = { trigger = if (trigger == option) null else option },
+                )
             }
         }
 
@@ -619,7 +645,7 @@ private fun RecoveryFlow(
     var trigger by remember { mutableStateOf<String?>(null) }
     var reflection by remember { mutableStateOf("") }
 
-    Column(Modifier.padding(horizontal = 22.dp).padding(bottom = 34.dp)) {
+    Column {
         when (stage) {
             0 -> {
                 Text("You're human.", style = MaterialTheme.typography.headlineMedium, color = BastionColors.TextPrimary)
@@ -639,7 +665,11 @@ private fun RecoveryFlow(
                 Spacer(Modifier.height(16.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     TRIGGERS.forEach { option ->
-                        SelectChip(option, trigger == option) { trigger = option }
+                        BastionFilterChip(
+                            label = option,
+                            selected = trigger == option,
+                            onClick = { trigger = option },
+                        )
                     }
                 }
                 Spacer(Modifier.height(16.dp))
@@ -701,28 +731,6 @@ private fun tipFor(trigger: String?): String = when (trigger) {
     else -> "Log a few more and your own data will point at it."
 }
 
-@Composable
-private fun SelectChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .padding(bottom = 8.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(if (selected) BastionColors.BronzeDeep else BastionColors.SurfaceRaised)
-            .border(
-                1.dp,
-                if (selected) BastionColors.Bronze else BastionColors.Outline,
-                RoundedCornerShape(20.dp),
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = 13.dp, vertical = 8.dp)
-    ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelMedium,
-            color = if (selected) BastionColors.BronzeBright else BastionColors.TextSecondary,
-        )
-    }
-}
 
 @Composable
 private fun sheetFieldColors() = OutlinedTextFieldDefaults.colors(

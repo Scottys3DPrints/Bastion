@@ -54,6 +54,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.BastionColors
+import com.bastion.app.core.design.LinkButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import com.bastion.app.core.design.DawnBackground
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.SectionLabel
@@ -75,6 +78,7 @@ import kotlin.random.Random
  * It is not therapy and says so. Anything that reads like crisis is routed
  * straight to real human help rather than answered.
  */
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
     val context = LocalContext.current
@@ -132,28 +136,44 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
                 .windowInsetsPadding(WindowInsets.systemBars)
                 .imePadding()
         ) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column {
-                    Text("Mentor", style = MaterialTheme.typography.headlineMedium, color = BastionColors.TextPrimary)
-                    Text(
-                        "Offline · nothing leaves this phone",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = BastionColors.SageBright,
-                    )
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            // The same top bar as every other screen, even though the body
+            // below is a chat rather than a scrolling page. The header is what
+            // makes a screen feel like part of the app; the body is free to be
+            // whatever the content needs.
+            androidx.compose.material3.TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            "Mentor",
+                            style = MaterialTheme.typography.displaySmall,
+                            color = BastionColors.TextPrimary,
+                        )
+                        Text(
+                            "Offline · nothing leaves this phone",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = BastionColors.SageBright,
+                        )
+                    }
+                },
+                navigationIcon = {
+                    androidx.compose.material3.IconButton(onClick = onBack) {
+                        androidx.compose.material3.Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = BastionColors.TextSecondary,
+                        )
+                    }
+                },
+                actions = {
                     if (history.isNotEmpty()) {
                         LinkButton("Start fresh", BastionColors.TextMuted) { confirmClear = true }
                     }
-                    LinkButton("Close", BastionColors.TextMuted, onBack)
-                }
-            }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                    scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
+                ),
+            )
 
             LazyColumn(
                 state = listState,
@@ -254,20 +274,6 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
 }
 
 /** Text-styled actions that are still real buttons: 48dp target, button semantics. */
-@Composable
-private fun LinkButton(
-    label: String,
-    color: Color = BastionColors.BronzeBright,
-    onClick: () -> Unit,
-) {
-    TextButton(
-        onClick = onClick,
-        contentPadding = PaddingValues(horizontal = 8.dp),
-        colors = ButtonDefaults.textButtonColors(contentColor = color),
-    ) {
-        Text(label, style = MaterialTheme.typography.labelLarge)
-    }
-}
 
 /** The beat before a scripted reply lands, so it reads as considered. */
 @Composable
