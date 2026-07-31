@@ -149,6 +149,30 @@ private fun BastionRoot(openTarget: String? = null) {
     }
 }
 
+/**
+ * Switches to a tab from anywhere, including from Settings or the Mentor.
+ *
+ * Deliberately without saveState/restoreState. The usual pattern assumes each
+ * tab owns a nested graph; this graph is flat, and on a flat graph the pair
+ * misbehaves in two ways that were both reachable by hand:
+ *
+ *   - the state saved against the start destination included whatever overlay
+ *     was stacked on it, so leaving Settings by tapping a tab and then tapping
+ *     Home put Settings straight back;
+ *   - navigating to the start destination itself restored the stack that had
+ *     just been saved against it, so Home landed on Track.
+ *
+ * Dropping both costs per-tab scroll position and buys navigation that always
+ * goes where it says. For five shallow tabs that is unambiguously the better
+ * trade — the whole complaint was that the bar could not be trusted.
+ */
+private fun androidx.navigation.NavHostController.toTab(route: String) {
+    navigate(route) {
+        popUpTo(graph.findStartDestination().id) { inclusive = false }
+        launchSingleTop = true
+    }
+}
+
 @Composable
 private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
     val navController = rememberNavController()
@@ -170,13 +194,7 @@ private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
                     val selected = currentDestination?.hierarchy?.any { it.route == destination.route } == true
                     NavigationBarItem(
                         selected = selected,
-                        onClick = {
-                            navController.navigate(destination.route) {
-                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
+                        onClick = { navController.toTab(destination.route) },
                         icon = { Icon(destination.icon, contentDescription = destination.label) },
                         label = {
                             Text(
@@ -210,7 +228,7 @@ private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
                     WatchtowerScreen(
                         faithMode = faithMode,
                         onOpenMentor = { navController.navigate("mentor") },
-                        onOpenTrack = { navController.navigate(Destination.TRACK.route) },
+                        onOpenTrack = { navController.toTab(Destination.TRACK.route) },
                         onOpenSettings = { navController.navigate("settings") },
                     )
                 }
