@@ -34,13 +34,21 @@ object GuardWatchdog {
 
     /** How long before the same nag is allowed again. */
     private const val NAG_INTERVAL_MS = 6 * 60 * 60 * 1000L
-    private const val NOTIFICATION_ID = 4401
+    // 4401 belongs to the accessibility service's own guard-down notice; sharing
+    // it meant whichever posted second silently replaced the first.
+    private const val NOTIFICATION_ID = 4402
 
     /** True when Guard is off but the user has asked for it to be on. */
     suspend fun isBreached(context: Context): Boolean {
         val graph = BastionGraph.from(context)
         val intended = graph.settings.current().guardIntendedOn
         return intended && !BastionAccessibilityService.isEnabled(context)
+    }
+
+    /** How long the current breach has been running; 0 when Guard is up. */
+    suspend fun breachDurationMillis(context: Context): Long {
+        val since = BastionGraph.from(context).settings.current().guardOffSince
+        return if (since == 0L) 0L else (System.currentTimeMillis() - since).coerceAtLeast(0L)
     }
 
     /**
@@ -57,6 +65,11 @@ object GuardWatchdog {
 
         if (running) {
             if (!settings.guardIntendedOn) graph.settings.setGuardIntendedOn(true)
+            // The breach is over, so its record ends with it. Both flags are
+            // cleared here and only here, which is what makes the next breach a
+            // new one rather than a continuation of this one.
+            if (settings.guardOffSince != 0L) graph.settings.setGuardOffSince(0L)
+            if (settings.lockdownBreachAlerted) graph.settings.setLockdownBreachAlerted(false)
             clearNotification(context)
             return
         }
@@ -64,10 +77,51 @@ object GuardWatchdog {
         if (!settings.guardIntendedOn) return
 
         val now = System.currentTimeMillis()
+        // Stamped before the nag interval is consulted: the start of a breach is
+        // a fact about the breach, not about whether we happen to be nagging.
+        // Recording it after the early return meant a breach that began inside
+        // a quiet window was never dated at all.
+        if (settings.guardOffSince == 0L) graph.settings.setGuardOffSince(now)
+
         if (now - settings.guardOffNotifiedAt < NAG_INTERVAL_MS) return
 
-        notify(context)
+        val since = settings.guardOffSince.takeIf { it != 0L } ?: now
+        notify(context, now - since)
         graph.settings.setGuardOffNotifiedAt(now)
+    }
+
+    /**
+     * Turning Guard off mid-lockdown is the one breach worth its own alert.
+     *
+     * Every other breach is ambiguous — a system update, a factory reset of
+     * accessibility settings, a genuine mistake. This one is not: a lockdown is
+     * running precisely because the user asked, in advance, not to be able to
+     * undo it, and disabling Guard is the way around that. It is the moment the
+     * partner exists for.
+     *
+     * Returns the message to send, once per breach, or null. Like everything in
+     * Brotherhood it is composed and handed over — Bastion never sends.
+     */
+    suspend fun lockdownBreachAlert(context: Context): Intent? {
+        val graph = BastionGraph.from(context)
+        val settings = graph.settings.current()
+
+        if (!com.bastion.app.guard.lockdown.Lockdown.isActive(settings)) return null
+        if (!isBreached(context)) return null
+        if (settings.lockdownBreachAlerted) return null
+
+        val partner = graph.social.partnerOnce() ?: return null
+        if (!partner.shareGuardChanges) return null
+
+        graph.settings.setLockdownBreachAlerted(true)
+        val hoursLeft = com.bastion.app.guard.lockdown.Lockdown.remainingMinutes(settings) / 60
+        return Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("smsto:${partner.contact}"))
+            .putExtra(
+                "sms_body",
+                "Being straight with you: I turned Bastion Guard off while a lockdown " +
+                    "was still running — ${hoursLeft}h left on it. That's the one I asked " +
+                    "you to hold me to.",
+            )
     }
 
     /**
@@ -78,18 +132,23 @@ object GuardWatchdog {
      * different and far more fraught product.
      */
     suspend fun partnerAlertIntent(context: Context): Intent? {
+        // A breach during a lockdown outranks the generic message, and says so
+        // in its own words.
+        lockdownBreachAlert(context)?.let { return it }
+
         val graph = BastionGraph.from(context)
         val partner = graph.social.partnerOnce() ?: return null
         if (!partner.shareGuardChanges) return null
 
+        val down = describeDuration(breachDurationMillis(context))
         return Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("smsto:${partner.contact}"))
             .putExtra(
                 "sms_body",
-                "Telling you rather than hiding it: Bastion Guard is off on my phone.",
+                "Telling you rather than hiding it: Bastion Guard is off on my phone — $down.",
             )
     }
 
-    private fun notify(context: Context) {
+    private fun notify(context: Context, downFor: Long) {
         val open = PendingIntent.getActivity(
             context,
             0,
@@ -98,7 +157,7 @@ object GuardWatchdog {
         )
         val notification = Notification.Builder(context, BastionApp.CHANNEL_GUARD)
             .setContentTitle("Bastion Guard is off")
-            .setContentText("Guarded feeds are open right now.")
+            .setContentText("Guarded feeds have been open ${describeDuration(downFor)}.")
             .setSmallIcon(R.drawable.ic_shield)
             .setContentIntent(open)
             .setAutoCancel(true)
@@ -107,6 +166,25 @@ object GuardWatchdog {
 
         runCatching {
             context.getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
+        }
+    }
+
+    /**
+     * "since just now" / "for 3 hours" / "for 2 days".
+     *
+     * Deliberately coarse. The number that matters is the order of magnitude —
+     * whether this happened a moment ago or has quietly been true all week — and
+     * a precise "for 3h 14m" reads like telemetry rather than a nudge.
+     */
+    fun describeDuration(millis: Long): String {
+        val minutes = millis / 60_000L
+        return when {
+            minutes < 5 -> "since just now"
+            minutes < 60 -> "for $minutes minutes"
+            minutes < 120 -> "for an hour"
+            minutes < 24 * 60 -> "for ${minutes / 60} hours"
+            minutes < 48 * 60 -> "for a day"
+            else -> "for ${minutes / (24 * 60)} days"
         }
     }
 

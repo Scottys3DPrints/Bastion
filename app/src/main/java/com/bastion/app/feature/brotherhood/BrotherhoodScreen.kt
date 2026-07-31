@@ -78,6 +78,17 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
     var confirmRemove by remember { mutableStateOf(false) }
     val current = partner
 
+    // Deleting the partner used to delete their passcode along with them, which
+    // meant the lock could be lifted by removing the person holding it — a clean
+    // bypass of the one mechanism meant to be un-bypassable. While the lock is
+    // armed, removal is refused and says why.
+    val settings by graph.settings.settings.collectAsStateWithLifecycle(
+        initialValue = com.bastion.app.data.prefs.Settings()
+    )
+    var lockHasCode by remember { mutableStateOf(false) }
+    LaunchedEffect(settings.partnerLockEnabled) { lockHasCode = graph.social.hasPasscode() }
+    val removalLocked = settings.partnerLockEnabled && lockHasCode
+
     DawnBackground(intensity = 0.35f) {
         Column(
             Modifier
@@ -309,21 +320,35 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit) {
             containerColor = BastionColors.Surface,
             titleContentColor = BastionColors.TextPrimary,
             textContentColor = BastionColors.TextSecondary,
-            title = { Text("Remove ${current.name}?", style = MaterialTheme.typography.titleMedium) },
+            title = {
+                Text(
+                    if (removalLocked) "The partner lock is on" else "Remove ${current.name}?",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            },
             text = {
                 Text(
-                    "Your check-ins stay. You can add them back any time.",
+                    if (removalLocked)
+                        "Removing ${current.name} would delete the code they hold, which would lift the " +
+                            "lock. Turn the partner lock off first — that needs their code."
+                    else "Your check-ins stay. You can add them back any time.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             },
             confirmButton = {
-                LinkButton("Remove", BastionColors.BronzeBright) {
-                    scope.launch { graph.social.removePartner(current.id) }
-                    confirmRemove = false
+                if (!removalLocked) {
+                    LinkButton("Remove", BastionColors.BronzeBright) {
+                        scope.launch { graph.social.removePartner(current.id) }
+                        confirmRemove = false
+                    }
+                } else {
+                    LinkButton("All right", BastionColors.TextMuted) { confirmRemove = false }
                 }
             },
             dismissButton = {
-                LinkButton("Not now", BastionColors.TextMuted) { confirmRemove = false }
+                if (!removalLocked) {
+                    LinkButton("Not now", BastionColors.TextMuted) { confirmRemove = false }
+                }
             },
         )
     }
@@ -346,6 +371,7 @@ private fun PartnerLockCard(graph: BastionGraph) {
     var hasCode by remember { mutableStateOf(false) }
     var entering by remember { mutableStateOf(false) }
     var code by remember { mutableStateOf("") }
+    var needsPartner by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { hasCode = graph.social.hasPasscode() }
 
@@ -385,6 +411,15 @@ private fun PartnerLockCard(graph: BastionGraph) {
             )
         }
 
+        if (needsPartner) {
+            Spacer(Modifier.height(10.dp))
+            Text(
+                "Save your partner's name and number first — the code hangs off him.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.Amber,
+            )
+        }
+
         if (entering) {
             Spacer(Modifier.height(14.dp))
             Text(
@@ -395,13 +430,23 @@ private fun PartnerLockCard(graph: BastionGraph) {
             Spacer(Modifier.height(10.dp))
             OutlinedTextField(
                 value = code,
-                onValueChange = { code = it },
+                // Filtered rather than merely validated: the NumberPassword
+                // keyboard still offers a comma and a minus sign, and a code
+                // with one in it is a code his partner cannot retype.
+                onValueChange = { entered -> code = entered.filter(Char::isDigit).take(12) },
                 singleLine = true,
                 visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                 keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                     keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword,
                 ),
                 label = { Text("His code") },
+                supportingText = {
+                    Text(
+                        "At least 6 digits.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextMuted,
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
                 colors = fieldColors(),
@@ -412,15 +457,22 @@ private fun PartnerLockCard(graph: BastionGraph) {
                     "Lock it",
                     {
                         scope.launch {
-                            graph.social.setPartnerPasscode(code)
-                            graph.settings.setPartnerLock(true)
-                            hasCode = true
-                            code = ""
-                            entering = false
+                            // Only arm the lock if the code actually landed. It
+                            // cannot land with no partner saved, and switching
+                            // the lock on regardless made the UI claim a
+                            // protection that did not exist.
+                            if (graph.social.setPartnerPasscode(code)) {
+                                graph.settings.setPartnerLock(true)
+                                hasCode = true
+                                code = ""
+                                entering = false
+                            } else {
+                                needsPartner = true
+                            }
                         }
                     },
                     Modifier.weight(1f),
-                    enabled = code.length >= 4,
+                    enabled = code.length >= graph.social.minPasscodeLength,
                 )
                 QuietButton("Cancel", { code = ""; entering = false }, Modifier.weight(1f))
             }

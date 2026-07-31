@@ -46,11 +46,29 @@ class SocialRepository(
 
     suspend fun removePartner(id: String) = socialDao.removePartner(id)
 
-    /** Pass the raw code; it is salted and slow-hashed before it is stored. */
-    suspend fun setPartnerPasscode(passcode: String?) {
+    /**
+     * Pass the raw code; it is salted and slow-hashed before it is stored.
+     *
+     * Returns false, and stores nothing, when there is no partner to attach it
+     * to. It used to return Unit and silently drop the code in that case, while
+     * the screen went ahead and switched the lock on — a switch reading "locked"
+     * over nothing at all.
+     */
+    suspend fun setPartnerPasscode(passcode: String?): Boolean {
+        val partner = socialDao.partnerOnce() ?: return false
         val stored = passcode?.takeIf { it.isNotBlank() }?.let { PasscodeLock.hash(it) }
-        socialDao.partnerOnce()?.let { socialDao.upsertPartner(it.copy(lockPasscodeHash = stored)) }
+        socialDao.upsertPartner(partner.copy(lockPasscodeHash = stored))
+        return true
     }
+
+    /**
+     * Minimum length for a partner code.
+     *
+     * Four digits is ten thousand possibilities, and the man guessing them owns
+     * the phone and has all night. Six is a millionfold harder to walk through
+     * and no harder for a partner to remember.
+     */
+    val minPasscodeLength: Int get() = 6
 
     /** Whether a partner code is set, and therefore whether the lock can bite. */
     suspend fun hasPasscode(): Boolean = socialDao.partnerOnce()?.lockPasscodeHash != null

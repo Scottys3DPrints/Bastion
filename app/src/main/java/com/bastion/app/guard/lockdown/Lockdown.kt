@@ -24,11 +24,35 @@ import com.bastion.app.guard.vpn.BastionVpnService
  */
 object Lockdown {
 
-    fun isActive(settings: Settings): Boolean =
-        settings.lockdownUntil > System.currentTimeMillis()
+    /**
+     * Running if EITHER clock still says so.
+     *
+     * The wall clock alone was a one-tap bypass: rolling the device date forward
+     * past the end time ended a lockdown instantly, needing no permission at
+     * all. elapsedRealtime() is monotonic and cannot be moved by the user, so it
+     * is checked alongside — whichever says "still running" wins.
+     *
+     * The elapsed anchor is meaningless after a reboot, when the counter resets
+     * to near zero and would otherwise read as an enormous remaining time. It is
+     * therefore ignored unless the remainder it implies is within the lockdown's
+     * own length.
+     */
+    fun isActive(settings: Settings): Boolean = remainingMillis(settings) > 0
 
-    fun remainingMinutes(settings: Settings): Long =
-        ((settings.lockdownUntil - System.currentTimeMillis()) / 60_000L).coerceAtLeast(0)
+    fun remainingMinutes(settings: Settings): Long = remainingMillis(settings) / 60_000L
+
+    private fun remainingMillis(settings: Settings): Long {
+        val byWallClock = settings.lockdownUntil - System.currentTimeMillis()
+        val total = settings.lockdownHours * 60L * 60L * 1000L
+        // runCatching because SystemClock is Android framework: on the JVM, where
+        // the lockdown arithmetic is unit-tested, it throws. Falling back to 0
+        // leaves the wall clock in charge, which is the pre-existing behaviour.
+        val elapsedNow = runCatching { android.os.SystemClock.elapsedRealtime() }.getOrDefault(0L)
+        val byElapsed = (settings.lockdownEndElapsed - elapsedNow)
+            .takeIf { elapsedNow > 0L && settings.lockdownEndElapsed > 0L && it <= total }
+            ?: 0L
+        return maxOf(byWallClock, byElapsed).coerceAtLeast(0)
+    }
 
     /**
      * Starts a lockdown and carries out every step the user chose.
@@ -42,8 +66,12 @@ object Lockdown {
 
         // Extends rather than replaces: pressing it twice must never shorten a
         // lockdown already running.
-        val until = System.currentTimeMillis() + settings.lockdownHours * 60L * 60L * 1000L
+        val duration = settings.lockdownHours * 60L * 60L * 1000L
+        val until = System.currentTimeMillis() + duration
         graph.settings.setLockdownUntil(maxOf(until, settings.lockdownUntil))
+        graph.settings.setLockdownEndElapsed(
+            maxOf(android.os.SystemClock.elapsedRealtime() + duration, settings.lockdownEndElapsed)
+        )
 
         if (settings.lockdownGrayscale) graph.settings.setGrayscale(true)
 

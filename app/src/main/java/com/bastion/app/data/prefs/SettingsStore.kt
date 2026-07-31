@@ -30,6 +30,10 @@ data class Settings(
     val coolingOffHours: Int = 2,
     val tamperLockEnabled: Boolean = false,
     val partnerLockEnabled: Boolean = false,
+    /** Consecutive wrong partner-code entries; reset by a correct one. */
+    val passcodeFailures: Int = 0,
+    /** Epoch millis until which no code may be tried at all. 0 when free. */
+    val passcodeLockedUntil: Long = 0L,
     val triggers: List<String> = emptyList(),
     val baselineFrequency: String = "",
     val lastPanicAt: Long = 0L,
@@ -71,12 +75,25 @@ data class Settings(
     val guardIntendedOn: Boolean = false,
     /** So the nag is a reminder, not a pestering. */
     val guardOffNotifiedAt: Long = 0L,
+    /**
+     * Epoch millis Guard was first seen missing. 0 while it is running.
+     *
+     * Without this a breach had no duration — every notice said the same thing
+     * whether Guard had been off for a minute or since Tuesday, and the partner
+     * message could not tell him which of those it was. It is set once, on the
+     * first reconcile that finds Guard gone, and cleared the moment it returns.
+     */
+    val guardOffSince: Long = 0L,
+    /** Guards against re-sending the lockdown-breach alert for one breach. */
+    val lockdownBreachAlerted: Boolean = false,
 
     // --- Lockdown: the break-glass plan ---------------------------------
     /** How long a lockdown lasts once triggered. */
     val lockdownHours: Int = 24,
     /** Epoch millis the current lockdown ends. 0 when none is running. */
     val lockdownUntil: Long = 0L,
+    /** Monotonic twin of [lockdownUntil]; the user cannot move this one. */
+    val lockdownEndElapsed: Long = 0L,
     val lockdownLockScreen: Boolean = true,
     val lockdownFilter: Boolean = true,
     val lockdownGrayscale: Boolean = true,
@@ -121,6 +138,10 @@ class SettingsStore(private val context: Context) {
         val COOLING_OFF = intPreferencesKey("cooling_off_hours")
         val TAMPER_LOCK = booleanPreferencesKey("tamper_lock")
         val PARTNER_LOCK = booleanPreferencesKey("partner_lock")
+        val GUARD_OFF_SINCE = longPreferencesKey("guard_off_since")
+        val LOCKDOWN_BREACH_ALERTED = booleanPreferencesKey("lockdown_breach_alerted")
+        val PASSCODE_FAILURES = intPreferencesKey("passcode_failures")
+        val PASSCODE_LOCKED_UNTIL = longPreferencesKey("passcode_locked_until")
         val TRIGGERS = stringPreferencesKey("triggers")
         val BASELINE = stringPreferencesKey("baseline_frequency")
         val LAST_PANIC = longPreferencesKey("last_panic")
@@ -136,6 +157,7 @@ class SettingsStore(private val context: Context) {
         val GUARD_OFF_NOTIFIED = longPreferencesKey("guard_off_notified_at")
         val LOCKDOWN_HOURS = intPreferencesKey("lockdown_hours")
         val LOCKDOWN_UNTIL = longPreferencesKey("lockdown_until")
+        val LOCKDOWN_END_ELAPSED = longPreferencesKey("lockdown_end_elapsed")
         val LOCKDOWN_LOCK_SCREEN = booleanPreferencesKey("lockdown_lock_screen")
         val LOCKDOWN_FILTER = booleanPreferencesKey("lockdown_filter")
         val LOCKDOWN_GRAYSCALE = booleanPreferencesKey("lockdown_grayscale")
@@ -156,6 +178,10 @@ class SettingsStore(private val context: Context) {
             coolingOffHours = p[Keys.COOLING_OFF] ?: 2,
             tamperLockEnabled = p[Keys.TAMPER_LOCK] ?: false,
             partnerLockEnabled = p[Keys.PARTNER_LOCK] ?: false,
+            guardOffSince = p[Keys.GUARD_OFF_SINCE] ?: 0L,
+            lockdownBreachAlerted = p[Keys.LOCKDOWN_BREACH_ALERTED] ?: false,
+            passcodeFailures = p[Keys.PASSCODE_FAILURES] ?: 0,
+            passcodeLockedUntil = p[Keys.PASSCODE_LOCKED_UNTIL] ?: 0L,
             triggers = p[Keys.TRIGGERS].decodeTriggers(),
             baselineFrequency = p[Keys.BASELINE] ?: "",
             lastPanicAt = p[Keys.LAST_PANIC] ?: 0L,
@@ -171,6 +197,7 @@ class SettingsStore(private val context: Context) {
             guardOffNotifiedAt = p[Keys.GUARD_OFF_NOTIFIED] ?: 0L,
             lockdownHours = p[Keys.LOCKDOWN_HOURS] ?: 24,
             lockdownUntil = p[Keys.LOCKDOWN_UNTIL] ?: 0L,
+            lockdownEndElapsed = p[Keys.LOCKDOWN_END_ELAPSED] ?: 0L,
             lockdownLockScreen = p[Keys.LOCKDOWN_LOCK_SCREEN] ?: true,
             lockdownFilter = p[Keys.LOCKDOWN_FILTER] ?: true,
             lockdownGrayscale = p[Keys.LOCKDOWN_GRAYSCALE] ?: true,
@@ -194,6 +221,14 @@ class SettingsStore(private val context: Context) {
     suspend fun setCoolingOffHours(value: Int) = edit { it[Keys.COOLING_OFF] = value }
     suspend fun setTamperLock(value: Boolean) = edit { it[Keys.TAMPER_LOCK] = value }
     suspend fun setPartnerLock(value: Boolean) = edit { it[Keys.PARTNER_LOCK] = value }
+    suspend fun setGuardOffSince(value: Long) = edit { it[Keys.GUARD_OFF_SINCE] = value }
+    suspend fun setLockdownBreachAlerted(value: Boolean) = edit {
+        it[Keys.LOCKDOWN_BREACH_ALERTED] = value
+    }
+    suspend fun setPasscodeFailures(value: Int) = edit { it[Keys.PASSCODE_FAILURES] = value }
+    suspend fun setPasscodeLockedUntil(value: Long) = edit {
+        it[Keys.PASSCODE_LOCKED_UNTIL] = value
+    }
     suspend fun setTriggers(values: List<String>) = edit {
         it[Keys.TRIGGERS] = Json.encodeToString(values)
     }
@@ -209,6 +244,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setGuardOffNotifiedAt(value: Long) = edit { it[Keys.GUARD_OFF_NOTIFIED] = value }
     suspend fun setLockdownHours(value: Int) = edit { it[Keys.LOCKDOWN_HOURS] = value }
     suspend fun setLockdownUntil(value: Long) = edit { it[Keys.LOCKDOWN_UNTIL] = value }
+    suspend fun setLockdownEndElapsed(value: Long) = edit { it[Keys.LOCKDOWN_END_ELAPSED] = value }
     suspend fun setLockdownLockScreen(value: Boolean) = edit { it[Keys.LOCKDOWN_LOCK_SCREEN] = value }
     suspend fun setLockdownFilter(value: Boolean) = edit { it[Keys.LOCKDOWN_FILTER] = value }
     suspend fun setLockdownGrayscale(value: Boolean) = edit { it[Keys.LOCKDOWN_GRAYSCALE] = value }

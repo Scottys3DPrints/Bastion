@@ -151,8 +151,14 @@ fun GuardScreen() {
     // Reads the breach; recording the intent happens app-wide in MainActivity,
     // because it must not depend on this screen being the one in front.
     var guardBreached by remember { mutableStateOf(false) }
+    var breachedFor by remember { mutableStateOf("") }
     androidx.lifecycle.compose.LifecycleResumeEffect(serviceRunning) {
-        scope.launch { guardBreached = com.bastion.app.guard.GuardWatchdog.isBreached(context) }
+        scope.launch {
+            guardBreached = com.bastion.app.guard.GuardWatchdog.isBreached(context)
+            breachedFor = com.bastion.app.guard.GuardWatchdog.describeDuration(
+                com.bastion.app.guard.GuardWatchdog.breachDurationMillis(context)
+            )
+        }
         onPauseOrDispose { }
     }
 
@@ -185,7 +191,9 @@ fun GuardScreen() {
                     )
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        "It's off. Guarded feeds are open.",
+                        // How long matters more than the fact: "since just now"
+                        // is a slip, "for 3 days" is a decision.
+                        "It's off. Guarded feeds have been open $breachedFor.",
                         style = MaterialTheme.typography.bodySmall,
                         color = BastionColors.TextMuted,
                     )
@@ -552,7 +560,8 @@ fun GuardScreen() {
 
     pendingWeakening?.let { action ->
         PasscodeDialog(
-            onVerify = { code -> graph.social.verifyPasscode(code) },
+            onAttempt = { code -> graph.passcodeGate.attempt(code) },
+            initialWait = { graph.passcodeGate.waitMillis() },
             onUnlocked = {
                 scope.launch { action() }
                 pendingWeakening = null
@@ -872,7 +881,8 @@ private fun ConfirmDialog(
  */
 @Composable
 private fun PasscodeDialog(
-    onVerify: suspend (String) -> Boolean,
+    onAttempt: suspend (String) -> com.bastion.app.core.security.PasscodeGate.Result,
+    initialWait: suspend () -> Long,
     onUnlocked: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -880,6 +890,18 @@ private fun PasscodeDialog(
     var code by remember { mutableStateOf("") }
     var wrong by remember { mutableStateOf(false) }
     var checking by remember { mutableStateOf(false) }
+    var waitMillis by remember { mutableStateOf(0L) }
+
+    // Counts down live rather than reading once on open: a dialog frozen at
+    // "wait 4 min" gives no sign it is still running, and the natural response
+    // is to close and reopen it — which is exactly the hammering being slowed.
+    LaunchedEffect(Unit) { waitMillis = initialWait() }
+    LaunchedEffect(waitMillis) {
+        if (waitMillis > 0) {
+            kotlinx.coroutines.delay(1_000)
+            waitMillis = (waitMillis - 1_000).coerceAtLeast(0L)
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -907,10 +929,24 @@ private fun PasscodeDialog(
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         keyboardType = androidx.compose.ui.text.input.KeyboardType.NumberPassword,
                     ),
-                    isError = wrong,
-                    supportingText = if (wrong) {
-                        { Text("Not that one.", color = BastionColors.Amber) }
-                    } else null,
+                    enabled = waitMillis == 0L,
+                    isError = wrong || waitMillis > 0,
+                    supportingText = when {
+                        waitMillis > 0 -> {
+                            {
+                                Text(
+                                    "Too many tries. " +
+                                        com.bastion.app.core.security.formatWait(waitMillis) +
+                                        " to go.",
+                                    color = BastionColors.Amber,
+                                )
+                            }
+                        }
+                        wrong -> {
+                            { Text("Not that one.", color = BastionColors.Amber) }
+                        }
+                        else -> null
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -925,11 +961,20 @@ private fun PasscodeDialog(
         },
         confirmButton = {
             TextButton(
-                enabled = code.isNotBlank() && !checking,
+                enabled = code.isNotBlank() && !checking && waitMillis == 0L,
                 onClick = {
                     scope.launch {
                         checking = true
-                        if (onVerify(code)) onUnlocked() else wrong = true
+                        when (val result = onAttempt(code)) {
+                            is com.bastion.app.core.security.PasscodeGate.Result.Unlocked ->
+                                onUnlocked()
+                            is com.bastion.app.core.security.PasscodeGate.Result.Wrong -> {
+                                wrong = true
+                                waitMillis = result.waitMillis
+                            }
+                            is com.bastion.app.core.security.PasscodeGate.Result.Wait ->
+                                waitMillis = result.millis
+                        }
                         checking = false
                     }
                 },
@@ -978,8 +1023,20 @@ private fun GuardedAppRow(
         }
         Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            BlockMode.entries.forEach { mode ->
+            // SCHEDULE and TIME_LIMIT are deliberately absent.
+            //
+            // Both need a parameter — a window, or a number of minutes — and
+            // there is nowhere to set either, so choosing them silently applied
+            // defaults of 00:00–00:00 and a fixed cap. The chips looked like
+            // features and behaved like dead ends, which is worse than not
+            // offering them. They come back when their editors do.
+            listOf(BlockMode.FEED_ONLY, BlockMode.FULL).forEach { mode ->
                 ModeChip(mode, app.mode == mode) { onModeChange(mode) }
+            }
+            if (app.mode == BlockMode.SCHEDULE || app.mode == BlockMode.TIME_LIMIT) {
+                // Shown only if an older build already set one, so the row still
+                // tells the truth about what is running.
+                ModeChip(app.mode, true) {}
             }
         }
     }

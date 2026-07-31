@@ -76,6 +76,10 @@ class BastionGraph(context: Context) {
         )
     }
 
+    val passcodeGate: com.bastion.app.core.security.PasscodeGate by lazy {
+        com.bastion.app.core.security.PasscodeGate(settings = settings, social = social)
+    }
+
     companion object {
         fun from(context: Context): BastionGraph =
             (context.applicationContext as com.bastion.app.BastionApp).graph

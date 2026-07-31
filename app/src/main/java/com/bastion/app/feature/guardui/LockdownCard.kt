@@ -83,7 +83,8 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
             Text(
                 // Says plainly that it cannot be called off, because discovering
                 // that by trying would feel like a trap rather than a decision.
-                "Every guarded app is closed until it ends. It can't be called off — that's why it works.",
+                "Guarded apps stay closed until it ends. Clearing Bastion's data or turning "
+                    + "Guard off would end it — Android lets no app be truly uncloseable.",
                 style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.TextMuted,
             )
@@ -91,7 +92,7 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
             SectionLabel("Break glass")
             Spacer(Modifier.height(8.dp))
             Text(
-                "One button. Runs your plan for ${settings.lockdownHours}h. No way back once it starts.",
+                "One button, ${settings.lockdownHours}h. Not cancellable from inside the app.",
                 style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.TextMuted,
             )
@@ -115,7 +116,7 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
                         append("Every guarded app closes. ")
                         if (settings.lockdownFilter) append("The filter comes on. ")
                         if (settings.lockdownGrayscale) append("Colour goes. ")
-                        if (settings.lockdownLockScreen) append("Your screen locks. ")
+                        if (settings.lockdownLockScreen) append("Your screen locks once — not for the whole time. ")
                         append("\n\nThis cannot be undone before it ends.")
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -189,7 +190,7 @@ fun LockdownCompactButton(
                         append("Every guarded app closes. ")
                         if (settings.lockdownFilter) append("The filter comes on. ")
                         if (settings.lockdownGrayscale) append("Colour goes. ")
-                        if (settings.lockdownLockScreen) append("Your screen locks. ")
+                        if (settings.lockdownLockScreen) append("Your screen locks once — not for the whole time. ")
                         append("\n\nThis cannot be undone before it ends.")
                     },
                     style = MaterialTheme.typography.bodyMedium,
