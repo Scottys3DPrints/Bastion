@@ -91,6 +91,28 @@ object GuardWatchdog {
     }
 
     /**
+     * A deliberate "I am done with Guard", as opposed to a breach.
+     *
+     * [guardIntendedOn] was a one-way latch: set true the first time Guard ran
+     * and never cleared. Someone who genuinely stopped using the feature was
+     * therefore nagged every six hours forever, with the only escape being to
+     * clear the app's data — which takes the whole journey with it. A tool that
+     * can only be entered is a trap, and a nag no one can honour is one people
+     * learn to ignore, which costs the warnings that do matter.
+     *
+     * The friction stays where it belongs: the caller gates this behind the
+     * partner passcode when the lock is armed. What this does not do is pretend
+     * the decision never happened — it clears the intent, not the history.
+     */
+    suspend fun standDown(context: Context) {
+        val graph = BastionGraph.from(context)
+        graph.settings.setGuardIntendedOn(false)
+        graph.settings.setGuardOffSince(0L)
+        graph.settings.setLockdownBreachAlerted(false)
+        clearNotification(context)
+    }
+
+    /**
      * Turning Guard off mid-lockdown is the one breach worth its own alert.
      *
      * Every other breach is ambiguous — a system update, a factory reset of

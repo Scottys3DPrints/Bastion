@@ -3,6 +3,7 @@ package com.bastion.app.core.design
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -159,6 +161,7 @@ fun CalendarMonth(
     marks: Map<Int, DayMark>,
     modifier: Modifier = Modifier,
     today: LocalDate = LocalDate.now(),
+    onDayClick: ((LocalDate) -> Unit)? = null,
 ) {
     val first = month.atDay(1)
     // Monday-first, matching the weekday labels below.
@@ -189,6 +192,31 @@ fun CalendarMonth(
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(7f / rows.toFloat())
+                // The tap maths mirrors the draw maths below rather than sharing
+                // it, because the draw happens per-cell in a loop and the tap
+                // needs the inverse: offset back to a day. Kept adjacent so the
+                // two cannot drift apart unnoticed.
+                .then(
+                    if (onDayClick == null) Modifier
+                    else Modifier.pointerInput(month, rows, leading, length) {
+                        detectTapGestures { offset ->
+                            val day = dayAtOffset(
+                                x = offset.x,
+                                y = offset.y,
+                                width = size.width.toFloat(),
+                                height = size.height.toFloat(),
+                                rows = rows,
+                                leading = leading,
+                                length = length,
+                            ) ?: return@detectTapGestures
+                            val date = month.atDay(day)
+                            // Future days are drawn dimmed and are not facts
+                            // yet; tapping one should do nothing rather than
+                            // quietly log tomorrow.
+                            if (!date.isAfter(today)) onDayClick(date)
+                        }
+                    }
+                )
         ) {
             val cell = size.width / 7f
             val gap = 3.dp.toPx()
@@ -266,6 +294,36 @@ fun CalendarMonth(
             }
         }
     }
+}
+
+/**
+ * Which day of the month a tap landed on, or null for the blank cells that pad
+ * the first and last weeks.
+ *
+ * The inverse of the grid maths in [CalendarMonth], kept as a separate function
+ * purely so it can be tested: an off-by-one in [leading] does not look wrong on
+ * screen, it just silently logs a slip against the wrong date — the one error
+ * this feature cannot afford, since the whole point is an accurate history.
+ */
+internal fun dayAtOffset(
+    x: Float,
+    y: Float,
+    width: Float,
+    height: Float,
+    rows: Int,
+    leading: Int,
+    length: Int,
+): Int? {
+    if (width <= 0f || height <= 0f || rows <= 0) return null
+    // Bounds-checked on the raw offset, not on the derived cell. Float-to-int
+    // truncates toward zero, so an x of -50 divides to -0.5 and lands in column
+    // 0 — a tap off the left edge silently reading as the first day of the week.
+    if (x < 0f || y < 0f || x >= width || y >= height) return null
+
+    val col = (x / (width / 7f)).toInt()
+    val row = (y / (height / rows.toFloat())).toInt()
+    if (col !in 0..6 || row !in 0 until rows) return null
+    return (row * 7 + col - leading + 1).takeIf { it in 1..length }
 }
 
 /** Compact key for the calendar. Shape as well as colour, for the same reason. */

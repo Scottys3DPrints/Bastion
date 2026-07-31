@@ -99,6 +99,7 @@ fun TrackScreen(faithMode: Boolean) {
     var benefits by remember { mutableStateOf<List<BenefitCard>>(emptyList()) }
     var showLogSheet by remember { mutableStateOf(false) }
     var showRecovery by remember { mutableStateOf(false) }
+    var editingDay by remember { mutableStateOf<LocalDate?>(null) }
 
     LaunchedEffect(state.currentStreak) {
         benefits = graph.content.unlockedBenefits(state.currentStreak)
@@ -184,8 +185,18 @@ fun TrackScreen(faithMode: Boolean) {
                     )
                 }
                 Spacer(Modifier.height(16.dp))
-                CalendarMonth(month = month, marks = marks)
-                Spacer(Modifier.height(14.dp))
+                CalendarMonth(
+                    month = month,
+                    marks = marks,
+                    onDayClick = { editingDay = it },
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Tap a day to log it.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = BastionColors.TextMuted,
+                )
+                Spacer(Modifier.height(10.dp))
                 CalendarLegend()
             }
 
@@ -282,6 +293,35 @@ fun TrackScreen(faithMode: Boolean) {
         }
     }
 
+    editingDay?.let { date ->
+        val existing = remember(days, date) {
+            days.firstOrNull { it.epochDay == date.toEpochDay() }
+        }
+        ModalBottomSheet(
+            onDismissRequest = { editingDay = null },
+            sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+            containerColor = BastionColors.Surface,
+        ) {
+            DayLogSheet(
+                date = date,
+                status = existing?.status,
+                note = existing?.note,
+                onSlip = { note ->
+                    scope.launch {
+                        graph.journey.logSlip(date.toEpochDay(), note)
+                        editingDay = null
+                    }
+                },
+                onClean = {
+                    scope.launch {
+                        graph.journey.clearDay(date.toEpochDay())
+                        editingDay = null
+                    }
+                },
+            )
+        }
+    }
+
     if (showRecovery) {
         ModalBottomSheet(
             onDismissRequest = { showRecovery = false },
@@ -306,6 +346,88 @@ fun TrackScreen(faithMode: Boolean) {
                     }
                 },
             )
+        }
+    }
+}
+
+/**
+ * Logging a day that has already happened.
+ *
+ * Bastion derives the streak from logged slips rather than from daily
+ * check-ins, which is what lets a man close the app for a week without being
+ * told he failed — but it also meant a slip he did not log at the time could
+ * never be entered afterwards. The honest history is the one recorded when he
+ * is ready to record it, not only the one he was in a state to type at 2am.
+ *
+ * Deliberately two buttons and an optional line of text. Asking a man to relive
+ * a bad night in detail, days later, is the shame loop this app exists to avoid.
+ */
+@Composable
+private fun DayLogSheet(
+    date: LocalDate,
+    status: DayStatus?,
+    note: String?,
+    onSlip: (String?) -> Unit,
+    onClean: () -> Unit,
+) {
+    var text by remember(date) { mutableStateOf(note.orEmpty()) }
+    val isSlip = status == DayStatus.SLIP
+    val today = LocalDate.now()
+
+    Column(Modifier.padding(horizontal = 24.dp).padding(bottom = 32.dp)) {
+        Text(
+            when (date) {
+                today -> "Today"
+                today.minusDays(1) -> "Yesterday"
+                else -> date.format(DateTimeFormatter.ofPattern("EEEE d MMMM"))
+            },
+            style = MaterialTheme.typography.titleLarge,
+            color = BastionColors.TextPrimary,
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            if (isSlip) "Logged as a slip." else "Nothing logged.",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (isSlip) BastionColors.Amber else BastionColors.TextMuted,
+        )
+
+        Spacer(Modifier.height(18.dp))
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            label = { Text("What was going on? (optional)") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            minLines = 2,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = BastionColors.Bronze,
+                unfocusedBorderColor = BastionColors.Outline,
+                focusedTextColor = BastionColors.TextPrimary,
+                unfocusedTextColor = BastionColors.TextPrimary,
+                cursorColor = BastionColors.Bronze,
+            ),
+        )
+
+        Spacer(Modifier.height(16.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            if (isSlip) {
+                // Undo, offered first, because the commonest reason to open a
+                // past day is a mis-tap rather than a confession.
+                PrimaryButton("Mark clean", onClean, Modifier.weight(1f))
+                QuietButton(
+                    "Update note",
+                    { onSlip(text.trim().takeIf(String::isNotBlank)) },
+                    Modifier.weight(1f),
+                    BastionColors.Amber,
+                )
+            } else {
+                QuietButton(
+                    "Log a slip",
+                    { onSlip(text.trim().takeIf(String::isNotBlank)) },
+                    Modifier.weight(1f),
+                    BastionColors.Amber,
+                )
+            }
         }
     }
 }

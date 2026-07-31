@@ -1,5 +1,6 @@
 package com.bastion.app.feature.guardui
 
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -64,6 +65,7 @@ import com.bastion.app.data.db.GuardedAppEntity
 import com.bastion.app.data.prefs.Settings
 import com.bastion.app.guard.accessibility.BastionAccessibilityService
 import com.bastion.app.guard.browser.FilteredBrowserActivity
+import com.bastion.app.guard.lockdown.BastionDeviceAdmin
 import com.bastion.app.guard.vpn.BastionVpnService
 import kotlinx.coroutines.launch
 
@@ -152,6 +154,11 @@ fun GuardScreen() {
     // because it must not depend on this screen being the one in front.
     var guardBreached by remember { mutableStateOf(false) }
     var breachedFor by remember { mutableStateOf("") }
+    var showAdbHint by remember { mutableStateOf(false) }
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    var confirmStandDown by remember { mutableStateOf(false) }
+    var rulesExpanded by remember { mutableStateOf(false) }
+    var detailRuleId by remember { mutableStateOf<String?>(null) }
     androidx.lifecycle.compose.LifecycleResumeEffect(serviceRunning) {
         scope.launch {
             guardBreached = com.bastion.app.guard.GuardWatchdog.isBreached(context)
@@ -216,9 +223,62 @@ fun GuardScreen() {
                         Modifier.fillMaxWidth(),
                         BastionColors.SageBright,
                     )
+                    Spacer(Modifier.height(4.dp))
+                    // The honest exit. Without it the only way to stop the
+                    // six-hourly nag was to clear the app's data, which takes
+                    // the whole journey with it.
+                    LinkButton("I'm done with Guard") { confirmStandDown = true }
                 }
                 Spacer(Modifier.height(12.dp))
             }
+
+            // --- Guard strength: what is actually armed -------------------
+            //
+            // Pinned above everything else because it is the question the
+            // screen exists to answer. Each unarmed row is its own one-tap
+            // route to the system screen that arms it, which is what turns a
+            // status display into the setup checklist as well.
+            val layers = rememberGuardLayers(settings)
+            GuardStrengthCard(
+                layers = layers,
+                onArm = { layer ->
+                    when (layer) {
+                        GuardLayer.FEED_GUARD -> BastionAccessibilityService.openSettings(context)
+                        GuardLayer.CONTENT_FILTER -> {
+                            val consent = BastionVpnService.prepareIntent(context)
+                            if (consent != null) {
+                                vpnConsent.launch(consent)
+                            } else {
+                                BastionVpnService.start(context)
+                                scope.launch { graph.settings.setVpnEnabled(true) }
+                            }
+                        }
+                        GuardLayer.PRIVATE_DNS -> openPrivateDnsSettings(context)
+                        GuardLayer.SCREEN_LOCK -> runCatching {
+                            context.startActivity(
+                                BastionDeviceAdmin.activationIntent(context)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            )
+                        }
+                        GuardLayer.GRAYSCALE -> {
+                            // Turning the feature on is a tap; upgrading the
+                            // veil to true grayscale needs a command from a
+                            // computer, so those are two different answers.
+                            if (!settings.grayscaleEnabled) {
+                                scope.launch { graph.settings.setGrayscale(true) }
+                            } else {
+                                clipboard.setText(
+                                    androidx.compose.ui.text.AnnotatedString(ADB_GRANT_COMMAND)
+                                )
+                                showAdbHint = true
+                            }
+                        }
+                        GuardLayer.NOTIFICATIONS -> openNotificationSettings(context)
+                    }
+                },
+            )
+
+            Spacer(Modifier.height(12.dp))
 
             // --- Bastion Guard service ---
             BastionCard(accent = if (serviceRunning) BastionColors.Sage else BastionColors.Amber) {
@@ -370,6 +430,32 @@ fun GuardScreen() {
                     LinkButton("Learn →") { showLearnMode = true }
                 }
                 Spacer(Modifier.height(8.dp))
+                // Collapsed by default. Two dozen rows of matcher internals is
+                // the single densest thing on this screen and almost never what
+                // someone came here to change — the summary answers "is it
+                // covered", and the list is one tap away when a rule breaks.
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable { rulesExpanded = !rulesExpanded }
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        feedRuleSummary(feedRules),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextMuted,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        if (rulesExpanded) "Hide" else "Show",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = BastionColors.BronzeBright,
+                    )
+                }
+                if (rulesExpanded) {
+                Spacer(Modifier.height(14.dp))
                 Text(
                     "A rule stopped firing? Learn it again in seconds.",
                     style = MaterialTheme.typography.bodySmall,
@@ -390,12 +476,30 @@ fun GuardScreen() {
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                "${rule.matchType.name.lowercase()} · ${rule.matchValue}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = BastionColors.TextMuted,
-                                modifier = Modifier.weight(1f),
-                            )
+                            // The label, not the matcher. "view_id ·
+                            // com.instagram.android:id/clips_viewer" is what
+                            // the rule is made of; "Instagram Reels" is what it
+                            // does, and a non-technical reader took the former
+                            // for breakage. The internals stay one tap away for
+                            // when a rule needs re-learning.
+                            Column(
+                                Modifier
+                                    .weight(1f)
+                                    .clickable { detailRuleId = if (detailRuleId == rule.id) null else rule.id }
+                            ) {
+                                Text(
+                                    rule.label,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = BastionColors.TextSecondary,
+                                )
+                                if (detailRuleId == rule.id) {
+                                    Text(
+                                        "${rule.matchType.name.lowercase()} · ${rule.matchValue}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = BastionColors.TextMuted,
+                                    )
+                                }
+                            }
                             Switch(
                                 checked = rule.enabled,
                                 onCheckedChange = { enabled ->
@@ -414,6 +518,7 @@ fun GuardScreen() {
                         }
                     }
                     Spacer(Modifier.height(8.dp))
+                }
                 }
             }
 
@@ -587,6 +692,42 @@ fun GuardScreen() {
                 ) { graph.guard.upsertApp(app.copy(mode = mode, updatedAt = System.currentTimeMillis())) }
             },
             onDismiss = { confirmRelax = null },
+        )
+    }
+
+    if (confirmStandDown) {
+        ConfirmDialog(
+            title = "Stop using Guard?",
+            body = "Bastion will stop expecting it and stop warning you. Your streak, " +
+                "history and guarded-app list all stay. Turn Guard back on any time and " +
+                "this picks up where it left off.",
+            confirmLabel = "Stop expecting it",
+            onConfirm = {
+                // Refused outright during a lockdown, and gated by the partner's
+                // code otherwise. This is the widest weakening on the screen —
+                // it switches off the only thing that notices the others are
+                // gone — so it must not be the cheapest one to reach.
+                if (com.bastion.app.guard.lockdown.Lockdown.isActive(settings)) {
+                    blockedByLockdown = true
+                } else {
+                    weaken {
+                        com.bastion.app.guard.GuardWatchdog.standDown(context)
+                        guardBreached = false
+                    }
+                }
+            },
+            onDismiss = { confirmStandDown = false },
+        )
+    }
+
+    if (showAdbHint) {
+        ConfirmDialog(
+            title = "Copied the command",
+            body = "Plug the phone into a computer with adb and run it. Bastion can't grant " +
+                "itself this one — that's the point of it.",
+            confirmLabel = "All right",
+            onConfirm = {},
+            onDismiss = { showAdbHint = false },
         )
     }
 
@@ -1237,6 +1378,81 @@ private fun switchColors() = SwitchDefaults.colors(
     uncheckedTrackColor = BastionColors.SurfaceHigh,
     uncheckedBorderColor = BastionColors.Outline,
 )
+
+/**
+ * Private DNS lives in a different place on almost every OEM skin, and the
+ * dedicated action is not present on all of them, so this walks down from most
+ * to least specific rather than risking a dead button.
+ */
+private fun openPrivateDnsSettings(context: Context) {
+    val candidates = listOf(
+        Intent("android.settings.PRIVATE_DNS_SETTINGS"),
+        Intent("android.settings.WIRELESS_SETTINGS"),
+        Intent(android.provider.Settings.ACTION_SETTINGS),
+    )
+    for (intent in candidates) {
+        val opened = runCatching {
+            context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        }.isSuccess
+        if (opened) return
+    }
+}
+
+/**
+ * The app's own notification settings rather than a permission request.
+ *
+ * Android stops showing the runtime prompt after it has been dismissed twice,
+ * and a button that silently does nothing is worse than one extra tap. This
+ * screen always works and also covers the case where the permission was
+ * granted and the channel was muted afterwards.
+ */
+private fun openNotificationSettings(context: Context) {
+    val opened = runCatching {
+        context.startActivity(
+            Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }.isSuccess
+    if (!opened) {
+        runCatching {
+            context.startActivity(
+                Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    .setData(android.net.Uri.fromParts("package", context.packageName, null))
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }
+    }
+}
+
+/**
+ * "Instagram, YouTube and 2 more · 14 rules" — coverage, not internals.
+ *
+ * Named apps rather than a bare count, because the question behind this line is
+ * "is the app I'm worried about covered", and a number cannot answer it.
+ */
+private fun feedRuleSummary(rules: List<com.bastion.app.data.db.FeedRuleEntity>): String {
+    val active = rules.filter { it.enabled }
+    if (active.isEmpty()) return "No rules active — feeds open everywhere."
+
+    val names = active.map { it.packageName }.distinct().map(::appNameForPackage)
+    val shown = names.take(2).joinToString(", ")
+    val rest = names.size - 2
+    val apps = if (rest > 0) "$shown and $rest more" else shown
+    return "$apps · ${active.size} ${if (active.size == 1) "rule" else "rules"}"
+}
+
+/** Best-effort friendly name; falls back to the package's last segment. */
+private fun appNameForPackage(pkg: String): String = when (pkg) {
+    "com.instagram.android" -> "Instagram"
+    "com.google.android.youtube" -> "YouTube"
+    "com.zhiliaoapp.musically", "com.ss.android.ugc.trill" -> "TikTok"
+    "com.facebook.katana" -> "Facebook"
+    "com.snapchat.android" -> "Snapchat"
+    "com.twitter.android" -> "X"
+    "com.reddit.frontpage" -> "Reddit"
+    else -> pkg.substringAfterLast('.').replaceFirstChar(Char::uppercase)
+}
 
 private const val ADB_GRANT_COMMAND =
     "adb shell pm grant com.bastion.app android.permission.WRITE_SECURE_SETTINGS"
