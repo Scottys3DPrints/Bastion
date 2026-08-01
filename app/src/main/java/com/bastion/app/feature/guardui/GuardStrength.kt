@@ -52,7 +52,7 @@ enum class GuardLayer(val label: String, val blurb: String) {
     CONTENT_FILTER("Content filter", "Blocks known hosts at the resolver"),
     PRIVATE_DNS("Private DNS", "Filters below the app layer"),
     SCREEN_LOCK("Screen lock", "Lets the break-glass plan lock the screen"),
-    GRAYSCALE("True grayscale", "Drains the colour, not just a veil"),
+    GRAYSCALE("Dimming veil", "Takes the shine off guarded feeds"),
     NOTIFICATIONS("Alerts", "Tells you when a layer falls"),
 }
 
@@ -96,16 +96,10 @@ private fun readLayers(context: Context, settings: Settings): List<LayerState> =
     ),
     LayerState(GuardLayer.PRIVATE_DNS, privateDnsIsSet(context)),
     LayerState(GuardLayer.SCREEN_LOCK, BastionDeviceAdmin.isActive(context)),
-    run {
-        val trueGrayscale = context.checkSelfPermission(
-            android.Manifest.permission.WRITE_SECURE_SETTINGS
-        ) == PackageManager.PERMISSION_GRANTED
-        LayerState(
-            GuardLayer.GRAYSCALE,
-            on = settings.grayscaleEnabled && trueGrayscale,
-            partial = if (settings.grayscaleEnabled && !trueGrayscale) "veil only" else null,
-        )
-    },
+    // Was gated on WRITE_SECURE_SETTINGS and reported "veil only" without it,
+    // which implied a stronger mode existed behind the grant. None did — the
+    // veil is the whole feature, so the switch alone decides.
+    LayerState(GuardLayer.GRAYSCALE, settings.grayscaleEnabled),
     LayerState(GuardLayer.NOTIFICATIONS, notificationsAllowed(context)),
 )
 

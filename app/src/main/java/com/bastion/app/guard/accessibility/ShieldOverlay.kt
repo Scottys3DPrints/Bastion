@@ -84,9 +84,13 @@ class ShieldOverlay(private val service: AccessibilityService) {
     }
 
     /**
-     * The grayscale fallback when WRITE_SECURE_SETTINGS has not been granted.
-     * Not true desaturation — a translucent veil that takes the shine off a feed
-     * without hiding it. Honest about being a lesser tool.
+     * The dimming veil over a guarded app.
+     *
+     * Not desaturation — a translucent sheet that takes the shine off a feed
+     * without hiding it. It was documented as a "fallback" for when
+     * WRITE_SECURE_SETTINGS had not been granted, which implied a stronger
+     * path existed behind that grant. None was ever written: this is the whole
+     * mechanism, and it is a nudge rather than a wall.
      */
     fun showDimVeil(alpha: Float = 0.28f) {
         handler.post {

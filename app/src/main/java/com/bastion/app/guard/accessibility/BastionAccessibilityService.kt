@@ -51,8 +51,17 @@ class BastionAccessibilityService : AccessibilityService() {
     @Volatile private var guardedApps: Map<String, GuardedAppEntity> = emptyMap()
     @Volatile private var rulesByPackage: Map<String, List<FeedRuleEntity>> = emptyMap()
 
-    /** Epoch millis a running lockdown ends; 0 when none. */
-    @Volatile private var lockdownUntil: Long = 0L
+    /**
+     * The last settings seen, mirrored so [evaluate] stays synchronous.
+     *
+     * The whole object rather than a copied-out field: it used to keep only
+     * `lockdownUntil`, and once lockdowns gained a monotonic anchor that single
+     * field stopped being the answer to "is a lockdown running" — a user who
+     * rolled the device clock forward got every guarded app back while the
+     * lockdown was still, by the elapsed clock, very much running.
+     */
+    @Volatile private var settings: com.bastion.app.data.prefs.Settings =
+        com.bastion.app.data.prefs.Settings()
 
     private var lastScanAt = 0L
     private var lastInterruptAt = 0L
@@ -76,7 +85,7 @@ class BastionAccessibilityService : AccessibilityService() {
             }
         }
         scope.launch {
-            graph.settings.settings.collect { lockdownUntil = it.lockdownUntil }
+            graph.settings.settings.collect { settings = it }
         }
     }
 
@@ -134,13 +143,22 @@ class BastionAccessibilityService : AccessibilityService() {
             return
         }
 
-        val guarded = guardedApps[pkg] ?: return
+        val guarded = guardedApps[pkg]
+        if (guarded == null) {
+            // Leaving a guarded app has to take the veil with it. This branch
+            // was a bare `?: return`, which was harmless only for as long as the
+            // veil was never shown at all; the moment it works, an unguarded
+            // return would leave a translucent sheet over the home screen and
+            // every other app, with no way to clear it but killing the service.
+            shield.hideDimVeil()
+            return
+        }
 
         // During a lockdown every guarded app is fully closed, whatever its own
         // mode says. A break-glass plan that still let the feed-only apps open
         // would not be worth pressing.
-        if (System.currentTimeMillis() < lockdownUntil) {
-            val minutes = (lockdownUntil - System.currentTimeMillis()) / 60_000L
+        if (com.bastion.app.guard.lockdown.Lockdown.isActive(settings)) {
+            val minutes = com.bastion.app.guard.lockdown.Lockdown.remainingMinutes(settings)
             val remaining = if (minutes >= 60) "${minutes / 60}h ${minutes % 60}m" else "${minutes}m"
             blockApp(guarded, "Lockdown. $remaining left.")
             return
@@ -155,7 +173,14 @@ class BastionAccessibilityService : AccessibilityService() {
             BlockMode.FEED_ONLY -> checkFeed(pkg, guarded)
         }
 
-        if (guarded.grayscale) shield.showDimVeil() else shield.hideDimVeil()
+        // Reads the global setting, which is the one the UI actually writes.
+        //
+        // This asked `guarded.grayscale` — a per-app column with no writer
+        // anywhere in the app, so it was false for every row ever created and
+        // the veil had never once been shown. Meanwhile the "Temptation
+        // dampening" switch, and the grayscale step of the break-glass plan,
+        // both wrote a global preference that nothing read.
+        if (settings.grayscaleEnabled) shield.showDimVeil() else shield.hideDimVeil()
     }
 
     private fun checkTimeLimit(app: GuardedAppEntity) {
@@ -318,6 +343,9 @@ class BastionAccessibilityService : AccessibilityService() {
 
     override fun onUnbind(intent: Intent?): Boolean {
         running.value = false
+        // The overlay belongs to this service; if it goes away without taking
+        // the veil down, nothing else can.
+        shield.destroy()
         return super.onUnbind(intent)
     }
 

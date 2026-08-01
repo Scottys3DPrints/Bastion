@@ -162,8 +162,6 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
     // because it must not depend on this screen being the one in front.
     var guardBreached by remember { mutableStateOf(false) }
     var breachedFor by remember { mutableStateOf("") }
-    var showAdbHint by remember { mutableStateOf(false) }
-    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     var confirmStandDown by remember { mutableStateOf(false) }
     var rulesExpanded by remember { mutableStateOf(false) }
     var detailRuleId by remember { mutableStateOf<String?>(null) }
@@ -270,19 +268,12 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                         )
                     }
-                    GuardLayer.GRAYSCALE -> {
-                        // Turning the feature on is a tap; upgrading the
-                        // veil to true grayscale needs a command from a
-                        // computer, so those are two different answers.
-                        if (!settings.grayscaleEnabled) {
-                            scope.launch { graph.settings.setGrayscale(true) }
-                        } else {
-                            clipboard.setText(
-                                androidx.compose.ui.text.AnnotatedString(ADB_GRANT_COMMAND)
-                            )
-                            showAdbHint = true
-                        }
-                    }
+                    // One tap, and that is the whole feature. This used to
+                    // offer an adb command as the "upgrade" once the switch
+                    // was already on — for a stronger mode that was never
+                    // built.
+                    GuardLayer.GRAYSCALE ->
+                        scope.launch { graph.settings.setGrayscale(true) }
                     GuardLayer.NOTIFICATIONS -> openNotificationSettings(context)
                 }
             },
@@ -716,17 +707,6 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
         )
     }
 
-    if (showAdbHint) {
-        ConfirmDialog(
-            title = "Copied the command",
-            body = "Plug the phone into a computer with adb and run it. Bastion can't grant " +
-                "itself this one — that's the point of it.",
-            confirmLabel = "All right",
-            onConfirm = {},
-            onDismiss = { showAdbHint = false },
-        )
-    }
-
     if (blockedByLockdown) {
         ConfirmDialog(
             title = "Lockdown is running",
@@ -875,26 +855,7 @@ private const val PRIVATE_DNS_HOST = "family.cloudflare-dns.com"
 
 @Composable
 private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val clipboard = LocalClipboardManager.current
-
-    // The grant lands over adb while this screen is open, so a value read once
-    // at composition left the fallback showing until the process was restarted.
-    var hasPermission by remember { mutableStateOf(false) }
-    LifecycleResumeEffect(Unit) {
-        hasPermission = context.checkSelfPermission(android.Manifest.permission.WRITE_SECURE_SETTINGS) ==
-            PackageManager.PERMISSION_GRANTED
-        onPauseOrDispose {}
-    }
-
-    var copied by remember { mutableStateOf(false) }
-    LaunchedEffect(copied) {
-        if (copied) {
-            kotlinx.coroutines.delay(1_800)
-            copied = false
-        }
-    }
 
     Column(Modifier.fillMaxWidth()) {
         Row(
@@ -906,8 +867,7 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
                 Text("Temptation dampening", style = MaterialTheme.typography.titleMedium, color = BastionColors.TextPrimary)
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    if (hasPermission) "True grayscale on guarded apps"
-                    else "Dimming veil on guarded apps",
+                    "A dimming veil over guarded apps",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
@@ -918,45 +878,18 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
                 colors = switchColors(),
             )
         }
-        if (!hasPermission) {
-            Spacer(Modifier.height(10.dp))
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    "True grayscale needs one adb command:",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                    modifier = Modifier.weight(1f),
-                )
-                LinkButton(if (copied) "Copied" else "Copy") {
-                    clipboard.setText(AnnotatedString(ADB_GRANT_COMMAND))
-                    copied = true
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(BastionColors.MidnightDeep)
-                    .padding(12.dp)
-            ) {
-                Text(
-                    ADB_GRANT_COMMAND,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.SageBright,
-                )
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Until then: a dimming veil, which is weaker.",
-                style = MaterialTheme.typography.bodySmall,
-                color = BastionColors.TextMuted,
-            )
-        }
+        Spacer(Modifier.height(10.dp))
+        Text(
+            // What it is, with no overclaim. The card used to offer an adb
+            // command to grant WRITE_SECURE_SETTINGS and promise "true
+            // grayscale" in exchange; nothing in the app ever wrote a system
+            // setting, so the grant bought a change of wording and nothing
+            // else. The veil is the real mechanism, and it is a nudge rather
+            // than a wall.
+            "Takes the shine off a feed without hiding it. A nudge, not a wall.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BastionColors.TextMuted,
+        )
     }
 }
 
@@ -1415,9 +1348,6 @@ private fun appNameForPackage(pkg: String): String = when (pkg) {
     "com.reddit.frontpage" -> "Reddit"
     else -> pkg.substringAfterLast('.').replaceFirstChar(Char::uppercase)
 }
-
-private const val ADB_GRANT_COMMAND =
-    "adb shell pm grant com.bastion.app android.permission.WRITE_SECURE_SETTINGS"
 
 /**
  * Heading for a package's rules.
