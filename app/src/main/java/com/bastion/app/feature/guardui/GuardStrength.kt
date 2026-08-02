@@ -47,13 +47,19 @@ import com.bastion.app.guard.vpn.BastionVpnService
  * own: they are how you find out a layer has fallen. They count because a
  * silent watchdog is not a watchdog.
  */
+/**
+ * Named for what each layer does for the person, in their words.
+ *
+ * "Blocks known hosts at the resolver" is true and unreadable. A status meter
+ * whose rows have to be decoded is not a status meter.
+ */
 enum class GuardLayer(val label: String, val blurb: String) {
-    FEED_GUARD("Feed guard", "Closes guarded feeds as they open"),
-    CONTENT_FILTER("Content filter", "Blocks known hosts at the resolver"),
-    PRIVATE_DNS("Private DNS", "Filters below the app layer"),
-    SCREEN_LOCK("Screen lock", "Lets the break-glass plan lock the screen"),
-    GRAYSCALE("Dimming veil", "Takes the shine off guarded feeds"),
-    NOTIFICATIONS("Alerts", "Tells you when a layer falls"),
+    FEED_GUARD("Feed blocking", "Closes Reels, Shorts and For You as they open"),
+    CONTENT_FILTER("Website filter", "Blocks adult sites across your apps and browsers"),
+    PRIVATE_DNS("Extra website blocking", "Catches apps that get around the filter"),
+    SCREEN_LOCK("Screen lock", "Lets a panic lockdown lock your screen"),
+    GRAYSCALE("Dimming", "Takes the shine off guarded apps"),
+    NOTIFICATIONS("Alerts", "Tells you when a protection drops"),
 }
 
 /** What a layer's state is right now, and what to say when it is not on. */

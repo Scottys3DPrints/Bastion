@@ -1,6 +1,8 @@
 package com.bastion.app.core.design
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,8 +28,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -319,6 +326,102 @@ fun EmptyState(
                     color = BastionColors.BronzeBright,
                 )
             }
+        }
+    }
+}
+
+/**
+ * A titled group of related controls, on one shared surface.
+ *
+ * [Section] separates by whitespace alone, which is right when the things
+ * either side of the gap look different anyway — a chart, then a calendar. It
+ * is not enough on a settings screen, where every row is a label and a switch:
+ * the eye finds no edges, twenty rows read as one undifferentiated list, and
+ * the user cannot tell where "notifications" stopped and "backups" began.
+ *
+ * So a group gets a real container. One surface for the whole group rather than
+ * one per row — the boundary is what needs drawing, not each item inside it —
+ * which keeps the bordered-surface count low while making the grouping
+ * unmissable.
+ *
+ * [subtitle] is for the sentence that says what the group is *for*, in the
+ * words the user would use. A heading alone names a thing; the line under it is
+ * what stops a stranger having to guess.
+ */
+@Composable
+fun SettingsGroup(
+    title: String,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(modifier.fillMaxWidth()) {
+        SectionLabel(title)
+        subtitle?.let {
+            Spacer(Modifier.height(Space.xs))
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
+            )
+        }
+        Spacer(Modifier.height(Space.md))
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(BastionColors.Surface.copy(alpha = 0.55f))
+                .padding(horizontal = Space.lg, vertical = Space.xs),
+            content = content,
+        )
+    }
+}
+
+/**
+ * The line between two controls inside a [SettingsGroup].
+ *
+ * Inset from the left so it reads as separating siblings rather than cutting
+ * the group in half.
+ */
+@Composable
+fun GroupDivider() {
+    Spacer(
+        Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(BastionColors.OutlineSoft)
+    )
+}
+
+/**
+ * One tap for the explanation, for the things that cannot be said in a line.
+ *
+ * The alternative is either a wall of text nobody reads or a technical term
+ * nobody understands, and this app has done both. Collapsed by default so the
+ * screen stays short; there for the person who wants to know what "Private DNS"
+ * actually means before they touch it.
+ */
+@Composable
+fun WhatsThis(text: String, modifier: Modifier = Modifier) {
+    var open by remember { mutableStateOf(false) }
+    Column(modifier.fillMaxWidth()) {
+        TextButton(
+            onClick = { open = !open },
+            contentPadding = PaddingValues(vertical = Space.sm),
+        ) {
+            Text(
+                if (open) "Hide" else "What's this?",
+                style = MaterialTheme.typography.labelMedium,
+                color = BastionColors.SageBright,
+            )
+        }
+        androidx.compose.animation.AnimatedVisibility(open) {
+            Text(
+                text,
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextSecondary,
+                modifier = Modifier.padding(bottom = Space.sm),
+            )
         }
     }
 }

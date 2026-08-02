@@ -351,12 +351,33 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    if (serviceRunning) "Apps open. Guarded feeds don't."
-                    else "Blocks Reels, Shorts and For You while the app stays usable.",
+                    if (serviceRunning) "On — apps open normally, their feeds don't."
+                    else "Off — Reels, Shorts and For You are not being blocked.",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
                 if (!serviceRunning) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        // Android's own wording for this permission sounds far
+                        // more alarming than what is actually being granted, and
+                        // people back out of the screen because of it. Saying so
+                        // first is the difference between a granted permission
+                        // and an abandoned setup.
+                        "Android calls this \"Accessibility\", and its warning sounds " +
+                            "scarier than this is. It lets Bastion see which screen " +
+                            "you're on — that you opened Reels — so it can close it. " +
+                            "It never reads your messages or anything on the screen.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextMuted,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "You're looking for \"Bastion Guard\" in the list, then the " +
+                            "switch at the top.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BastionColors.SageBright,
+                    )
                     Spacer(Modifier.height(14.dp))
                     PrimaryButton(
                         "Turn on in Settings",
@@ -386,7 +407,11 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        Text("Content filter", style = MaterialTheme.typography.titleMedium, color = BastionColors.TextPrimary)
+                        Text(
+                    "Block adult websites",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = BastionColors.TextPrimary,
+                )
                         Spacer(Modifier.height(4.dp))
                         Text(
                             if (filterRunning) "On · $blockedCount lookups blocked"
@@ -414,7 +439,11 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 }
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "Apps with their own encrypted DNS can route around this. One layer of three.",
+                    "Android will ask for \"VPN\" permission. Bastion isn't sending " +
+                        "your traffic anywhere — it uses that only to check website " +
+                        "addresses against its blocklist, on this phone. A few apps " +
+                        "use their own private connection and slip past; the setting " +
+                        "below closes that gap.",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
@@ -446,7 +475,13 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
         }
 
         if (managing) {
-            // --- Guarded apps ---
+            // Group headings on the configuration screen too.
+            //
+            // Six blocks in one scroll, each a label and some controls, read as
+            // one undifferentiated list — the complaint was that it all felt
+            // like the same part. Naming what each group is for is most of the
+            // fix; the shared surface behind each one does the rest.
+            SectionLabel("What is guarded")
             Column(Modifier.fillMaxWidth()) {
                 Row(
                     Modifier.fillMaxWidth(),
@@ -597,6 +632,8 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
             }
 
 
+            SectionLabel("How hard it is to undo")
+
             // --- Tamper resistance ---
             BastionCard(accent = BastionColors.Bronze) {
                 Row(
@@ -605,16 +642,27 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
-                        SectionLabel("Cooling-off lock")
+                        // "Cooling-off lock" named a mechanism. This names the
+                        // thing it does for you, which is the only reason to
+                        // turn it on.
+                        SectionLabel("Make changes hard to undo")
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Turning protection OFF waits before it happens, so a " +
+                                "weak moment can't undo your setup in seconds. " +
+                                "Turning protection ON is always immediate.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = BastionColors.TextMuted,
+                        )
                         Spacer(Modifier.height(6.dp))
                         Text(
                             // The two states are named plainly, because the whole
                             // point is knowing which one you are in before you
                             // change something.
                             if (settings.tamperLockEnabled)
-                                "Locked in. Weakening waits ${settings.coolingOffHours}h."
+                                "On — off-switches wait ${settings.coolingOffHours}h"
                             else
-                                "Not locked in. Every change is instant.",
+                                "Off — changes happen right away",
                             style = MaterialTheme.typography.bodySmall,
                             color = if (settings.tamperLockEnabled) BastionColors.BronzeBright
                             else BastionColors.TextMuted,
@@ -754,12 +802,12 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 }
             }
 
-            // --- Settings ---
+            // --- Extras ---
             //
-            // Everything that is configured rather than acted on. The break-glass
+            // Everything that is configured rather than acted on. The panic
             // button itself lives on the home screen, where it can be reached
             // without going looking; only its plan belongs here.
-            SectionLabel("Settings")
+            SectionLabel("Extra protection")
 
             LockdownPlanCard(settings = settings, graph = graph)
 
@@ -961,7 +1009,9 @@ private fun PrivateDnsCard() {
     val isOff = watching && live == null
 
     Column(Modifier.fillMaxWidth()) {
-        SectionLabel("Close the DNS-over-HTTPS gap")
+        // "Close the DNS-over-HTTPS gap" is accurate and means nothing to
+        // anyone who has not implemented a resolver.
+        SectionLabel("Extra website blocking (recommended)")
         Spacer(Modifier.height(8.dp))
         Text(
             when {
@@ -1051,7 +1101,11 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text("Temptation dampening", style = MaterialTheme.typography.titleMedium, color = BastionColors.TextPrimary)
+                Text(
+                    "Dim the tempting apps",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = BastionColors.TextPrimary,
+                )
                 Spacer(Modifier.height(4.dp))
                 Text(
                     "A dimming veil over guarded apps",
@@ -1290,9 +1344,18 @@ private fun GuardedAppRow(
         ChoiceRow(
             options = modes,
             selected = app.mode,
-            label = { it.label() },
+            // The segmented control has room for two words, so it gets the
+            // short form; the sentence explaining the choice sits under it,
+            // where there is room to finish it.
+            label = { it.shortLabel() },
             onSelect = onModeChange,
             modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            app.mode.explain(),
+            style = MaterialTheme.typography.labelSmall,
+            color = BastionColors.TextMuted,
         )
     }
 }
@@ -1412,10 +1475,17 @@ private fun LearnModeSheet(onClose: () -> Unit) {
             // fixed 520dp clipped this sheet mid-sentence.
             .heightIn(min = 320.dp, max = 560.dp)
     ) {
-        Text("Learn mode", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
+        Text(
+            // "Learn mode" describes what the app does. This describes the
+            // problem the user actually has when they reach for it.
+            "Fix a feed slipping through",
+            style = MaterialTheme.typography.headlineSmall,
+            color = BastionColors.TextPrimary,
+        )
         Spacer(Modifier.height(Space.sm))
         Text(
-            "Open the screen you want closed, come back, pick its identifier.",
+            "If an app updates and its feed starts getting past Bastion: open " +
+                "that feed, come back here, and pick it from the list.",
             style = MaterialTheme.typography.bodyMedium,
             color = BastionColors.TextSecondary,
         )
@@ -1615,9 +1685,34 @@ private fun feedGroupName(packageName: String, rules: List<FeedRuleEntity>): Str
         ?: packageName.substringAfterLast('.')
 }
 
+/**
+ * Named by what happens, not by what the mode is called internally.
+ *
+ * "Feed only" is a developer's shorthand — only the feed *what*? Blocked?
+ * Allowed? It read either way, and a switch that can be read two opposite ways
+ * is worse than no label. These say the outcome instead.
+ */
 private fun BlockMode.label(): String = when (this) {
-    BlockMode.FULL -> "Fully blocked"
-    BlockMode.SCHEDULE -> "Scheduled"
+    BlockMode.FULL -> "Block the whole app"
+    BlockMode.SCHEDULE -> "Block on a schedule"
+    BlockMode.TIME_LIMIT -> "Daily time limit"
+    BlockMode.FEED_ONLY -> "Block the endless feed"
+}
+
+/** The one-liner under a mode, finishing the sentence "…so you ______." */
+private fun BlockMode.explain(): String = when (this) {
+    BlockMode.FULL -> "The app won't open at all."
+    BlockMode.SCHEDULE -> "The app won't open during the hours you set."
+    BlockMode.TIME_LIMIT -> "The app closes once you've used your daily minutes."
+    BlockMode.FEED_ONLY ->
+        "The app opens normally — messages, search, posting. Reels, Shorts and " +
+            "For You close as soon as they appear."
+}
+
+/** Two words, for the segmented control. */
+private fun BlockMode.shortLabel(): String = when (this) {
+    BlockMode.FULL -> "Whole app"
+    BlockMode.SCHEDULE -> "Schedule"
     BlockMode.TIME_LIMIT -> "Time limit"
     BlockMode.FEED_ONLY -> "Feed only"
 }

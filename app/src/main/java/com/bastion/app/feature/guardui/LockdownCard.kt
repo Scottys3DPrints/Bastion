@@ -95,11 +95,13 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
                 color = BastionColors.TextMuted,
             )
         } else {
-            SectionLabel("Break glass")
+            SectionLabel("Panic lockdown")
             Spacer(Modifier.height(8.dp))
             Text(
-                "One button, ${Lockdown.describeShort(settings.lockdownSeconds)}. " +
-                    "Not cancellable from inside the app.",
+                "One button that shuts everything down for " +
+                    "${Lockdown.describe(settings.lockdownSeconds)} — closes your " +
+                    "guarded apps, turns on the filter, locks your screen. Once " +
+                    "started it can't be called off until the timer ends.",
                 style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.TextMuted,
             )
@@ -269,7 +271,7 @@ fun LockdownPlanCard(settings: Settings, graph: BastionGraph) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                SectionLabel("Break-glass plan")
+                SectionLabel("Panic lockdown")
                 Spacer(Modifier.height(6.dp))
                 Text(
                     "${Lockdown.describeShort(settings.lockdownSeconds)} · ${planSummary(settings)}",
