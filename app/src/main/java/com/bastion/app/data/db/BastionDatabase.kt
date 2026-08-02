@@ -51,7 +51,7 @@ class BastionConverters {
         AppUsageEntity::class,
         FeedSeenEntity::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 @TypeConverters(BastionConverters::class)

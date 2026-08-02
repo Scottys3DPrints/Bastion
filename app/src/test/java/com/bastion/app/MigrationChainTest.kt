@@ -1,6 +1,10 @@
 package com.bastion.app
 
 import com.bastion.app.data.db.Migrations
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -70,6 +74,59 @@ class MigrationChainTest {
                     migration.endVersion,
                 )
             }
+    }
+
+    /**
+     * The bug the chain test cannot see.
+     *
+     * Bumping the version, adding a field to the entity and writing an
+     * `ALTER TABLE` that misses one column produces a build that compiles, tests
+     * green, and then throws `IllegalStateException: Migration didn't properly
+     * handle` on launch — for every existing user, and only for them. A fresh
+     * install works perfectly, so it survives every kind of testing except
+     * updating a real phone.
+     *
+     * So the exported schemas are diffed against each other, and every column a
+     * version added must appear in that version's migration SQL.
+     */
+    @Test
+    fun `every added column appears in its migration`() {
+        val migrationSource =
+            File("src/main/java/com/bastion/app/data/db/Migrations.kt").readText()
+
+        exportedVersions().zipWithNext { from, to ->
+            val added = columnsByTable(to).flatMap { (table, columns) ->
+                val before = columnsByTable(from)[table] ?: return@flatMap emptyList()
+                (columns - before).map { table to it }
+            }
+            added.forEach { (table, column) ->
+                // Matched against the whole file rather than the one migration:
+                // parsing Kotlin here would be its own source of bugs, and a
+                // column named in the wrong migration still fails the chain.
+                assertTrue(
+                    "v$from -> v$to adds $table.$column to the schema, but no migration " +
+                        "mentions it. Every existing install would crash on launch.",
+                    migrationSource.contains(column),
+                )
+            }
+        }
+    }
+
+    /**
+     * kotlinx rather than `org.json`, which on the JVM is Android's stub and
+     * throws "not mocked" the moment it is touched.
+     */
+    private fun columnsByTable(version: Int): Map<String, Set<String>> {
+        val root = Json.parseToJsonElement(File(schemaDir, "$version.json").readText())
+        val entities = root.jsonObject.getValue("database").jsonObject
+            .getValue("entities").jsonArray
+        return entities.associate { entity ->
+            val obj = entity.jsonObject
+            obj.getValue("tableName").jsonPrimitive.content to
+                obj.getValue("fields").jsonArray
+                    .map { it.jsonObject.getValue("columnName").jsonPrimitive.content }
+                    .toSet()
+        }
     }
 
     @Test

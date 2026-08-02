@@ -42,6 +42,30 @@ data class UrgeLogEntity(
     val contextApp: String?,
     val place: String?,
     val note: String?,
+    /**
+     * The emotional weather, comma-separated, because it is never one thing.
+     *
+     * [trigger] is the situation that set it off; this is what he was carrying
+     * into it. Kept separate rather than folded together: "late night" and
+     * "lonely" are different facts, and a man who can see that his hard nights
+     * are the lonely ones rather than the late ones knows something worth
+     * knowing.
+     */
+    val feelings: String? = null,
+    /** Phone, laptop, tablet, TV. Where the pattern actually lives. */
+    val device: String? = null,
+    /**
+     * Whether he went looking or it arrived.
+     *
+     * The single most useful thing to separate, and the one most apps refuse to
+     * ask: stumbling into it on a feed and deciding to seek it out are different
+     * problems with different answers. Null when he would rather not say.
+     */
+    val soughtOut: Boolean? = null,
+    /** How long it lasted, in minutes, when he knows. */
+    val durationMinutes: Int? = null,
+    /** What worked, for a held urge — the thing worth doing again. */
+    val whatHelped: String? = null,
     val updatedAt: Long = System.currentTimeMillis(),
 )
 

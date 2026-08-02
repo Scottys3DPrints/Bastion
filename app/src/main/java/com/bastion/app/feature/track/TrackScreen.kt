@@ -83,10 +83,6 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-private val TRIGGERS = listOf(
-    "Late night", "Boredom", "Stress", "Loneliness", "Tiredness",
-    "Social media", "Anger", "Home alone", "Anxiety", "Alcohol",
-)
 
 private val MILESTONES = listOf(7, 14, 30, 60, 90, 180, 365)
 
@@ -240,6 +236,63 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
                 Spacer(Modifier.height(Space.md))
                 BarChart(bars = weekdayBars(urges), labelEvery = 1)
 
+                // The dimensions the longer log pays for.
+                //
+                // Held to the same bar as every other claim on this screen:
+                // Analytics refuses to name a pattern under six logs, and these
+                // charts must not undercut it. One entry rendered as a
+                // full-height bar reads as "this is your problem" on a sample of
+                // one — the app sounding certain about a man's life from a
+                // single Tuesday is exactly how it loses the right to be
+                // believed later.
+                val enoughToSpeak = urges.size >= Analytics.MIN_SAMPLE
+
+                val feelings = if (enoughToSpeak) {
+                    topCounts(urges.flatMap { it.feelingList() })
+                } else emptyList()
+                if (feelings.isNotEmpty()) {
+                    Spacer(Modifier.height(Space.section))
+                    SectionLabel("What you were carrying")
+                    Spacer(Modifier.height(Space.md))
+                    BarChart(bars = feelings, labelEvery = 1)
+                }
+
+                val places = if (enoughToSpeak) topCounts(urges.mapNotNull { it.place }) else emptyList()
+                if (places.isNotEmpty()) {
+                    Spacer(Modifier.height(Space.section))
+                    SectionLabel("Where it finds you")
+                    Spacer(Modifier.height(Space.md))
+                    BarChart(bars = places, labelEvery = 1)
+                }
+
+                val sought = urges.count { it.soughtOut == true }
+                val found = urges.count { it.soughtOut == false }
+                if (enoughToSpeak && sought + found > 0) {
+                    Spacer(Modifier.height(Space.section))
+                    SectionLabel("Found you, or went looking")
+                    Spacer(Modifier.height(Space.md))
+                    Text(
+                        // Stated as a fact about the split, without a verdict
+                        // attached either way. Both numbers point at different
+                        // work: one is a guard to tighten, the other is not.
+                        "$found found you · $sought you went looking for",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = BastionColors.TextSecondary,
+                    )
+                    Spacer(Modifier.height(Space.sm))
+                    com.bastion.app.core.design.ProportionBar(
+                        fraction = found.toFloat() / (found + sought),
+                    )
+                }
+
+                val helped = if (enoughToSpeak) topCounts(urges.mapNotNull { it.whatHelped }) else emptyList()
+                if (helped.isNotEmpty()) {
+                    Spacer(Modifier.height(Space.section))
+                    SectionLabel("What has actually worked")
+                    Spacer(Modifier.height(Space.md))
+                    BarChart(bars = helped, labelEvery = 1)
+                }
+
                 insights.forEach { insight ->
                     Spacer(Modifier.height(Space.section))
                     Text(
@@ -283,23 +336,15 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
 
     if (showLogSheet) {
         BastionBottomSheet(onDismiss = { showLogSheet = false }) {
-            UrgeLogSheet(
-                onSave = { intensity, trigger, note ->
+            LogFlow(
+                resisted = true,
+                onCancel = { showLogSheet = false },
+                onSave = { entry ->
                     scope.launch {
-                        graph.journey.logUrge(
-                            resisted = true,
-                            intensity = intensity,
-                            mood = null,
-                            trigger = trigger,
-                            contextApp = com.bastion.app.guard.accessibility
-                                .BastionAccessibilityService.foregroundApp.value,
-                            place = null,
-                            note = note,
-                        )
+                        graph.journey.saveLog(entry, heldContextApp = true)
                         showLogSheet = false
                     }
                 },
-                onCancel = { showLogSheet = false },
             )
         }
     }
@@ -339,18 +384,9 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
                     faithMode = faithMode,
                     rankName = state.rank.displayName(faithMode),
                     date = date,
-                    onDone = { trigger, reflection ->
+                    onDone = { entry ->
                         scope.launch {
-                            graph.journey.logUrge(
-                                resisted = false,
-                                intensity = 5,
-                                mood = null,
-                                trigger = trigger,
-                                contextApp = null,
-                                place = null,
-                                note = reflection,
-                                epochDay = date.toEpochDay(),
-                            )
+                            graph.journey.saveLog(entry)
                             editingDay = null
                         }
                     },
@@ -364,17 +400,9 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
             RecoveryFlow(
                 faithMode = faithMode,
                 rankName = state.rank.displayName(faithMode),
-                onDone = { trigger, reflection ->
+                onDone = { entry ->
                     scope.launch {
-                        graph.journey.logUrge(
-                            resisted = false,
-                            intensity = 5,
-                            mood = null,
-                            trigger = trigger,
-                            contextApp = null,
-                            place = null,
-                            note = reflection,
-                        )
+                        graph.journey.saveLog(entry)
                         showRecovery = false
                     }
                 },
@@ -538,10 +566,40 @@ private fun buildMarks(
         val epoch = date.toEpochDay()
         when {
             date.isAfter(today) -> DayMark.FUTURE
-            journeyStart > 0 && epoch < journeyStart -> DayMark.NONE
+            // A logged slip outranks the journey-start cutoff.
+            //
+            // The cutoff exists so days before a man started are not painted
+            // green as though he had held them — but it used to come first, so a
+            // slip he deliberately recorded for a day before his start date
+            // vanished. He fills in five screens, saves, and the calendar shows
+            // nothing: every reason to believe the app dropped it.
             epoch in slipDays -> DayMark.SLIP
+            journeyStart > 0 && epoch < journeyStart -> DayMark.NONE
             else -> DayMark.CLEAN
         }
+    }
+}
+
+/** The stored CSV, back as a list. Empty when he skipped the question. */
+private fun UrgeLogEntity.feelingList(): List<String> =
+    feelings?.split(',')?.map(String::trim)?.filter(String::isNotBlank).orEmpty()
+
+/**
+ * The five commonest answers, biggest first.
+ *
+ * Capped at five because these lists are long — fourteen feelings, nine places —
+ * and a bar chart with fourteen labels on a phone is a grey smear. The tail is
+ * genuinely not interesting: what a man needs is the two or three that keep
+ * coming up.
+ */
+private fun topCounts(values: List<String>): List<Bar> {
+    if (values.isEmpty()) return emptyList()
+    val counts = values.groupingBy { it }.eachCount().entries
+        .sortedByDescending { it.value }
+        .take(5)
+    val peak = counts.firstOrNull()?.value ?: 0
+    return counts.map { (label, count) ->
+        Bar(label, count.toFloat(), highlight = count == peak && peak > 0)
     }
 }
 
@@ -638,67 +696,6 @@ fun ConfidenceDot(confidence: String) {
     )
 }
 
-@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
-@Composable
-private fun UrgeLogSheet(
-    onSave: (intensity: Int, trigger: String?, note: String?) -> Unit,
-    onCancel: () -> Unit,
-) {
-    var intensity by remember { mutableFloatStateOf(3f) }
-    var trigger by remember { mutableStateOf<String?>(null) }
-    var note by remember { mutableStateOf("") }
-
-    Column {
-        Text("You resisted", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-        Spacer(Modifier.height(Space.lg))
-
-        SectionLabel("Strength")
-        Slider(
-            value = intensity,
-            onValueChange = { intensity = it },
-            valueRange = 1f..5f,
-            steps = 3,
-            colors = SliderDefaults.colors(
-                thumbColor = BastionColors.Bronze,
-                activeTrackColor = BastionColors.Bronze,
-                inactiveTrackColor = BastionColors.SurfaceHigh,
-            ),
-        )
-
-        Spacer(Modifier.height(10.dp))
-        SectionLabel("Trigger")
-        Spacer(Modifier.height(10.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
-            TRIGGERS.forEach { option ->
-                BastionFilterChip(
-                    label = option,
-                    selected = trigger == option,
-                    onClick = { trigger = if (trigger == option) null else option },
-                )
-            }
-        }
-
-        Spacer(Modifier.height(14.dp))
-        OutlinedTextField(
-            value = note,
-            onValueChange = { note = it },
-            placeholder = { Text("Note (optional)") },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(Space.md),
-            colors = sheetFieldColors(),
-        )
-
-        Spacer(Modifier.height(Space.lg))
-        PrimaryButton(
-            "Save",
-            { onSave(intensity.toInt(), trigger, note.takeIf { it.isNotBlank() }) },
-            Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(8.dp))
-        QuietButton("Cancel", onCancel, Modifier.fillMaxWidth())
-    }
-}
-
 /**
  * The recovery flow.
  *
@@ -713,11 +710,10 @@ private fun RecoveryFlow(
     rankName: String,
     /** The night being recorded. Null means now, which is the common case. */
     date: LocalDate? = null,
-    onDone: (trigger: String?, reflection: String?) -> Unit,
+    onDone: (LogEntry) -> Unit,
 ) {
     var stage by remember { mutableIntStateOf(0) }
-    var trigger by remember { mutableStateOf<String?>(null) }
-    var reflection by remember { mutableStateOf("") }
+    var captured by remember { mutableStateOf<LogEntry?>(null) }
 
     // A grace-first line for the worst moment to be reading anything. Loaded
     // rather than hard-coded so the words are not the same every single time a
@@ -777,37 +773,34 @@ private fun RecoveryFlow(
                 PrimaryButton("Look at it", { stage = 1 }, Modifier.fillMaxWidth())
             }
 
-            1 -> {
-                Text("What was happening?", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-                Spacer(Modifier.height(Space.lg))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
-                    TRIGGERS.forEach { option ->
-                        BastionFilterChip(
-                            label = option,
-                            selected = trigger == option,
-                            onClick = { trigger = option },
-                        )
-                    }
-                }
-                Spacer(Modifier.height(Space.lg))
-                OutlinedTextField(
-                    value = reflection,
-                    onValueChange = { reflection = it },
-                    placeholder = { Text("What would have helped, ten minutes earlier?") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 110.dp),
-                    shape = RoundedCornerShape(Space.md),
-                    colors = sheetFieldColors(),
-                )
-                Spacer(Modifier.height(Space.lg))
-                PrimaryButton("Continue", { stage = 2 }, Modifier.fillMaxWidth())
-            }
+            // The same five questions a held urge gets.
+            //
+            // A slip used to be asked less than a resisted urge — one trigger
+            // chip and a text box — which is exactly backwards. The nights that
+            // went wrong are the ones with something to learn from, and asking
+            // less about them was the app quietly agreeing that they are better
+            // not looked at. Grace comes first and then it gets looked at
+            // properly; that order is the whole argument.
+            1 -> LogFlow(
+                resisted = false,
+                forDate = date ?: LocalDate.now(),
+                saveLabel = "Continue",
+                onCancel = { stage = 0 },
+                onSave = { entry ->
+                    captured = entry
+                    stage = 2
+                },
+            )
 
             else -> {
+                val entry = captured ?: LogEntry(resisted = false, date = date ?: LocalDate.now())
                 Text("Your lever", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
                 Spacer(Modifier.height(Space.md))
-                Text(tipFor(trigger), style = MaterialTheme.typography.bodyLarge, color = BastionColors.TextSecondary)
+                Text(
+                    tipFor(entry.trigger),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = BastionColors.TextSecondary,
+                )
                 Spacer(Modifier.height(Space.section))
                 Box(
                     Modifier
@@ -823,11 +816,7 @@ private fun RecoveryFlow(
                     )
                 }
                 Spacer(Modifier.height(Space.section))
-                PrimaryButton(
-                    "Keep walking",
-                    { onDone(trigger, reflection.takeIf { it.isNotBlank() }) },
-                    Modifier.fillMaxWidth(),
-                )
+                PrimaryButton("Keep walking", { onDone(entry) }, Modifier.fillMaxWidth())
             }
         }
     }

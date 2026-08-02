@@ -164,19 +164,29 @@ class JourneyRepository(
     suspend fun logUrge(
         resisted: Boolean,
         intensity: Int,
-        mood: String?,
-        trigger: String?,
-        contextApp: String?,
-        place: String?,
-        note: String?,
+        mood: String? = null,
+        trigger: String? = null,
+        contextApp: String? = null,
+        place: String? = null,
+        note: String? = null,
+        feelings: List<String> = emptyList(),
+        device: String? = null,
+        soughtOut: Boolean? = null,
+        durationMinutes: Int? = null,
+        whatHelped: String? = null,
         epochDay: Long = LocalDate.now().toEpochDay(),
+        /**
+         * When it actually happened. Defaults to now; a past entry passes the
+         * real moment so that "when urges hit" stays an honest clock rather than
+         * a chart of when this man happens to open the app.
+         */
+        atMillis: Long = System.currentTimeMillis(),
     ) {
-        val now = System.currentTimeMillis()
         // Never in the future, whatever the caller passes.
         val today = epochDay.coerceAtMost(LocalDate.now().toEpochDay())
         val urge = UrgeLogEntity(
             id = UUID.randomUUID().toString(),
-            timestamp = now,
+            timestamp = atMillis.coerceAtMost(System.currentTimeMillis()),
             epochDay = today,
             resisted = resisted,
             intensity = intensity,
@@ -185,6 +195,11 @@ class JourneyRepository(
             contextApp = contextApp,
             place = place,
             note = note,
+            feelings = feelings.takeIf { it.isNotEmpty() }?.joinToString(","),
+            device = device,
+            soughtOut = soughtOut,
+            durationMinutes = durationMinutes,
+            whatHelped = whatHelped,
         )
         // The urge and the slip it became are a single fact; they are written
         // together or not at all.
@@ -192,6 +207,38 @@ class JourneyRepository(
         else DayLogEntity(epochDay = today, status = DayStatus.SLIP, note = note ?: trigger)
 
         journeyDao.upsertUrgeAndDay(urge, day)
+    }
+
+    /**
+     * Writes a filled-in [com.bastion.app.feature.track.LogEntry].
+     *
+     * The flow builds one object over five screens; unpacking it at each call
+     * site meant three places had to agree on twelve arguments, and the one
+     * that forgot `epochDay` filed a Tuesday under Friday.
+     */
+    suspend fun saveLog(
+        entry: com.bastion.app.feature.track.LogEntry,
+        /** Only for an urge happening right now — a past one has no foreground app. */
+        heldContextApp: Boolean = false,
+    ) {
+        val now = LocalDate.now()
+        logUrge(
+            resisted = entry.resisted,
+            intensity = entry.intensity,
+            trigger = entry.trigger,
+            contextApp = if (heldContextApp && entry.date == now) {
+                com.bastion.app.guard.accessibility.BastionAccessibilityService.foregroundApp.value
+            } else null,
+            place = entry.place,
+            note = entry.note,
+            feelings = entry.feelings,
+            device = entry.device,
+            soughtOut = entry.soughtOut,
+            durationMinutes = entry.durationMinutes,
+            whatHelped = entry.whatHelped,
+            epochDay = entry.date.toEpochDay(),
+            atMillis = entry.atMillis(),
+        )
     }
 
     suspend fun checkIn(mood: Int, note: String?) {

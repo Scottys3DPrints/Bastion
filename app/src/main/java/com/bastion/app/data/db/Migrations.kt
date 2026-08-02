@@ -39,7 +39,27 @@ object Migrations {
         MIGRATION_1_2,
         MIGRATION_2_3,
         MIGRATION_3_4,
+        MIGRATION_4_5,
     )
+}
+
+/**
+ * v4 → v5. Five more things a log can say.
+ *
+ * Every column is nullable with no default, so every urge already recorded stays
+ * exactly as it was and simply has nothing to say about where he was or what he
+ * was feeling — which is the truth, since it was never asked. No existing value
+ * is read, rewritten or reinterpreted.
+ *
+ * `place` and `mood` are not here: both have existed since v1 and were never
+ * collected by any screen. They are wired up now rather than added.
+ */
+private val MIGRATION_4_5 = Migration(4, 5) { db ->
+    db.execSQL("ALTER TABLE urge_log ADD COLUMN feelings TEXT")
+    db.execSQL("ALTER TABLE urge_log ADD COLUMN device TEXT")
+    db.execSQL("ALTER TABLE urge_log ADD COLUMN soughtOut INTEGER")
+    db.execSQL("ALTER TABLE urge_log ADD COLUMN durationMinutes INTEGER")
+    db.execSQL("ALTER TABLE urge_log ADD COLUMN whatHelped TEXT")
 }
 
 /**

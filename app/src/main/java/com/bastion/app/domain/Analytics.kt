@@ -15,7 +15,15 @@ import java.util.Locale
 object Analytics {
 
     /** Minimum sample before Bastion claims to have spotted anything. */
-    private const val MIN_SAMPLE = 6
+    /**
+     * Below this, Bastion says it does not know yet.
+     *
+     * Public because the Progress charts have to honour the same bar. A screen
+     * that refuses to name a pattern under six logs, then draws a full-height
+     * bar chart from one, has not been honest — it has just moved the
+     * overclaiming somewhere with no words on it.
+     */
+    const val MIN_SAMPLE = 6
 
     /**
      * A headline and, where possible, one tap that acts on it.
