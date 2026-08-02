@@ -26,8 +26,8 @@ val hasSigning = ciKeystorePath != null || keystoreProps.isNotEmpty()
  * downgrade. CI derives it from the run number, offset well clear of any
  * hand-built local APK so a CI build always supersedes one built on the laptop.
  */
-val resolvedVersionCode = System.getenv("BASTION_VERSION_CODE")?.toIntOrNull()?.let { it + 1000 } ?: 20
-val resolvedVersionName = System.getenv("BASTION_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "0.20.0"
+val resolvedVersionCode = System.getenv("BASTION_VERSION_CODE")?.toIntOrNull()?.let { it + 1000 } ?: 21
+val resolvedVersionName = System.getenv("BASTION_VERSION_NAME")?.takeIf { it.isNotBlank() } ?: "0.21.0"
 
 /** Where the app looks for its own updates. Overridable in Settings. */
 val defaultUpdateUrl = System.getenv("BASTION_UPDATE_URL")?.takeIf { it.isNotBlank() }

@@ -53,6 +53,21 @@
         </intent>
     </queries>
 
+    <!--
+        supportsRtl is deliberately false.
+
+        Every string in Bastion is written in English, and its layouts are
+        composed around that: the rank medallion, the streak ring, the calendar
+        and the charts all read left to right. On a phone set to Persian,
+        Arabic or Hebrew, Android would mirror the whole interface around
+        English text that does not mirror with it — arrows pointing away from
+        what they open, the back arrow on the wrong side, charts running
+        backwards beneath axis labels that are not.
+
+        A mirrored shell around unmirrored content is worse than no translation
+        at all. When Bastion is genuinely localised this flips back on and the
+        layouts get done properly.
+    -->
     <application
         android:name=".BastionApp"
         android:allowBackup="false"
@@ -61,7 +76,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
+        android:supportsRtl="false"
         android:enableOnBackInvokedCallback="true"
         android:theme="@style/Theme.Bastion">
 

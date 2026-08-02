@@ -79,7 +79,15 @@ class GuardDownActivity : ComponentActivity() {
             },
         )
 
-        setContent { GuardDownScreen(onResolved = { finishAndRelease() }) }
+        // Wrapped like every other screen: the theme is also where the
+        // layout direction is pinned, and a wall that mirrored itself on a
+        // Persian phone while the rest of the app did not would be the one
+        // screen where looking broken matters most.
+        setContent {
+            com.bastion.app.core.design.BastionTheme {
+                GuardDownScreen(onResolved = { finishAndRelease() })
+            }
+        }
     }
 
     /**
