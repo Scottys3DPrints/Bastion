@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -162,6 +163,14 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
     // because it must not depend on this screen being the one in front.
     var guardBreached by remember { mutableStateOf(false) }
     var breachedFor by remember { mutableStateOf("") }
+    val ownerClipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    var ownerCommandCopied by remember { mutableStateOf(false) }
+    LaunchedEffect(ownerCommandCopied) {
+        if (ownerCommandCopied) {
+            kotlinx.coroutines.delay(1_800)
+            ownerCommandCopied = false
+        }
+    }
     var confirmStandDown by remember { mutableStateOf(false) }
     var rulesExpanded by remember { mutableStateOf(false) }
     var detailRuleId by remember { mutableStateOf<String?>(null) }
@@ -549,12 +558,89 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         // Locking in is instant; unlocking is itself a
                         // weakening and waits, or the lock would be a button
                         // that turns itself off.
-                        if (wanted) scope.launch { graph.settings.setTamperLock(true) }
+                        if (wanted) scope.launch {
+                            graph.settings.setTamperLock(true)
+                            // The flag alone was the whole feature. Locking in
+                            // now also closes the doors Android lets an app
+                            // close, and starts the short watch that notices
+                            // Guard going down within a minute.
+                            com.bastion.app.guard.lockdown.DeviceOwner.apply(context, true)
+                            com.bastion.app.core.alarm.LockInWatchScheduler.sync(context, true)
+                        }
                         else confirmUnlock = true
                     },
                     colors = switchColors(),
                 )
             }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                // Never "cannot be turned off". The accessibility toggle stays
+                // reachable no matter what — Android keeps it that way on
+                // purpose — and a promise the app cannot keep would poison
+                // every promise it can.
+                com.bastion.app.guard.lockdown.DeviceOwner.statusLine(
+                    context,
+                    settings.tamperLockEnabled,
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                "Guard itself can always be switched off in Android's settings. " +
+                    "Locked in, that puts a wall in front of you that needs the partner's " +
+                    "code or the wait — and Bastion keeps putting it back. Home still " +
+                    "leaves it unless the command below has been run. A wall, not a cage.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
+            )
+
+            if (!com.bastion.app.guard.lockdown.DeviceOwner.isDeviceOwner(context)) {
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Close uninstall and factory reset — one adb command, once:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextMuted,
+                        modifier = Modifier.weight(1f),
+                    )
+                    LinkButton(if (ownerCommandCopied) "Copied" else "Copy") {
+                        ownerClipboard.setText(
+                            androidx.compose.ui.text.AnnotatedString(
+                                com.bastion.app.guard.lockdown.DeviceOwner.setupCommand(context)
+                            )
+                        )
+                        ownerCommandCopied = true
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(BastionColors.MidnightDeep)
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        com.bastion.app.guard.lockdown.DeviceOwner.setupCommand(context),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.SageBright,
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    "Only works on a phone with no accounts added yet, so it is a " +
+                        "fresh-device thing. Without it, everything above still applies " +
+                        "except the uninstall and reset blocks.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = BastionColors.TextMuted,
+                )
+            }
+
             Spacer(Modifier.height(14.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(1, 2, 6, 24).forEach { hours ->
@@ -1206,35 +1292,63 @@ private fun LearnModeSheet(onClose: () -> Unit) {
 
     LaunchedEffect(Unit) { BastionAccessibilityService.learnMode.value = true }
 
+    var showAll by remember { mutableStateOf(false) }
+
     Column(
         Modifier
-            .padding(horizontal = 22.dp)
-            .padding(bottom = 34.dp)
-            .height(520.dp)
+            // heightIn, not a fixed height: at a large system font scale a
+            // fixed 520dp clipped this sheet mid-sentence.
+            .heightIn(min = 320.dp, max = 560.dp)
     ) {
         Text("Learn mode", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(Space.sm))
         Text(
             "Open the screen you want closed, come back, pick its identifier.",
             style = MaterialTheme.typography.bodyMedium,
             color = BastionColors.TextSecondary,
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Space.xs))
         Text(
             "Identifiers only — no text is read.",
             style = MaterialTheme.typography.bodySmall,
             color = BastionColors.TextMuted,
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Space.lg))
 
         val current = capture
         if (current == null) {
             Text("Nothing captured yet.", style = MaterialTheme.typography.bodyMedium, color = BastionColors.TextMuted)
         } else {
             SectionLabel(current.packageName)
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(Space.sm))
+
+            // The live verdict. A rule could be saved, look correct, and never
+            // fire; this says plainly whether the screen just captured is
+            // covered, so a broken rule is a twenty-second fix instead of
+            // something discovered by not being stopped.
+            Text(
+                if (current.blockedNow) "This screen would be blocked."
+                else "This screen would NOT be blocked.",
+                style = MaterialTheme.typography.titleSmall,
+                color = if (current.blockedNow) BastionColors.SageBright else BastionColors.Amber,
+            )
+            Spacer(Modifier.height(Space.md))
+
+            val qualifying = current.viewIds.filter { it.wouldBlock }
+            val shown = if (showAll) current.viewIds else qualifying
+            if (qualifying.isEmpty() && !showAll) {
+                Text(
+                    "Nothing on this screen looks like a full-screen vertical player. " +
+                        "Open the feed itself, not a preview of it.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
+                )
+                Spacer(Modifier.height(Space.sm))
+            }
+
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                current.viewIds.forEach { id ->
+                shown.forEach { learned ->
+                    val id = learned.id
                     Row(
                         Modifier
                             .fillMaxWidth()
@@ -1253,10 +1367,32 @@ private fun LearnModeSheet(onClose: () -> Unit) {
                                     onClose()
                                 }
                             }
-                            .padding(vertical = 10.dp),
+                            .padding(vertical = Space.sm),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(id, style = MaterialTheme.typography.bodyMedium, color = BastionColors.SageBright)
+                        Text(
+                            id,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (learned.wouldBlock) BastionColors.SageBright
+                            else BastionColors.TextMuted,
+                            modifier = Modifier.weight(1f),
+                            maxLines = 2,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        )
+                        if (learned.wouldBlock) {
+                            Text(
+                                "would block",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = BastionColors.SageBright,
+                            )
+                        }
                     }
+                }
+                if (!showAll && current.viewIds.size > qualifying.size) {
+                    LinkButton(
+                        "Show all ${current.viewIds.size} identifiers",
+                        BastionColors.TextMuted,
+                    ) { showAll = true }
                 }
             }
         }

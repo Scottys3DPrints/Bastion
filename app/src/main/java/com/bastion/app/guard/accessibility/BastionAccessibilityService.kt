@@ -65,6 +65,9 @@ class BastionAccessibilityService : AccessibilityService() {
 
     private var lastScanAt = 0L
     private var lastInterruptAt = 0L
+
+    /** Consecutive scans that have seen the player; see [checkFeed]. */
+    private var feedHitStreak = 0
     private var foregroundPackage: String? = null
     private var foregroundSince = 0L
 
@@ -114,6 +117,10 @@ class BastionAccessibilityService : AccessibilityService() {
             foregroundPackage = pkg
             foregroundSince = now
             currentApp.value = pkg
+            // A streak is only meaningful within one app; carrying it across a
+            // switch would let one stray hit in the old app count towards an
+            // interruption in the new one.
+            feedHitStreak = 0
             if (shield.isShowing) shield.hide()
         }
     }
@@ -217,7 +224,23 @@ class BastionAccessibilityService : AccessibilityService() {
         val root = rootInActiveWindow ?: return
 
         val matched = findMatch(root, rules)
-        if (matched != null) {
+
+        // Two consecutive scans before acting, ~350ms apart.
+        //
+        // A reel unit flying past during a fling on the home feed can put a
+        // matching node in the tree for a single frame. One scan is enough to
+        // catch that and throw the user out of a feed he was allowed to be in;
+        // requiring the signal to still be there on the next scan costs a third
+        // of a second on a true positive and removes the whole class of
+        // false ones. The streak resets the instant a scan comes back negative.
+        if (matched == null) {
+            feedHitStreak = 0
+            return
+        }
+        feedHitStreak++
+        if (feedHitStreak < REQUIRED_FEED_HITS) return
+
+        run {
             if (System.currentTimeMillis() - lastInterruptAt < INTERRUPT_COOLDOWN_MS) return
             lastInterruptAt = System.currentTimeMillis()
 
@@ -236,6 +259,7 @@ class BastionAccessibilityService : AccessibilityService() {
                 },
                 autoDismissMillis = 6_000,
             )
+            feedHitStreak = 0
         }
     }
 
@@ -257,10 +281,23 @@ class BastionAccessibilityService : AccessibilityService() {
                 val node = queue.removeFirst()
                 visited++
 
-                val viewId = node.viewIdResourceName
+                val idSegment = node.viewIdResourceName?.substringAfterLast('/')
                 for (rule in rules) {
                     val hit = when (rule.matchType) {
-                        MatchType.VIEW_ID -> viewId != null && viewId.contains(rule.matchValue, ignoreCase = true)
+                        // Exact segment equality, not `contains`.
+                        //
+                        // `contains("reel_viewer")` also matched
+                        // `reel_viewer_thumbnail` and `clips_viewer_preview` —
+                        // the small inline previews Instagram embeds in the
+                        // ordinary home feed. The rule is meant to name a
+                        // destination, and a destination is one id, not a
+                        // family of ids that happen to share a prefix.
+                        MatchType.VIEW_ID ->
+                            FeedSurface.idMatches(idSegment, rule.matchValue) && isPlayerSurface(node)
+                        // No geometry gate on these: they describe a label
+                        // rather than a container, so "how big is it" is not a
+                        // meaningful question. Nothing built-in uses them, and
+                        // Learn Mode only ever produces VIEW_ID rules.
                         MatchType.CONTENT_DESC -> node.contentDescription.equalsIgnoreCase(rule.matchValue)
                         MatchType.TEXT -> node.text.equalsIgnoreCase(rule.matchValue)
                     }
@@ -275,6 +312,61 @@ class BastionAccessibilityService : AccessibilityService() {
                 }
             }
             return null
+        } finally {
+            recycleAll(borrowed)
+        }
+    }
+
+    /**
+     * Whether this node is the short-form player *as the screen in front of you*,
+     * rather than a tile of one embedded in something else.
+     *
+     * This is what separates Instagram's ordinary home feed from Reels. The home
+     * feed embeds inline reel units and a reel tray whose view-ids are the same
+     * ones the rules name, so id alone said "you are in Reels" the moment the
+     * user scrolled their normal feed. Two properties tell the two apart, and
+     * both have to hold:
+     *
+     *  - **Near-fullscreen.** The real viewer fills the display; an inline tile
+     *    is a fraction of it. This single check does most of the work.
+     *  - **Vertically scrollable.** The player is a vertical pager. The home
+     *    feed's reel tray scrolls *horizontally*, so it fails here even on the
+     *    rare occasion it is wide enough to pass the first test.
+     */
+    private fun isPlayerSurface(node: AccessibilityNodeInfo): Boolean {
+        val metrics = resources.displayMetrics
+        val bounds = android.graphics.Rect().also { node.getBoundsInScreen(it) }
+
+        if (!FeedSurface.isNearFullscreen(
+                width = bounds.width(),
+                height = bounds.height(),
+                screenWidth = metrics.widthPixels,
+                screenHeight = metrics.heightPixels,
+            )
+        ) return false
+
+        val selfScrolls = FeedSurface.isVerticalScroller(node.isScrollable, bounds.width(), bounds.height())
+        return selfScrolls || hasVerticallyScrollableAncestor(node)
+    }
+
+    /**
+     * The matched id often sits on a page *inside* the pager rather than on the
+     * pager itself, so the scrollability lives a level or two up.
+     */
+    private fun hasVerticallyScrollableAncestor(node: AccessibilityNodeInfo): Boolean {
+        val borrowed = mutableListOf<AccessibilityNodeInfo>()
+        try {
+            var current: AccessibilityNodeInfo? = node.parent?.also { borrowed.add(it) }
+            var depth = 0
+            while (current != null && depth < MAX_ANCESTOR_DEPTH) {
+                val bounds = android.graphics.Rect().also { current!!.getBoundsInScreen(it) }
+                if (FeedSurface.isVerticalScroller(current.isScrollable, bounds.width(), bounds.height())) {
+                    return true
+                }
+                current = current.parent?.also { borrowed.add(it) }
+                depth++
+            }
+            return false
         } finally {
             recycleAll(borrowed)
         }
@@ -295,7 +387,9 @@ class BastionAccessibilityService : AccessibilityService() {
      */
     private fun captureViewIds() {
         val root = rootInActiveWindow ?: return
-        val found = LinkedHashSet<String>()
+        // Keyed by id so the same identifier seen twice does not appear twice,
+        // and so a node that qualifies wins over one that does not.
+        val found = LinkedHashMap<String, Boolean>()
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
         val borrowed = mutableListOf<AccessibilityNodeInfo>()
@@ -307,7 +401,15 @@ class BastionAccessibilityService : AccessibilityService() {
             node.viewIdResourceName
                 ?.substringAfterLast('/')
                 ?.takeIf { it.isNotBlank() }
-                ?.let { found.add(it) }
+                ?.let { id ->
+                    // Whether a rule on THIS id would actually fire. Learn mode
+                    // used to list every identifier on screen with no way to
+                    // tell which would work, so a rule could be saved, look
+                    // right, and silently never match — the failure the user
+                    // only discovers by not being stopped.
+                    val qualifies = isPlayerSurface(node)
+                    found[id] = (found[id] ?: false) || qualifies
+                }
             for (i in 0 until node.childCount) {
                 node.getChild(i)?.let {
                     queue.add(it)
@@ -316,9 +418,19 @@ class BastionAccessibilityService : AccessibilityService() {
             }
         }
         recycleAll(borrowed)
+
+        val pkg = root.packageName?.toString().orEmpty()
         learnedIds.value = LearnCapture(
-            packageName = root.packageName?.toString().orEmpty(),
-            viewIds = found.toList(),
+            packageName = pkg,
+            // Ids that would actually block sort first; there are usually one
+            // or two among a hundred.
+            viewIds = found.entries
+                .map { LearnedId(it.key, it.value) }
+                .sortedByDescending { it.wouldBlock },
+            // The live verdict: does this screen match a rule that already
+            // exists? Answers "is what I am looking at right now covered?"
+            // without having to leave the app and find out the hard way.
+            blockedNow = findMatch(root, rulesByPackage[pkg].orEmpty()) != null,
         )
     }
 
@@ -397,12 +509,26 @@ class BastionAccessibilityService : AccessibilityService() {
         }
     }
 
-    data class LearnCapture(val packageName: String, val viewIds: List<String>)
+    /** One identifier on screen, and whether a rule on it would actually fire. */
+    data class LearnedId(val id: String, val wouldBlock: Boolean)
+
+    data class LearnCapture(
+        val packageName: String,
+        val viewIds: List<LearnedId>,
+        /** Whether an existing rule already covers the captured screen. */
+        val blockedNow: Boolean,
+    )
 
     companion object {
         private const val SCAN_THROTTLE_MS = 350L
         private const val INTERRUPT_COOLDOWN_MS = 1_800L
         private const val MAX_NODES = 500
+
+        /** Scans the player must be seen on before the user is interrupted. */
+        private const val REQUIRED_FEED_HITS = 2
+
+        /** How far up to look for the pager that owns the matched page. */
+        private const val MAX_ANCESTOR_DEPTH = 4
         private const val NOTIFICATION_GUARD_DOWN = 4401
         private const val HALF_HOUR = 30 * 60 * 1000L
 

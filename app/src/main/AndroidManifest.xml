@@ -9,6 +9,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--
+        The only sanctioned way to raise a screen from the background. Used for
+        exactly one thing: putting the "Guard is off" wall in front of a user
+        who asked to be locked in. Android 14 reserves full-screen delivery for
+        calling and alarm apps, so elsewhere this degrades to a heads-up notice.
+    -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
@@ -81,6 +88,23 @@
             android:taskAffinity=".panic"
             android:theme="@style/Theme.Bastion" />
 
+        <!--
+            The wall for switching Guard off while locked in.
+
+            Its own task affinity so it cannot be swiped away with whatever the
+            user was doing, and singleTask so the watchdog re-launching it
+            brings the existing one forward rather than stacking copies.
+            Not exported: nothing outside Bastion has any business opening it.
+        -->
+        <activity
+            android:name=".guard.lockdown.GuardDownActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:taskAffinity=".guarddown"
+            android:theme="@style/Theme.Bastion" />
+
         <activity
             android:name=".guard.browser.FilteredBrowserActivity"
             android:exported="false"
@@ -149,6 +173,11 @@
 
         <receiver
             android:name=".core.alarm.BastionAlarmReceiver"
+            android:exported="false" />
+
+        <!-- The minute-by-minute check that runs only while locked in. -->
+        <receiver
+            android:name=".core.alarm.LockInWatchReceiver"
             android:exported="false" />
 
         <!-- Outcome of a self-install session; see SelfInstaller. -->

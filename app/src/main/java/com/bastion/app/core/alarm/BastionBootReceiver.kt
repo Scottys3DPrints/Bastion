@@ -38,6 +38,12 @@ class BastionBootReceiver : BroadcastReceiver() {
                 }
                 // A reboot is a common moment for a guard to quietly not come back.
                 com.bastion.app.guard.GuardWatchdog.reconcile(appContext)
+
+                // Alarms do not survive a reboot, so the lock-in watch has to
+                // be re-armed or the enforcement quietly stops at the first
+                // restart — which is a restart away from being no enforcement.
+                LockInWatchScheduler.sync(appContext, settings.tamperLockEnabled)
+                com.bastion.app.guard.GuardWatchdog.enforceIfLockedIn(appContext)
             } finally {
                 pending.finish()
             }

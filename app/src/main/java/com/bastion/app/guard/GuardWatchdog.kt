@@ -37,6 +37,9 @@ object GuardWatchdog {
     // 4401 belongs to the accessibility service's own guard-down notice; sharing
     // it meant whichever posted second silently replaced the first.
     private const val NOTIFICATION_ID = 4402
+    /** The locked-in wall's own notice; separate so clearing one never clears the other. */
+    private const val NOTIFICATION_WALL = 4403
+    private const val REQUEST_WALL = 4403
 
     /** True when Guard is off but the user has asked for it to be on. */
     suspend fun isBreached(context: Context): Boolean {
@@ -63,6 +66,11 @@ object GuardWatchdog {
         val settings = graph.settings.current()
         val running = BastionAccessibilityService.isEnabled(context)
 
+        // The Device Owner restrictions track the lock, on every reconcile, so
+        // the phone's actual state cannot drift away from the setting that is
+        // supposed to govern it — including after a reboot or an update.
+        com.bastion.app.guard.lockdown.DeviceOwner.apply(context, settings.tamperLockEnabled)
+
         if (running) {
             if (!settings.guardIntendedOn) graph.settings.setGuardIntendedOn(true)
             // The breach is over, so its record ends with it. Both flags are
@@ -71,6 +79,7 @@ object GuardWatchdog {
             if (settings.guardOffSince != 0L) graph.settings.setGuardOffSince(0L)
             if (settings.lockdownBreachAlerted) graph.settings.setLockdownBreachAlerted(false)
             clearNotification(context)
+            clearWallNotification(context)
             return
         }
 
@@ -88,6 +97,72 @@ object GuardWatchdog {
         val since = settings.guardOffSince.takeIf { it != 0L } ?: now
         notify(context, now - since)
         graph.settings.setGuardOffNotifiedAt(now)
+    }
+
+    /**
+     * Puts the wall in front of a locked-in user whose Guard has gone down.
+     *
+     * Separate from [reconcile] because it is the one response that interrupts
+     * rather than informs, and it must only ever happen while locked in. That
+     * is the whole bargain of locking in: the user asked, in a calmer hour, to
+     * be made to work for this.
+     *
+     * Deliberately not called when the lock is off — an app that seizes the
+     * screen because a setting changed, without being asked to, is malware
+     * with good intentions.
+     */
+    suspend fun enforceIfLockedIn(context: Context) {
+        val settings = BastionGraph.from(context).settings.current()
+        if (!settings.tamperLockEnabled) return
+        if (!isBreached(context)) return
+
+        val wall = Intent(context, com.bastion.app.guard.lockdown.GuardDownActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
+        // Works only when Bastion is already the app in front. From the
+        // one-minute alarm it does not, and the system says so out loud:
+        //
+        //   ActivityTaskManager: Background activity launch blocked!
+        //   callingUidProcState: RECEIVER
+        //
+        // Android 10 onwards refuses to let a background receiver take over the
+        // screen, which is a rule worth having and one Bastion does not get an
+        // exception from.
+        runCatching { context.startActivity(wall) }
+
+        // So the background path goes through the one door the platform does
+        // leave open: a full-screen intent. Where the system honours it the
+        // wall comes up by itself; where it does not — Android 14 reserves that
+        // for calling and alarm apps — it lands as a high-priority heads-up
+        // that opens the wall on a tap. A notification you have to tap is
+        // weaker than a screen you cannot leave, and it is what is actually
+        // available.
+        runCatching {
+            val pending = PendingIntent.getActivity(
+                context,
+                REQUEST_WALL,
+                wall,
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            )
+            val notification = Notification.Builder(context, BastionApp.CHANNEL_GUARD)
+                .setContentTitle("You're locked in — Guard is off")
+                .setContentText("Tap to turn it back on.")
+                .setSmallIcon(R.drawable.ic_shield)
+                .setContentIntent(pending)
+                .setFullScreenIntent(pending, true)
+                .setOngoing(true)
+                .setAutoCancel(false)
+                .build()
+            context.getSystemService(NotificationManager::class.java)
+                ?.notify(NOTIFICATION_WALL, notification)
+        }
+    }
+
+    /** Taken down the moment Guard is back, from [reconcile]. */
+    private fun clearWallNotification(context: Context) {
+        runCatching {
+            context.getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_WALL)
+        }
     }
 
     /**

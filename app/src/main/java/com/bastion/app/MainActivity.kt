@@ -131,6 +131,14 @@ private fun BastionRoot(openTarget: String? = null) {
             if (graph.guard.applyMaturedChanges()) {
                 com.bastion.app.guard.vpn.BastionVpnService.stop(context)
             }
+            // Whatever the lock says now, the enforcement follows it. This is
+            // the path that lifts the restrictions when a cooling-off unlock
+            // finally matures — without it, deciding to stop being locked in
+            // would leave uninstall blocked and the minute watch running.
+            val lockedIn = graph.settings.current().tamperLockEnabled
+            com.bastion.app.guard.lockdown.DeviceOwner.apply(context, lockedIn)
+            com.bastion.app.core.alarm.LockInWatchScheduler.sync(context, lockedIn)
+            com.bastion.app.guard.GuardWatchdog.enforceIfLockedIn(context)
         }
         onPauseOrDispose { }
     }
