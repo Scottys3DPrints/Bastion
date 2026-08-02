@@ -98,6 +98,23 @@ object GuardWatchdog {
         // supposed to govern it — including after a reboot or an update.
         com.bastion.app.guard.lockdown.DeviceOwner.apply(context, settings.tamperLockEnabled)
 
+        // Locking in hands the web layer to Private DNS, which a Device Owner
+        // can hold on. Bastion's own filter has to stand down when that
+        // happens: it is a VpnService that claims the device resolver, and
+        // strict Private DNS cannot reach its host through it — the phone would
+        // end up with no name resolution at all, which is what "Private DNS
+        // server cannot be accessed" means on a real handset.
+        //
+        // Doing this here rather than asking means locking in cannot be the
+        // thing that breaks someone's internet.
+        if (settings.tamperLockEnabled &&
+            settings.vpnFilterEnabled &&
+            com.bastion.app.guard.lockdown.DeviceOwner.willHoldPrivateDns(context)
+        ) {
+            graph.settings.setVpnEnabled(false)
+            com.bastion.app.guard.vpn.BastionVpnService.stop(context)
+        }
+
         if (running) {
             if (!settings.guardIntendedOn) graph.settings.setGuardIntendedOn(true)
             // The breach is over, so its record ends with it. Both flags are

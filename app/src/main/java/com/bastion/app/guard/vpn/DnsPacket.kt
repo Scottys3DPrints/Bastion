@@ -100,6 +100,155 @@ object DnsPacket {
         return response
     }
 
+
+    /**
+     * Rebuilds a query so it asks for [newHost] instead, keeping everything else.
+     *
+     * Only the question's name changes: the transaction id, the flags and the
+     * type/class that follow the name are carried across untouched, so the
+     * upstream resolver sees an ordinary query and the reply matches what was
+     * sent.
+     *
+     * Returns null on anything it cannot read confidently — a name that is
+     * compressed, a packet with no question, a host too long to encode. The
+     * caller falls back to forwarding the original, because an unfiltered
+     * search is a smaller failure than a search that does not resolve.
+     */
+    fun rewriteQuestion(
+        packet: ByteArray,
+        offset: Int,
+        length: Int,
+        newHost: String,
+    ): ByteArray? {
+        if (length < 13) return null
+        val end = offset + length
+
+        // Walk the existing name to find where it ends, so the four bytes of
+        // QTYPE and QCLASS after it can be preserved.
+        var cursor = offset + 12
+        while (cursor < end) {
+            val len = packet[cursor].toInt() and 0xFF
+            if (len == 0) { cursor++; break }
+            if (len and 0xC0 != 0) return null
+            cursor += 1 + len
+            if (cursor > end) return null
+        }
+        if (cursor + 4 > end) return null
+
+        val encoded = encodeName(newHost) ?: return null
+        val tail = packet.copyOfRange(cursor, end)
+        val header = packet.copyOfRange(offset, offset + 12)
+
+        return ByteArray(header.size + encoded.size + tail.size).also { out ->
+            header.copyInto(out, 0)
+            encoded.copyInto(out, header.size)
+            tail.copyInto(out, header.size + encoded.size)
+        }
+    }
+
+    /**
+     * Serves an upstream reply under the name the client originally asked for.
+     *
+     * A client discards an answer whose question does not match what it sent,
+     * so the reply for `forcedsafesearch.google.com` cannot simply be handed
+     * back to something that asked about `google.com`. This takes the original
+     * query, marks it as a response, and appends the upstream answer's records
+     * with their name replaced by a pointer to the question — which is both
+     * legal and how real resolvers encode it.
+     *
+     * Only A and AAAA records are carried over. Anything else in the reply
+     * describes the safe host rather than the asked-for one, and copying it
+     * would be asserting something untrue about a name.
+     */
+    fun reanswerUnderOriginalName(originalQuery: ByteArray, upstreamReply: ByteArray): ByteArray {
+        val fallback = buildNxDomain(originalQuery, 0, originalQuery.size)
+        if (upstreamReply.size < 12) return fallback
+
+        val answerCount = ((upstreamReply[6].toInt() and 0xFF) shl 8) or
+            (upstreamReply[7].toInt() and 0xFF)
+        if (answerCount == 0) return fallback
+
+        // Step past the reply's own question section.
+        var cursor = 12
+        val replyQuestions = ((upstreamReply[4].toInt() and 0xFF) shl 8) or
+            (upstreamReply[5].toInt() and 0xFF)
+        repeat(replyQuestions) {
+            cursor = skipName(upstreamReply, cursor) ?: return fallback
+            cursor += 4
+            if (cursor > upstreamReply.size) return fallback
+        }
+
+        val records = ArrayList<ByteArray>()
+        repeat(answerCount) {
+            cursor = skipName(upstreamReply, cursor) ?: return@repeat
+            if (cursor + 10 > upstreamReply.size) return@repeat
+            val type = ((upstreamReply[cursor].toInt() and 0xFF) shl 8) or
+                (upstreamReply[cursor + 1].toInt() and 0xFF)
+            val dataLength = ((upstreamReply[cursor + 8].toInt() and 0xFF) shl 8) or
+                (upstreamReply[cursor + 9].toInt() and 0xFF)
+            val bodyStart = cursor
+            cursor += 10 + dataLength
+            if (cursor > upstreamReply.size) return@repeat
+            if (type != TYPE_A && type != TYPE_AAAA) return@repeat
+
+            // 0xC00C is a pointer to offset 12 — the question's name.
+            val record = ByteArray(2 + (cursor - bodyStart))
+            record[0] = 0xC0.toByte()
+            record[1] = 0x0C
+            upstreamReply.copyInto(record, 2, bodyStart, cursor)
+            records.add(record)
+        }
+        if (records.isEmpty()) return fallback
+
+        val response = originalQuery.copyOf()
+        response[2] = ((response[2].toInt() and 0x01) or 0x80).toByte()
+        response[3] = 0x80.toByte()          // RA=1, RCODE=0
+        response[6] = (records.size shr 8).toByte()
+        response[7] = records.size.toByte()
+        response[8] = 0; response[9] = 0     // no authority records
+        response[10] = 0; response[11] = 0   // no additional records
+
+        val total = response.size + records.sumOf { it.size }
+        return ByteArray(total).also { out ->
+            response.copyInto(out, 0)
+            var at = response.size
+            records.forEach { it.copyInto(out, at); at += it.size }
+        }
+    }
+
+    /** Encodes "a.b.com" as length-prefixed labels ending in a zero byte. */
+    private fun encodeName(host: String): ByteArray? {
+        val labels = host.trimEnd('.').split('.')
+        if (labels.any { it.isEmpty() || it.length > 63 }) return null
+        val size = labels.sumOf { it.length + 1 } + 1
+        if (size > 255) return null
+
+        return ByteArray(size).also { out ->
+            var at = 0
+            labels.forEach { label ->
+                out[at++] = label.length.toByte()
+                label.toByteArray(Charsets.US_ASCII).copyInto(out, at)
+                at += label.length
+            }
+            out[at] = 0
+        }
+    }
+
+    /** Returns the offset just past a name, following one level of pointer. */
+    private fun skipName(packet: ByteArray, start: Int): Int? {
+        var cursor = start
+        while (cursor < packet.size) {
+            val len = packet[cursor].toInt() and 0xFF
+            if (len == 0) return cursor + 1
+            if (len and 0xC0 == 0xC0) return cursor + 2
+            cursor += 1 + len
+        }
+        return null
+    }
+
+    private const val TYPE_A = 1
+    private const val TYPE_AAAA = 28
+
     /** Wraps a DNS reply in an IPv4/UDP packet flowing back to the asking app. */
     fun buildResponsePacket(request: Parsed, dnsPayload: ByteArray): ByteArray {
         val totalLength = 20 + 8 + dnsPayload.size

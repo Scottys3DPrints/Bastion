@@ -142,7 +142,69 @@ class BastionVpnService : VpnService() {
             write(DnsPacket.buildResponsePacket(parsed, nx))
             return
         }
+
+        // Forced SafeSearch. The query goes upstream under a different name —
+        // the one the search engine serves with explicit results stripped —
+        // and the answer comes back under the name that was asked for, so the
+        // client is none the wiser and every app on the phone is covered.
+        val safeHost = hostname?.let { SafeSearch.redirectFor(it) }
+        if (safeHost != null) {
+            forwardAs(packet, parsed, safeHost)
+            return
+        }
+
         forward(packet, parsed)
+    }
+
+    /**
+     * Forwards the query under [safeHost] and answers under the original name.
+     *
+     * The rewrite happens on the wire rather than by handing the client a
+     * redirect, because there is nothing to redirect — a DNS answer for
+     * google.com has to *be* an answer for google.com or the client discards
+     * it. So the question section is rebuilt with the safe name, the upstream
+     * answer's addresses are lifted out, and they are re-served under the
+     * asked-for name.
+     *
+     * Any failure falls through to a plain forward. A search that is unfiltered
+     * for one lookup is bad; a search that does not load at all teaches people
+     * to turn the whole filter off.
+     */
+    private fun forwardAs(packet: ByteArray, parsed: DnsPacket.Parsed, safeHost: String) {
+        forwarders.execute {
+            val rewritten = DnsPacket.rewriteQuestion(
+                packet, parsed.payloadOffset, parsed.payloadLength, safeHost,
+            )
+            if (rewritten == null) {
+                forward(packet, parsed)
+                return@execute
+            }
+            runCatching {
+                DatagramSocket().use { socket ->
+                    protect(socket)
+                    socket.soTimeout = UPSTREAM_TIMEOUT_MS
+                    socket.send(
+                        DatagramPacket(rewritten, rewritten.size, upstream, DnsPacket.DNS_PORT)
+                    )
+
+                    val replyBuffer = ByteArray(4_096)
+                    val reply = DatagramPacket(replyBuffer, replyBuffer.size)
+                    socket.receive(reply)
+
+                    val original = packet.copyOfRange(
+                        parsed.payloadOffset,
+                        parsed.payloadOffset + parsed.payloadLength,
+                    )
+                    val answer = DnsPacket.reanswerUnderOriginalName(
+                        original, replyBuffer.copyOf(reply.length),
+                    )
+                    write(DnsPacket.buildResponsePacket(parsed, answer))
+                }
+            }.onFailure {
+                Log.d(TAG, "SafeSearch lookup failed for $safeHost", it)
+                forward(packet, parsed)
+            }
+        }
     }
 
     /** Anything not blocked goes to the real resolver, off-tunnel via protect(). */
