@@ -165,8 +165,14 @@ class BastionAccessibilityService : AccessibilityService() {
         // mode says. A break-glass plan that still let the feed-only apps open
         // would not be worth pressing.
         if (com.bastion.app.guard.lockdown.Lockdown.isActive(settings)) {
-            val minutes = com.bastion.app.guard.lockdown.Lockdown.remainingMinutes(settings)
-            val remaining = if (minutes >= 60) "${minutes / 60}h ${minutes % 60}m" else "${minutes}m"
+            // Seconds below a minute, so a short rehearsal does not tell the
+            // user "0m left" for its entire duration.
+            val left = com.bastion.app.guard.lockdown.Lockdown.remainingSeconds(settings)
+            val remaining = when {
+                left >= 3600 -> "${left / 3600}h ${(left % 3600) / 60}m"
+                left >= 60 -> "${left / 60}m"
+                else -> "${left}s"
+            }
             blockApp(guarded, "Lockdown. $remaining left.")
             return
         }

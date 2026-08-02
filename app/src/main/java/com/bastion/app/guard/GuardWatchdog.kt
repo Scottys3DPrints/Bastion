@@ -287,12 +287,17 @@ object GuardWatchdog {
         if (!partner.shareGuardChanges) return null
 
         graph.settings.setLockdownBreachAlerted(true)
-        val hoursLeft = com.bastion.app.guard.lockdown.Lockdown.remainingMinutes(settings) / 60
+        val left = com.bastion.app.guard.lockdown.Lockdown.remainingSeconds(settings)
+        val remaining = when {
+            left >= 3600 -> "${left / 3600}h"
+            left >= 60 -> "${left / 60}m"
+            else -> "${left}s"
+        }
         return Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("smsto:${partner.contact}"))
             .putExtra(
                 "sms_body",
                 "Being straight with you: I turned Bastion Guard off while a lockdown " +
-                    "was still running — ${hoursLeft}h left on it. That's the one I asked " +
+                    "was still running — $remaining left on it. That's the one I asked " +
                     "you to hold me to.",
             )
     }

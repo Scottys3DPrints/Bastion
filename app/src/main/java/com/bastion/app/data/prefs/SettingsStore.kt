@@ -120,7 +120,15 @@ data class Settings(
 
     // --- Lockdown: the break-glass plan ---------------------------------
     /** How long a lockdown lasts once triggered. */
-    val lockdownHours: Int = 24,
+    /**
+     * Seconds, not hours.
+     *
+     * It was hours, which made the shortest possible lockdown an hour — long
+     * enough that nobody could reasonably check the thing worked before
+     * trusting it with a real evening. A plan you cannot rehearse is a plan you
+     * find out about at the worst moment.
+     */
+    val lockdownSeconds: Int = 24 * 60 * 60,
     /** Epoch millis the current lockdown ends. 0 when none is running. */
     val lockdownUntil: Long = 0L,
     /** Monotonic twin of [lockdownUntil]; the user cannot move this one. */
@@ -192,6 +200,7 @@ class SettingsStore(private val context: Context) {
         val GUARD_INTENDED_ON = booleanPreferencesKey("guard_intended_on")
         val GUARD_OFF_NOTIFIED = longPreferencesKey("guard_off_notified_at")
         val LOCKDOWN_HOURS = intPreferencesKey("lockdown_hours")
+        val LOCKDOWN_SECONDS = intPreferencesKey("lockdown_seconds")
         val LOCKDOWN_UNTIL = longPreferencesKey("lockdown_until")
         val LOCKDOWN_END_ELAPSED = longPreferencesKey("lockdown_end_elapsed")
         val LOCKDOWN_LOCK_SCREEN = booleanPreferencesKey("lockdown_lock_screen")
@@ -236,7 +245,12 @@ class SettingsStore(private val context: Context) {
             lastSeenRankTier = p[Keys.LAST_SEEN_RANK] ?: 1,
             guardIntendedOn = p[Keys.GUARD_INTENDED_ON] ?: false,
             guardOffNotifiedAt = p[Keys.GUARD_OFF_NOTIFIED] ?: 0L,
-            lockdownHours = p[Keys.LOCKDOWN_HOURS] ?: 24,
+            // Falls back to the old hours key so an existing install keeps
+            // the duration its owner chose rather than silently resetting to
+            // the default the day this shipped.
+            lockdownSeconds = p[Keys.LOCKDOWN_SECONDS]
+                ?: p[Keys.LOCKDOWN_HOURS]?.times(60 * 60)
+                ?: (24 * 60 * 60),
             lockdownUntil = p[Keys.LOCKDOWN_UNTIL] ?: 0L,
             lockdownEndElapsed = p[Keys.LOCKDOWN_END_ELAPSED] ?: 0L,
             lockdownLockScreen = p[Keys.LOCKDOWN_LOCK_SCREEN] ?: true,
@@ -294,7 +308,7 @@ class SettingsStore(private val context: Context) {
     suspend fun setLastSeenRankTier(value: Int) = edit { it[Keys.LAST_SEEN_RANK] = value }
     suspend fun setGuardIntendedOn(value: Boolean) = edit { it[Keys.GUARD_INTENDED_ON] = value }
     suspend fun setGuardOffNotifiedAt(value: Long) = edit { it[Keys.GUARD_OFF_NOTIFIED] = value }
-    suspend fun setLockdownHours(value: Int) = edit { it[Keys.LOCKDOWN_HOURS] = value }
+    suspend fun setLockdownSeconds(value: Int) = edit { it[Keys.LOCKDOWN_SECONDS] = value }
     suspend fun setLockdownUntil(value: Long) = edit { it[Keys.LOCKDOWN_UNTIL] = value }
     suspend fun setLockdownEndElapsed(value: Long) = edit { it[Keys.LOCKDOWN_END_ELAPSED] = value }
     suspend fun setLockdownLockScreen(value: Boolean) = edit { it[Keys.LOCKDOWN_LOCK_SCREEN] = value }

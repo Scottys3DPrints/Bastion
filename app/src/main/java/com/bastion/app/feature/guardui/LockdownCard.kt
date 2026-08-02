@@ -98,7 +98,8 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
             SectionLabel("Break glass")
             Spacer(Modifier.height(8.dp))
             Text(
-                "One button, ${settings.lockdownHours}h. Not cancellable from inside the app.",
+                "One button, ${Lockdown.describeShort(settings.lockdownSeconds)}. " +
+                    "Not cancellable from inside the app.",
                 style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.TextMuted,
             )
@@ -115,7 +116,12 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
         AlertDialog(
             onDismissRequest = { confirming = false },
             containerColor = BastionColors.Surface,
-            title = { Text("Lock down for ${settings.lockdownHours} hours?", color = BastionColors.TextPrimary) },
+            title = {
+                Text(
+                    "Lock down for ${Lockdown.describe(settings.lockdownSeconds)}?",
+                    color = BastionColors.TextPrimary,
+                )
+            },
             text = {
                 Text(
                     buildString {
@@ -187,11 +193,15 @@ fun LockdownCompactButton(
         contentColor = BastionColors.Amber,
     ) {
         if (active) {
-            val m = Lockdown.remainingMinutes(settings)
-            Text(
-                if (m >= 60) "${m / 60}h" else "${m}m",
-                style = MaterialTheme.typography.labelMedium,
-            )
+            // Seconds below a minute: a 30-second rehearsal that reads "0m"
+            // for its whole life looks broken rather than short.
+            val secondsLeft = Lockdown.remainingSeconds(settings)
+            val label = when {
+                secondsLeft >= 3600 -> "${secondsLeft / 3600}h"
+                secondsLeft >= 60 -> "${secondsLeft / 60}m"
+                else -> "${secondsLeft}s"
+            }
+            Text(label, style = MaterialTheme.typography.labelMedium)
         } else {
             androidx.compose.material3.Icon(
                 Icons.Filled.Lock,
@@ -204,7 +214,12 @@ fun LockdownCompactButton(
         AlertDialog(
             onDismissRequest = { confirming = false },
             containerColor = BastionColors.Surface,
-            title = { Text("Lock down for ${settings.lockdownHours} hours?", color = BastionColors.TextPrimary) },
+            title = {
+                Text(
+                    "Lock down for ${Lockdown.describe(settings.lockdownSeconds)}?",
+                    color = BastionColors.TextPrimary,
+                )
+            },
             text = {
                 Text(
                     buildString {
@@ -257,7 +272,7 @@ fun LockdownPlanCard(settings: Settings, graph: BastionGraph) {
                 SectionLabel("Break-glass plan")
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    "${settings.lockdownHours}h · ${planSummary(settings)}",
+                    "${Lockdown.describeShort(settings.lockdownSeconds)} · ${planSummary(settings)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
@@ -294,25 +309,40 @@ private fun LockdownPlanDialog(
                 SectionLabel("How long")
                 Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(1, 6, 24, 72).forEach { hours ->
+                    // 30 seconds is a rehearsal setting, and it is first for a
+                    // reason: this plan cannot be called off once it starts, so
+                    // the only safe way to find out what it actually does to
+                    // your phone is to try it at a length that costs nothing.
+                    LOCKDOWN_LENGTHS.forEach { seconds ->
+                        val chosen = settings.lockdownSeconds == seconds
                         Box(
                             Modifier
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(
-                                    if (settings.lockdownHours == hours) BastionColors.BronzeDeep
+                                    if (chosen) BastionColors.BronzeDeep
                                     else BastionColors.SurfaceRaised
                                 )
-                                .clickable { scope.launch { graph.settings.setLockdownHours(hours) } }
+                                .clickable {
+                                    scope.launch { graph.settings.setLockdownSeconds(seconds) }
+                                }
                                 .padding(horizontal = 14.dp, vertical = 8.dp)
                         ) {
                             Text(
-                                "${hours}h",
+                                Lockdown.describeShort(seconds),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = if (settings.lockdownHours == hours) BastionColors.BronzeBright
+                                color = if (chosen) BastionColors.BronzeBright
                                 else BastionColors.TextMuted,
                             )
                         }
                     }
+                }
+                if (settings.lockdownSeconds < 60) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "A rehearsal length. Set it back to something real once you have seen it work.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BastionColors.Amber,
+                    )
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -388,4 +418,13 @@ private fun PlanToggle(
         )
     }
 }
+
+/**
+ * The lengths offered, in seconds.
+ *
+ * 30 seconds is deliberately in the list rather than hidden behind a debug
+ * flag: the plan is un-cancellable by design, so a man has to be able to
+ * rehearse it before he trusts it with an evening.
+ */
+private val LOCKDOWN_LENGTHS = listOf(30, 60 * 60, 6 * 60 * 60, 24 * 60 * 60, 72 * 60 * 60)
 

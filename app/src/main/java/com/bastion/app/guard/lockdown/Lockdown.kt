@@ -41,9 +41,42 @@ object Lockdown {
 
     fun remainingMinutes(settings: Settings): Long = remainingMillis(settings) / 60_000L
 
+    fun remainingSeconds(settings: Settings): Long = remainingMillis(settings) / 1_000L
+
+    /**
+     * "30 seconds", "6 hours", "3 days" — for asking and for telling.
+     *
+     * One formatter for every place the plan's length is spoken about, so the
+     * confirmation, the summary and the message to a partner can never disagree
+     * about what was actually set.
+     */
+    fun describe(seconds: Int): String = when {
+        seconds < 60 -> "$seconds seconds"
+        seconds < 60 * 60 -> {
+            val m = seconds / 60
+            if (m == 1) "1 minute" else "$m minutes"
+        }
+        seconds < 24 * 60 * 60 -> {
+            val h = seconds / 3600
+            if (h == 1) "1 hour" else "$h hours"
+        }
+        else -> {
+            val d = seconds / 86_400
+            if (d == 1) "1 day" else "$d days"
+        }
+    }
+
+    /** The same length, short enough for a chip: "30s", "6h", "3d". */
+    fun describeShort(seconds: Int): String = when {
+        seconds < 60 -> "${seconds}s"
+        seconds < 60 * 60 -> "${seconds / 60}m"
+        seconds < 24 * 60 * 60 -> "${seconds / 3600}h"
+        else -> "${seconds / 86_400}d"
+    }
+
     private fun remainingMillis(settings: Settings): Long {
         val byWallClock = settings.lockdownUntil - System.currentTimeMillis()
-        val total = settings.lockdownHours * 60L * 60L * 1000L
+        val total = settings.lockdownSeconds * 1000L
         // runCatching because SystemClock is Android framework: on the JVM, where
         // the lockdown arithmetic is unit-tested, it throws. Falling back to 0
         // leaves the wall clock in charge, which is the pre-existing behaviour.
@@ -66,7 +99,7 @@ object Lockdown {
 
         // Extends rather than replaces: pressing it twice must never shorten a
         // lockdown already running.
-        val duration = settings.lockdownHours * 60L * 60L * 1000L
+        val duration = settings.lockdownSeconds * 1000L
         val until = System.currentTimeMillis() + duration
         graph.settings.setLockdownUntil(maxOf(until, settings.lockdownUntil))
         graph.settings.setLockdownEndElapsed(
@@ -89,7 +122,8 @@ object Lockdown {
                 Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("smsto:${partner.contact}"))
                     .putExtra(
                         "sms_body",
-                        "I've just put my phone into lockdown for ${settings.lockdownHours} hours. " +
+                        "I've just put my phone into lockdown for " +
+                            "${describe(settings.lockdownSeconds)}. " +
                             "Telling you rather than white-knuckling it alone.",
                     )
             }
