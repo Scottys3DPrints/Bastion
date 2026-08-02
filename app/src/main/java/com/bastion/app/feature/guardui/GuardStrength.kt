@@ -92,9 +92,17 @@ private fun readLayers(context: Context, settings: Settings): List<LayerState> =
         GuardLayer.CONTENT_FILTER,
         // Consent alone is not protection: the switch must also be on, or the
         // service is authorised and idle.
-        settings.vpnFilterEnabled && BastionVpnService.prepareIntent(context) == null,
+        // Not counted while Private DNS is also set: the two cannot coexist,
+        // and scoring them as two independent points is what encouraged
+        // turning both on — which takes the phone off the internet.
+        on = settings.vpnFilterEnabled &&
+            BastionVpnService.prepareIntent(context) == null &&
+            !com.bastion.app.guard.vpn.DnsFilters.privateDnsIsSet(context),
+        partial = if (settings.vpnFilterEnabled &&
+            com.bastion.app.guard.vpn.DnsFilters.privateDnsIsSet(context)
+        ) "clashing with Private DNS" else null,
     ),
-    LayerState(GuardLayer.PRIVATE_DNS, privateDnsIsSet(context)),
+    LayerState(GuardLayer.PRIVATE_DNS, com.bastion.app.guard.vpn.DnsFilters.privateDnsIsSet(context)),
     LayerState(GuardLayer.SCREEN_LOCK, BastionDeviceAdmin.isActive(context)),
     // Was gated on WRITE_SECURE_SETTINGS and reported "veil only" without it,
     // which implied a stronger mode existed behind the grant. None did — the
@@ -103,17 +111,6 @@ private fun readLayers(context: Context, settings: Settings): List<LayerState> =
     LayerState(GuardLayer.NOTIFICATIONS, notificationsAllowed(context)),
 )
 
-/**
- * Whether Private DNS points at a hostname.
- *
- * "opportunistic" is the Android default and filters nothing, so it is
- * deliberately not counted — treating it as on would inflate the meter with a
- * layer that does no filtering at all.
- */
-private fun privateDnsIsSet(context: Context): Boolean = runCatching {
-    android.provider.Settings.Global.getString(context.contentResolver, "private_dns_mode") ==
-        "hostname"
-}.getOrDefault(false)
 
 private fun notificationsAllowed(context: Context): Boolean =
     if (android.os.Build.VERSION.SDK_INT < 33) true

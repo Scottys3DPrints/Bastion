@@ -258,7 +258,52 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 }
             }
 
-            // --- Guard strength: what is actually armed -------------------
+                // Both DNS filters on at once means no working name resolution
+            // at all, and Android says so with "Private DNS server cannot be
+            // accessed". Loud and above the strength card, because until it
+            // is resolved nothing else on this screen matters.
+            if (com.bastion.app.guard.vpn.DnsFilters.bothRunning(context, settings.vpnFilterEnabled)) {
+                BastionCard(accent = BastionColors.Amber) {
+                    Text(
+                        "Two filters, no internet",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = BastionColors.TextPrimary,
+                    )
+                    Spacer(Modifier.height(Space.sm))
+                    Text(
+                        "Private DNS is set to " +
+                            (com.bastion.app.guard.vpn.DnsFilters.privateDnsHostname(context)
+                                ?: "a hostname") +
+                            ", and Bastion's content filter is on. They both take over DNS, " +
+                            "so neither works and the phone loses internet. Keep one.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextMuted,
+                    )
+                    Spacer(Modifier.height(Space.md))
+                    PrimaryButton(
+                        "Turn Bastion's filter off",
+                        {
+                            // Private DNS is the one worth keeping: it filters
+                            // below the app layer and survives Bastion being
+                            // killed. Bastion cannot switch it on for you, but
+                            // it can get out of its way.
+                            scope.launch {
+                                graph.settings.setVpnEnabled(false)
+                                BastionVpnService.stop(context)
+                            }
+                        },
+                        Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(Space.sm))
+                    Text(
+                        "Or set Private DNS back to Automatic and keep Bastion's.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BastionColors.TextMuted,
+                    )
+                }
+            }
+
+        // --- Guard strength: what is actually armed -------------------
             //
             // Pinned above everything else because it is the question the
             // screen exists to answer. Each unarmed row is its own one-tap
