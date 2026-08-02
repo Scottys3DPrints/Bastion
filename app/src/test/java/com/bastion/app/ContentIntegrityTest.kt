@@ -200,6 +200,14 @@ class ContentIntegrityTest {
     )
     private val allowedModes = setOf("faith", "discipline")
     private val allowedMoments = setOf("urge", "daily", "relapse", "milestone", "library")
+
+    /**
+     * The four moments a screen actually asks for by name. "library" is a
+     * widening tag the Well also accepts — it grants an item extra reach rather
+     * than describing a surface of its own, so an empty pool of it starves
+     * nothing and is not worth failing a build over.
+     */
+    private val servedMoments = setOf("urge", "daily", "relapse", "milestone")
     private val allowedTriggers = setOf(
         "late_night", "boredom", "stress", "loneliness", "tiredness",
         "social_media", "anger", "home_alone", "anxiety", "alcohol",
@@ -251,7 +259,7 @@ class ContentIntegrityTest {
 
     @Test
     fun `every moment can be served in both modes`() {
-        allowedMoments.forEach { moment ->
+        servedMoments.forEach { moment ->
             listOf(true, false).forEach { faith ->
                 val pool = motivation.items.filter {
                     it.verified && it.visibleIn(faith) && moment in it.moments
@@ -282,6 +290,60 @@ class ContentIntegrityTest {
                     assertTrue("${it.id} has no reference", !it.sourceRef.isNullOrBlank())
                 }
             }
+    }
+
+    /**
+     * Lines that famous men did not say.
+     *
+     * Every one of these arrived in a library drop marked verified, because
+     * that is what quote sites assert and quote sites are where these files get
+     * assembled. They are matched on their words rather than their ids so that
+     * re-importing a library — new ids, same aggregator — cannot quietly
+     * restore them.
+     *
+     * This is not pedantry. Bastion asks a man to believe it about his own
+     * character; an app that hands him a fake Einstein has already shown him
+     * how carefully it checks things.
+     */
+    private val knownMisattributed = listOf(
+        "Luck is what happens when preparation",          // not Seneca
+        "Knowing yourself is the beginning of all wisdom", // not Aristotle
+        "It does not matter how slowly you go",            // not in the Analects
+        "Excellence is never an accident",                 // Willa Foster, not Aristotle
+        "Integrity is doing the right thing, even when",    // not C.S. Lewis
+        "You are never too old to set another goal",        // not C.S. Lewis
+        "The two most important days in your life",         // not Twain
+        "The best way to predict your future is to create", // not Lincoln
+        "Adversity introduces a man to himself",            // not Einstein
+        "Any fool can know",                                // not Einstein
+        "Success is not final, failure is not fatal",       // not Churchill
+        "we fall to the level of our training",             // not Archilochus
+        "It is never too late to be what you might have",   // not George Eliot
+        "the purpose of life is not to be happy",           // Rosten, not Emerson
+    )
+
+    @Test
+    fun `misattributed lines never reach a screen`() {
+        knownMisattributed.forEach { fragment ->
+            val shown = motivation.items.filter {
+                it.verified && it.text.contains(fragment, ignoreCase = true)
+            }
+            assertTrue(
+                "misattributed line is displayable: ${shown.map { "${it.id} (${it.attribution})" }}",
+                shown.isEmpty(),
+            )
+        }
+    }
+
+    /**
+     * The counterpart to the test above: the gate has to still be worth having.
+     * If a drop-in library ever arrives with everything marked verified, this
+     * is what notices.
+     */
+    @Test
+    fun `the verified gate is actually holding something back`() {
+        val hidden = motivation.items.count { !it.verified }
+        assertTrue("nothing is marked unverified — was the audit lost?", hidden >= 10)
     }
 
     /** A short item has to actually be short — the widget has one line for it. */
