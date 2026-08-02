@@ -262,3 +262,30 @@ interface SocialDao {
     @Query("DELETE FROM mentor_message")
     suspend fun clearMentorHistory()
 }
+
+@Dao
+interface FeedDao {
+
+    @Query("SELECT itemId FROM feed_seen")
+    suspend fun seenIds(): List<String>
+
+    @Query("SELECT * FROM feed_seen WHERE epochDay = :epochDay ORDER BY seenAt")
+    suspend fun seenOn(epochDay: Long): List<FeedSeenEntity>
+
+    @Query("SELECT COUNT(*) FROM feed_seen WHERE epochDay = :epochDay")
+    fun countOnFlow(epochDay: Long): kotlinx.coroutines.flow.Flow<Int>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun markSeen(rows: List<FeedSeenEntity>)
+
+    /**
+     * Lets the well refill once everything has been drawn from it.
+     *
+     * Without this a long-running user eventually sees "caught up" forever,
+     * which turns a gift into a dead end. Clearing the record is not the same
+     * as an infinite feed: the day's portion is still finite, the cards are
+     * simply allowed to come round again.
+     */
+    @Query("DELETE FROM feed_seen")
+    suspend fun clearSeen()
+}

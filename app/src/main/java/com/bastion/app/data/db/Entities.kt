@@ -262,3 +262,22 @@ data class AppUsageEntity(
     val foregroundMillis: Long,
     val updatedAt: Long = System.currentTimeMillis(),
 )
+
+/**
+ * One card the feed has already shown.
+ *
+ * Exists so the feed can do the two things that make it not a slot machine:
+ * never repeat a card, and know when the day's portion is finished so it can
+ * say "you're caught up" instead of generating more forever. An infinite feed
+ * needs no memory; a finite one is nothing but memory.
+ *
+ * The id is the motivation item's id, so this table stays tiny — it holds
+ * references to bundled content, never the content itself.
+ */
+@Entity(tableName = "feed_seen")
+data class FeedSeenEntity(
+    @PrimaryKey val itemId: String,
+    /** The day it was served, so "today's set" can be reconstructed. */
+    val epochDay: Long,
+    val seenAt: Long = System.currentTimeMillis(),
+)

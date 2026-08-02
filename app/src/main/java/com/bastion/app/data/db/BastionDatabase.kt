@@ -49,8 +49,9 @@ class BastionConverters {
         LessonReadEntity::class,
         GuardChangeRequestEntity::class,
         AppUsageEntity::class,
+        FeedSeenEntity::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = true,
 )
 @TypeConverters(BastionConverters::class)
@@ -63,6 +64,7 @@ abstract class BastionDatabase : RoomDatabase() {
     abstract fun guardDao(): GuardDao
     abstract fun socialDao(): SocialDao
     abstract fun backupDao(): BackupDao
+    abstract fun feedDao(): FeedDao
 
     companion object {
         /**

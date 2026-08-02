@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
@@ -73,6 +74,7 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val EXTRA_OPEN = "com.bastion.app.OPEN"
         const val OPEN_MENTOR = "mentor"
+        const val OPEN_FEED = "feed"
     }
 }
 
@@ -97,6 +99,10 @@ private enum class Destination(
     val icon: ImageVector,
 ) {
     TODAY("watchtower", "Today", Icons.Filled.Shield),
+    // Second, not last. The point of the feed is to be there in the moment a
+    // thumb reaches for the other one, and a tab you have to hunt for is a tab
+    // that loses that race.
+    FEED("feed", "Feed", Icons.AutoMirrored.Filled.MenuBook),
     PROGRESS("track", "Progress", Icons.Filled.Insights),
     GUARD("guard", "Guard", Icons.Filled.Security),
     GROW("grow", "Grow", Icons.AutoMirrored.Filled.TrendingUp),
@@ -204,7 +210,13 @@ private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
     // Arriving from the Panic screen's "Talk it through", which used to be a
     // dead button on the one screen where a dead button is least forgivable.
     androidx.compose.runtime.LaunchedEffect(openTarget) {
-        if (openTarget == MainActivity.OPEN_MENTOR) navController.navigate(ROUTE_MENTOR)
+        when (openTarget) {
+            MainActivity.OPEN_MENTOR -> navController.navigate(ROUTE_MENTOR)
+            // Arriving from the shield or the panic screen: the whole point is
+            // that the redirect lands somewhere good in one gesture, so it goes
+            // straight to the feed rather than to the home screen.
+            MainActivity.OPEN_FEED -> navController.toTab(Destination.FEED.route)
+        }
     }
 
     val onTabs = Destination.entries.any { d ->
@@ -281,6 +293,11 @@ private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
                     WatchtowerScreen(
                         faithMode = faithMode,
                         onOpenProgress = { navController.toTab(Destination.PROGRESS.route) },
+                        onOpenProfile = { navController.navigate(ROUTE_PROFILE) },
+                    )
+                }
+                composable(Destination.FEED.route) {
+                    com.bastion.app.feature.feed.FeedScreen(
                         onOpenProfile = { navController.navigate(ROUTE_PROFILE) },
                     )
                 }

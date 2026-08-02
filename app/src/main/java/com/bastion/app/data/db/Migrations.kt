@@ -38,6 +38,26 @@ object Migrations {
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
+        MIGRATION_3_4,
+    )
+}
+
+/**
+ * v3 → v4. Adds the table that lets the feed be finite.
+ *
+ * Purely additive: a new table, nothing touched. Someone who has never opened
+ * the feed simply has an empty one, and every day counted before this update
+ * survives untouched — which is the only property that actually matters here.
+ */
+private val MIGRATION_3_4 = Migration(3, 4) { db ->
+    db.execSQL(
+        """
+        CREATE TABLE IF NOT EXISTS feed_seen (
+            itemId TEXT NOT NULL PRIMARY KEY,
+            epochDay INTEGER NOT NULL,
+            seenAt INTEGER NOT NULL
+        )
+        """.trimIndent()
     )
 }
 

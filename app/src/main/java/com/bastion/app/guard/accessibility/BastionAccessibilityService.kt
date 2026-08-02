@@ -253,17 +253,26 @@ class BastionAccessibilityService : AccessibilityService() {
             // Step back out of the feed first, then explain. Order matters: the
             // user should already be out before he reads anything.
             performGlobalAction(GLOBAL_ACTION_BACK)
+            // The best loop in the app: it catches the scroll impulse and
+            // hands it somewhere good in the same gesture, rather than only
+            // saying no and leaving the man holding the urge with nowhere to
+            // put it. Taking a feed away and offering nothing back is most of
+            // why blockers get uninstalled.
             shield.show(
                 title = "Not this.",
-                message = "The rest of ${app.label} is still yours.",
-                primaryLabel = "Good call",
-                onPrimary = { shield.hide() },
-                secondaryLabel = "Hold the line",
+                message = "The rest of ${app.label} is still yours — " +
+                    "or scroll something that builds you.",
+                primaryLabel = "Scroll something good",
+                onPrimary = {
+                    shield.hide()
+                    openFeed()
+                },
+                secondaryLabel = "I'm having an urge",
                 onSecondary = {
                     shield.hide()
                     openPanic()
                 },
-                autoDismissMillis = 6_000,
+                autoDismissMillis = 8_000,
             )
             feedHitStreak = 0
         }
@@ -438,6 +447,20 @@ class BastionAccessibilityService : AccessibilityService() {
             // without having to leave the app and find out the hard way.
             blockedNow = findMatch(root, rulesByPackage[pkg].orEmpty()) != null,
         )
+    }
+
+    /** Drops straight into the good feed, one tap from the block. */
+    private fun openFeed() {
+        runCatching {
+            startActivity(
+                Intent(this, com.bastion.app.MainActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    .putExtra(
+                        com.bastion.app.MainActivity.EXTRA_OPEN,
+                        com.bastion.app.MainActivity.OPEN_FEED,
+                    )
+            )
+        }
     }
 
     private fun openPanic() {

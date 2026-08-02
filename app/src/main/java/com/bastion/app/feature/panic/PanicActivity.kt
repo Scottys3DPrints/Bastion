@@ -174,6 +174,14 @@ private fun PanicFlow(onClose: () -> Unit) {
                             )
                             onClose()
                         },
+                        onFeed = {
+                            context.startActivity(
+                                Intent(context, MainActivity::class.java)
+                                    .putExtra(MainActivity.EXTRA_OPEN, MainActivity.OPEN_FEED)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                            )
+                            onClose()
+                        },
                         onPartner = { contact ->
                             context.startActivity(
                                 Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$contact")).putExtra(
@@ -385,6 +393,7 @@ private fun OutcomeStep(
     onHeld: suspend () -> Unit,
     onSlip: () -> Unit,
     onMentor: () -> Unit,
+    onFeed: () -> Unit,
     onPartner: (String) -> Unit,
     graph: BastionGraph,
 ) {
@@ -427,6 +436,16 @@ private fun OutcomeStep(
             Spacer(Modifier.height(10.dp))
         }
 
+        // Somewhere to put the impulse, not just somewhere to stop it. A man
+        // who has just held the line still has the restless hand that started
+        // this, and sending him back to a blank home screen wastes the moment.
+        QuietButton(
+            text = "Scroll something that builds you",
+            onClick = onFeed,
+            modifier = Modifier.fillMaxWidth(),
+            accent = BastionColors.BronzeBright,
+        )
+        Spacer(Modifier.height(10.dp))
         QuietButton("Talk it through", onMentor, Modifier.fillMaxWidth())
         Spacer(Modifier.height(10.dp))
         QuietButton(

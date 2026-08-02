@@ -76,6 +76,14 @@ class BastionGraph(context: Context) {
         )
     }
 
+    val feed: com.bastion.app.data.repo.FeedRepository by lazy {
+        com.bastion.app.data.repo.FeedRepository(
+            content = content,
+            feedDao = database.feedDao(),
+            journey = journey,
+        )
+    }
+
     val passcodeGate: com.bastion.app.core.security.PasscodeGate by lazy {
         com.bastion.app.core.security.PasscodeGate(settings = settings, social = social)
     }
