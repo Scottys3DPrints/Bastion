@@ -48,6 +48,31 @@ object GuardWatchdog {
         return intended && !BastionAccessibilityService.isEnabled(context)
     }
 
+    /**
+     * True when Private DNS has been turned off after having been set.
+     *
+     * Deliberately symmetrical with [isBreached]. Private DNS is the stronger
+     * of the two content filters — it works below the app layer and survives
+     * Bastion being killed — but it is a system setting, so Bastion can neither
+     * switch it on nor hold it down. Noticing is the whole of what it can do,
+     * and noticing is most of what matters.
+     */
+    suspend fun isDnsBreached(context: Context): Boolean {
+        val settings = BastionGraph.from(context).settings.current()
+        return settings.dnsIntendedOn &&
+            !com.bastion.app.guard.vpn.DnsFilters.privateDnsIsSet(context)
+    }
+
+    /** Which layer, if any, is down. Guard first — it is the broader one. */
+    suspend fun downLayer(context: Context): String? = when {
+        isBreached(context) -> LAYER_GUARD
+        isDnsBreached(context) -> LAYER_DNS
+        else -> null
+    }
+
+    const val LAYER_GUARD = "guard"
+    const val LAYER_DNS = "dns"
+
     /** How long the current breach has been running; 0 when Guard is up. */
     suspend fun breachDurationMillis(context: Context): Long {
         val since = BastionGraph.from(context).settings.current().guardOffSince
@@ -66,6 +91,8 @@ object GuardWatchdog {
         val settings = graph.settings.current()
         val running = BastionAccessibilityService.isEnabled(context)
 
+        reconcileDns(context, settings)
+
         // The Device Owner restrictions track the lock, on every reconcile, so
         // the phone's actual state cannot drift away from the setting that is
         // supposed to govern it — including after a reboot or an update.
@@ -79,7 +106,10 @@ object GuardWatchdog {
             if (settings.guardOffSince != 0L) graph.settings.setGuardOffSince(0L)
             if (settings.lockdownBreachAlerted) graph.settings.setLockdownBreachAlerted(false)
             clearNotification(context)
-            clearWallNotification(context)
+            // Only when nothing is down; Private DNS may still be off even
+            // though Guard came back, and clearing here would drop the notice
+            // for a breach that is still live.
+            if (downLayer(context) == null) clearWallNotification(context)
             return
         }
 
@@ -100,6 +130,46 @@ object GuardWatchdog {
     }
 
     /**
+     * Records that Private DNS is set, and notices when it stops being.
+     *
+     * Same shape as the Guard reconcile: intent is recorded the first time the
+     * thing is seen working, so the user never declares it separately, and the
+     * gap between intent and reality is what counts as a breach.
+     */
+    private suspend fun reconcileDns(
+        context: Context,
+        settings: com.bastion.app.data.prefs.Settings,
+    ) {
+        val graph = BastionGraph.from(context)
+        val hostname = com.bastion.app.guard.vpn.DnsFilters.privateDnsHostname(context)
+
+        if (hostname != null) {
+            if (!settings.dnsIntendedOn) graph.settings.setDnsIntendedOn(true)
+            if (settings.dnsHostname != hostname) graph.settings.setDnsHostname(hostname)
+            if (settings.dnsOffSince != 0L) graph.settings.setDnsOffSince(0L)
+            return
+        }
+
+        if (!settings.dnsIntendedOn) return
+        if (settings.dnsOffSince == 0L) {
+            graph.settings.setDnsOffSince(System.currentTimeMillis())
+        }
+    }
+
+    /**
+     * A deliberate "I am done with Private DNS", so the nag can be honoured.
+     *
+     * Without this the intent would be a one-way latch and someone who
+     * genuinely stopped using Private DNS would be walled forever — the same
+     * trap [standDown] exists to avoid for Guard.
+     */
+    suspend fun standDownDns(context: Context) {
+        val graph = BastionGraph.from(context)
+        graph.settings.setDnsIntendedOn(false)
+        graph.settings.setDnsOffSince(0L)
+    }
+
+    /**
      * Puts the wall in front of a locked-in user whose Guard has gone down.
      *
      * Separate from [reconcile] because it is the one response that interrupts
@@ -114,10 +184,11 @@ object GuardWatchdog {
     suspend fun enforceIfLockedIn(context: Context) {
         val settings = BastionGraph.from(context).settings.current()
         if (!settings.tamperLockEnabled) return
-        if (!isBreached(context)) return
+        val layer = downLayer(context) ?: return
 
         val wall = Intent(context, com.bastion.app.guard.lockdown.GuardDownActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            .putExtra(com.bastion.app.guard.lockdown.GuardDownActivity.EXTRA_LAYER, layer)
 
         // Works only when Bastion is already the app in front. From the
         // one-minute alarm it does not, and the system says so out loud:
@@ -144,8 +215,13 @@ object GuardWatchdog {
                 wall,
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
             )
+            val title = if (layer == LAYER_DNS) {
+                "You're locked in — Private DNS is off"
+            } else {
+                "You're locked in — Guard is off"
+            }
             val notification = Notification.Builder(context, BastionApp.CHANNEL_GUARD)
-                .setContentTitle("You're locked in — Guard is off")
+                .setContentTitle(title)
                 .setContentText("Tap to turn it back on.")
                 .setSmallIcon(R.drawable.ic_shield)
                 .setContentIntent(pending)

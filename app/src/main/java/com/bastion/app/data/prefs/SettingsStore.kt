@@ -91,6 +91,21 @@ data class Settings(
     val guardIntendedOn: Boolean = false,
     /** So the nag is a reminder, not a pestering. */
     val guardOffNotifiedAt: Long = 0L,
+
+    /**
+     * Whether the user has ever had Private DNS pointed at a hostname.
+     *
+     * The same trick as [guardIntendedOn], for the same reason: Private DNS is
+     * a system setting Bastion can neither switch on nor hold down, so the only
+     * way to notice it being turned off is to have recorded that it was once
+     * on. Set the first time it is seen set, so nobody has to declare the
+     * intent separately from doing the thing.
+     */
+    val dnsIntendedOn: Boolean = false,
+    /** The hostname it was set to, so the app can name it when it disappears. */
+    val dnsHostname: String = "",
+    /** Epoch millis Private DNS was first seen off. 0 while it is set. */
+    val dnsOffSince: Long = 0L,
     /**
      * Epoch millis Guard was first seen missing. 0 while it is running.
      *
@@ -155,6 +170,9 @@ class SettingsStore(private val context: Context) {
         val TAMPER_LOCK = booleanPreferencesKey("tamper_lock")
         val PARTNER_LOCK = booleanPreferencesKey("partner_lock")
         val GUARD_OFF_SINCE = longPreferencesKey("guard_off_since")
+        val DNS_INTENDED_ON = booleanPreferencesKey("dns_intended_on")
+        val DNS_HOSTNAME = stringPreferencesKey("dns_hostname")
+        val DNS_OFF_SINCE = longPreferencesKey("dns_off_since")
         val LOCKDOWN_BREACH_ALERTED = booleanPreferencesKey("lockdown_breach_alerted")
         val PASSCODE_FAILURES = intPreferencesKey("passcode_failures")
         val PASSCODE_LOCKED_UNTIL = longPreferencesKey("passcode_locked_until")
@@ -197,6 +215,9 @@ class SettingsStore(private val context: Context) {
             tamperLockEnabled = p[Keys.TAMPER_LOCK] ?: false,
             partnerLockEnabled = p[Keys.PARTNER_LOCK] ?: false,
             guardOffSince = p[Keys.GUARD_OFF_SINCE] ?: 0L,
+            dnsIntendedOn = p[Keys.DNS_INTENDED_ON] ?: false,
+            dnsHostname = p[Keys.DNS_HOSTNAME] ?: "",
+            dnsOffSince = p[Keys.DNS_OFF_SINCE] ?: 0L,
             lockdownBreachAlerted = p[Keys.LOCKDOWN_BREACH_ALERTED] ?: false,
             passcodeFailures = p[Keys.PASSCODE_FAILURES] ?: 0,
             passcodeLockedUntil = p[Keys.PASSCODE_LOCKED_UNTIL] ?: 0L,
@@ -242,6 +263,9 @@ class SettingsStore(private val context: Context) {
     suspend fun setTamperLock(value: Boolean) = edit { it[Keys.TAMPER_LOCK] = value }
     suspend fun setPartnerLock(value: Boolean) = edit { it[Keys.PARTNER_LOCK] = value }
     suspend fun setGuardOffSince(value: Long) = edit { it[Keys.GUARD_OFF_SINCE] = value }
+    suspend fun setDnsIntendedOn(value: Boolean) = edit { it[Keys.DNS_INTENDED_ON] = value }
+    suspend fun setDnsHostname(value: String) = edit { it[Keys.DNS_HOSTNAME] = value }
+    suspend fun setDnsOffSince(value: Long) = edit { it[Keys.DNS_OFF_SINCE] = value }
     suspend fun setLockdownBreachAlerted(value: Boolean) = edit {
         it[Keys.LOCKDOWN_BREACH_ALERTED] = value
     }

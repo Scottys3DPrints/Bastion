@@ -83,9 +83,12 @@ class GuardDownActivity : ComponentActivity() {
         // layout direction is pinned, and a wall that mirrored itself on a
         // Persian phone while the rest of the app did not would be the one
         // screen where looking broken matters most.
+        val layer = intent?.getStringExtra(EXTRA_LAYER)
+            ?: com.bastion.app.guard.GuardWatchdog.LAYER_GUARD
+
         setContent {
             com.bastion.app.core.design.BastionTheme {
-                GuardDownScreen(onResolved = { finishAndRelease() })
+                GuardDownScreen(layer = layer, onResolved = { finishAndRelease() })
             }
         }
     }
@@ -105,6 +108,11 @@ class GuardDownActivity : ComponentActivity() {
 
     private var resolved = false
 
+    companion object {
+        /** Which protection went down; see GuardWatchdog.LAYER_*. */
+        const val EXTRA_LAYER = "com.bastion.app.LAYER"
+    }
+
     private fun finishAndRelease() {
         resolved = true
         runCatching { stopLockTask() }
@@ -113,7 +121,7 @@ class GuardDownActivity : ComponentActivity() {
 }
 
 @Composable
-private fun GuardDownScreen(onResolved: () -> Unit) {
+private fun GuardDownScreen(layer: String, onResolved: () -> Unit) {
     val context = LocalContext.current
     val graph = remember { BastionGraph.from(context) }
     val scope = rememberCoroutineScope()
@@ -124,17 +132,42 @@ private fun GuardDownScreen(onResolved: () -> Unit) {
     var waitMillis by remember { mutableStateOf(0L) }
     var hasPartnerCode by remember { mutableStateOf(false) }
     var coolingOffHours by remember { mutableStateOf(2) }
+    var hostname by remember { mutableStateOf("") }
+    var copied by remember { mutableStateOf(false) }
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
+    LaunchedEffect(copied) {
+        if (copied) {
+            kotlinx.coroutines.delay(1_800)
+            copied = false
+        }
+    }
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         hasPartnerCode = graph.social.hasPasscode()
         coolingOffHours = graph.settings.current().coolingOffHours
+        hostname = graph.settings.current().dnsHostname
         waitMillis = graph.passcodeGate.waitMillis()
     }
 
-    // Closes itself the instant Guard is back on, so the honest way out needs
+    val isDns = layer == com.bastion.app.guard.GuardWatchdog.LAYER_DNS
+
+    // Closes itself the instant the layer is back, so the honest way out needs
     // no confirmation step at all.
+    //
+    // Guard publishes a flow; Private DNS is a system setting with nothing to
+    // observe, so that one is polled. A second of latency after fixing it is
+    // nothing next to a wall that will not admit it has been satisfied.
     val running by BastionAccessibilityService.isRunning.collectAsStateWithLifecycle()
-    LaunchedEffect(running) { if (running) onResolved() }
+    LaunchedEffect(running, isDns) { if (!isDns && running) onResolved() }
+    LaunchedEffect(isDns) {
+        while (isDns) {
+            if (com.bastion.app.guard.vpn.DnsFilters.privateDnsIsSet(context)) {
+                onResolved()
+                return@LaunchedEffect
+            }
+            kotlinx.coroutines.delay(1_000)
+        }
+    }
 
     DawnBackground(intensity = 0.15f) {
         Column(
@@ -147,24 +180,46 @@ private fun GuardDownScreen(onResolved: () -> Unit) {
             SectionLabel("You locked in", color = BastionColors.Amber)
             Spacer(Modifier.height(Space.md))
             Text(
-                "Guard is off.",
+                if (isDns) "Private DNS is off." else "Guard is off.",
                 style = MaterialTheme.typography.displaySmall,
                 color = BastionColors.TextPrimary,
             )
             Spacer(Modifier.height(Space.md))
             Text(
-                "You asked to be made to work for this. Turning it back on is one tap. " +
-                    "Leaving it off costs the partner's code, or the wait.",
+                if (isDns) {
+                    "You asked to be made to work for this. Set it back to " +
+                        (hostname.ifBlank { "your provider's hostname" }) +
+                        ". Leaving it off costs the partner's code, or the wait."
+                } else {
+                    "You asked to be made to work for this. Turning it back on is one tap. " +
+                        "Leaving it off costs the partner's code, or the wait."
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = BastionColors.TextSecondary,
             )
 
             Spacer(Modifier.height(Space.xl))
             PrimaryButton(
-                "Turn Guard back on",
-                { BastionAccessibilityService.openSettings(context) },
+                if (isDns) "Open Private DNS settings" else "Turn Guard back on",
+                {
+                    if (isDns) openPrivateDns(context)
+                    else BastionAccessibilityService.openSettings(context)
+                },
                 Modifier.fillMaxWidth(),
             )
+            if (isDns && hostname.isNotBlank()) {
+                Spacer(Modifier.height(Space.sm))
+                // The hostname is the part nobody remembers under pressure, and
+                // a wall that demands something you cannot recall is just a
+                // locked door.
+                com.bastion.app.core.design.LinkButton(
+                    if (copied) "Copied" else "Copy $hostname",
+                    BastionColors.SageBright,
+                ) {
+                    clipboard.setText(androidx.compose.ui.text.AnnotatedString(hostname))
+                    copied = true
+                }
+            }
 
             Spacer(Modifier.height(Space.md))
             if (!askingCode) {
@@ -177,7 +232,10 @@ private fun GuardDownScreen(onResolved: () -> Unit) {
                             // No partner code set, so the cooling-off delay is
                             // the only price there is. Queued like any other
                             // weakening rather than granted here.
-                            graph.guard.requestWeakening("Leave Guard off", "unlock")
+                            graph.guard.requestWeakening(
+                                if (isDns) "Leave Private DNS off" else "Leave Guard off",
+                                "unlock",
+                            )
                             onResolved()
                         }
                     },
@@ -239,11 +297,41 @@ private fun GuardDownScreen(onResolved: () -> Unit) {
             Text(
                 // The limit, stated plainly. Every other promise in this app
                 // depends on this one not being oversold.
-                "Android won't let any app make its accessibility permission permanent. " +
-                    "This is a wall, not a cage — which is why your partner holds the code.",
+                if (isDns) {
+                    "Private DNS is a system setting — Bastion can't switch it on or hold " +
+                        "it down, only notice. This is a wall, not a cage, which is why " +
+                        "your partner holds the code."
+                } else {
+                    "Android won't let any app make its accessibility permission permanent. " +
+                        "This is a wall, not a cage — which is why your partner holds the code."
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = BastionColors.TextMuted,
             )
         }
     }
 }
+
+/**
+ * Deep-links to Private DNS where the OEM exposes it, and to the network
+ * screen where it does not.
+ *
+ * The direct action is not present on every build, so the fallbacks matter: a
+ * wall whose only button does nothing is the worst version of this screen.
+ */
+private fun openPrivateDns(context: android.content.Context) {
+    val candidates = listOf(
+        android.content.Intent("android.settings.PRIVATE_DNS_SETTINGS"),
+        android.content.Intent("android.settings.WIRELESS_SETTINGS"),
+        android.content.Intent(android.provider.Settings.ACTION_SETTINGS),
+    )
+    for (intent in candidates) {
+        val opened = runCatching {
+            context.startActivity(
+                intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        }.isSuccess
+        if (opened) return
+    }
+}
+

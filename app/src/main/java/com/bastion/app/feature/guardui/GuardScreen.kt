@@ -935,8 +935,20 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
 @Composable
 private fun PrivateDnsCard() {
     val context = LocalContext.current
+    val graph = remember { BastionGraph.from(context) }
+    val scope = rememberCoroutineScope()
+    val settings by graph.settings.settings.collectAsStateWithLifecycle(initialValue = Settings())
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     var copied by remember { mutableStateOf(false) }
+
+    // Re-read on resume, because the change happens in Android's settings and
+    // the user comes straight back here expecting the screen to have noticed.
+    var live by remember { mutableStateOf<String?>(null) }
+    LifecycleResumeEffect(Unit) {
+        live = com.bastion.app.guard.vpn.DnsFilters.privateDnsHostname(context)
+        scope.launch { com.bastion.app.guard.GuardWatchdog.reconcile(context) }
+        onPauseOrDispose {}
+    }
 
     LaunchedEffect(copied) {
         if (copied) {
@@ -945,14 +957,34 @@ private fun PrivateDnsCard() {
         }
     }
 
+    val watching = settings.dnsIntendedOn
+    val isOff = watching && live == null
+
     Column(Modifier.fillMaxWidth()) {
         SectionLabel("Close the DNS-over-HTTPS gap")
         Spacer(Modifier.height(8.dp))
         Text(
-            "Set this as Private DNS. It filters below the app layer, where Bastion can't reach.",
+            when {
+                isOff -> "Off. You had this set to ${settings.dnsHostname} — " +
+                    "while you're locked in, turning it off puts a wall in front of you."
+                live != null -> "On: $live. Bastion is watching it. If it goes off while " +
+                    "you're locked in, you'll hit the same wall as when Guard goes off."
+                else -> "Set this as Private DNS. It filters below the app layer, where " +
+                    "Bastion can't reach — and once it's set, Bastion holds you to it."
+            },
             style = MaterialTheme.typography.bodySmall,
-            color = BastionColors.TextMuted,
+            color = if (isOff) BastionColors.Amber else BastionColors.TextMuted,
         )
+        if (watching) {
+            // The intent must not be a one-way latch. Someone who genuinely
+            // stops using Private DNS has to be able to say so, or the nag
+            // becomes something to ignore — and an ignored warning costs the
+            // warnings that matter.
+            com.bastion.app.core.design.LinkButton(
+                "I'm done with Private DNS",
+                BastionColors.TextMuted,
+            ) { scope.launch { com.bastion.app.guard.GuardWatchdog.standDownDns(context) } }
+        }
         Spacer(Modifier.height(12.dp))
         Box(
             Modifier
