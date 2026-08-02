@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -137,8 +138,8 @@ fun FeedScreen(onOpenProfile: () -> Unit) {
                 }
             }
 
-            // Chrome, kept to the minimum a full-bleed page can carry: where you
-            // are, and the way out to settings. Everything else would be
+            // Chrome, kept to the minimum a full-bleed page can carry: how far
+            // in you are, and the way out to settings. Everything else would be
             // furniture in front of the words.
             Row(
                 Modifier
@@ -146,14 +147,9 @@ fun FeedScreen(onOpenProfile: () -> Unit) {
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.systemBars)
                     .padding(horizontal = Space.lg, vertical = Space.sm),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(
-                    if (cards.isEmpty()) "" else "${(pager.currentPage + 1)} / ${cards.size}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = BastionColors.TextMuted,
-                )
                 IconButton(onClick = onOpenProfile) {
                     Icon(
                         Icons.Filled.AccountCircle,
@@ -161,6 +157,15 @@ fun FeedScreen(onOpenProfile: () -> Unit) {
                         tint = BastionColors.TextMuted,
                     )
                 }
+            }
+
+            if (cards.size > 1) {
+                ProgressHairline(
+                    fraction = (pager.currentPage + 1).toFloat() / cards.size,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .windowInsetsPadding(WindowInsets.systemBars),
+                )
             }
 
             if (cards.size > 1) {
@@ -287,6 +292,40 @@ private fun CaughtUpPage(
         } else {
             QuietButton("A few more", onMore, Modifier.fillMaxWidth(), BastionColors.TextMuted)
         }
+    }
+}
+
+/**
+ * How far in you are, without a number.
+ *
+ * A count — "4 / 16" — invites arithmetic. Twelve left, I can do twelve, and
+ * reading turns into a task with a score attached. It also reads as a target,
+ * and a man who stops at nine has failed at something he was never meant to be
+ * graded on.
+ *
+ * A line that fills says the one true thing the count was there for — this ends
+ * — and says it to the corner of the eye rather than to the part of him that
+ * counts things.
+ */
+@Composable
+private fun ProgressHairline(fraction: Float, modifier: Modifier = Modifier) {
+    val eased by androidx.compose.animation.core.animateFloatAsState(
+        targetValue = fraction.coerceIn(0f, 1f),
+        animationSpec = androidx.compose.animation.core.tween(450),
+        label = "wellProgress",
+    )
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(2.dp)
+            .background(BastionColors.Outline.copy(alpha = 0.25f))
+    ) {
+        Box(
+            Modifier
+                .fillMaxHeight()
+                .fillMaxWidth(eased)
+                .background(BastionColors.BronzeDeep)
+        )
     }
 }
 
