@@ -117,14 +117,7 @@ object DeviceOwner {
                 else dpm.clearUserRestriction(admin, restriction)
             }
 
-            // Screen pinning for the "Guard is down" wall. Allow-listing the
-            // package is what lets it pin itself without the system's own
-            // "Pin this screen?" prompt, which is dismissible and would defeat
-            // the point.
-            dpm.setLockTaskPackages(
-                admin,
-                if (lockedIn) arrayOf(context.packageName) else emptyArray(),
-            )
+            allowPinning(context)
 
             privateDnsHeld = holdPrivateDns(dpm, admin, lockedIn)
             applyChromePolicy(dpm, admin, lockedIn)
@@ -258,6 +251,59 @@ object DeviceOwner {
 
     /** Whether the pinned wall can actually pin itself. */
     fun canPinScreen(context: Context): Boolean = isDeviceOwner(context)
+
+    /**
+     * Allow-lists Bastion for silent screen pinning, and decides what stays
+     * reachable while it is pinned.
+     *
+     * Called whenever a wall goes up rather than only while locked in. Break
+     * glass is available to a man who has never locked in at all, and it was
+     * the one path where the allow-list had not been set — so the strongest
+     * thing the app can do was reserved for the people who needed it least.
+     * Allow-listing costs nothing on its own: it permits pinning, it does not
+     * pin.
+     *
+     * [DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS] is the power
+     * button's own menu, and it is where Android puts Emergency. It stays on,
+     * always, and is the reason this is a lockout rather than a trap. A man has
+     * to be able to call an ambulance from his own phone; no rule he sets for
+     * himself outranks that.
+     *
+     * Everything else is off: Home, Recents, the notification shade, the
+     * keyguard's own shortcuts. Those are the ways out, and closing them is the
+     * entire point.
+     */
+    fun allowPinning(context: Context): Boolean {
+        if (!isDeviceOwner(context)) return false
+        val dpm = context.getSystemService(DevicePolicyManager::class.java) ?: return false
+        val admin = BastionDeviceAdmin.component(context)
+        return runCatching {
+            dpm.setLockTaskPackages(admin, arrayOf(context.packageName))
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+                dpm.setLockTaskFeatures(
+                    admin,
+                    DevicePolicyManager.LOCK_TASK_FEATURE_GLOBAL_ACTIONS or
+                        // The clock and the battery. A wall that also hides how
+                        // much charge is left makes a man reach for the phone he
+                        // is trying not to reach for.
+                        DevicePolicyManager.LOCK_TASK_FEATURE_SYSTEM_INFO or
+                        // The keyguard, which is the emergency path that
+                        // actually exists on every phone.
+                        //
+                        // The power menu was the first answer and it is not
+                        // dependable: on the test device a long press opened the
+                        // Assistant instead, and which of the two it is depends
+                        // on the OEM and on a setting. Leaving the keyguard
+                        // enabled means pressing power and waking the phone
+                        // gives Android's own lock screen, whose Emergency
+                        // button is always there. Unlocking returns to the wall,
+                        // so it costs nothing.
+                        DevicePolicyManager.LOCK_TASK_FEATURE_KEYGUARD,
+                )
+            }
+            true
+        }.getOrDefault(false)
+    }
 
     /**
      * What Bastion can honestly claim right now, in one line.

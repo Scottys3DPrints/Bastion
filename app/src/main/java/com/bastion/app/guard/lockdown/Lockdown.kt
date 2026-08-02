@@ -129,9 +129,26 @@ object Lockdown {
             }
         } else null
 
-        // Last, so everything else is already in place when the screen goes dark.
-        if (settings.lockdownLockScreen) BastionDeviceAdmin.lockNow(context)
+        // Last, so every other guard is already in place before the phone goes
+        // away. Raising the wall is what makes this a lockout rather than a
+        // gesture — see LockdownWallActivity for what that does and does not
+        // mean without Device Owner.
+        if (settings.lockdownLockScreen) LockdownWallActivity.raise(context)
 
         return partnerIntent
+    }
+
+    /**
+     * Puts the wall back after a reboot, if the clock is still running.
+     *
+     * Restarting the phone was the whole bypass: the activity dies with the
+     * process, and the lockdown was only ever enforced by a screen that no
+     * longer existed. The clocks already survive — [remainingMillis] reads them
+     * from disk — so all that was missing was somebody to look.
+     */
+    fun restoreAfterBoot(context: Context, settings: Settings) {
+        if (settings.lockdownLockScreen && isActive(settings)) {
+            LockdownWallActivity.raise(context)
+        }
     }
 }

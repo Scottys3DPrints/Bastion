@@ -44,6 +44,11 @@ class BastionBootReceiver : BroadcastReceiver() {
                 // restart — which is a restart away from being no enforcement.
                 LockInWatchScheduler.sync(appContext, settings.tamperLockEnabled)
                 com.bastion.app.guard.GuardWatchdog.enforceIfLockedIn(appContext)
+
+                // A running lockdown outlives the process that raised it. The
+                // clocks are on disk and already survive; without this, holding
+                // the power button was the whole bypass.
+                com.bastion.app.guard.lockdown.Lockdown.restoreAfterBoot(appContext, settings)
             } finally {
                 pending.finish()
             }

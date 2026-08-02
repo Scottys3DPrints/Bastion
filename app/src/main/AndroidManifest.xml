@@ -112,6 +112,13 @@
             Not exported: nothing outside Bastion has any business opening it.
         -->
         <activity
+            android:name=".guard.lockdown.LockdownWallActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:taskAffinity=".lockdownwall"
+            android:theme="@style/Theme.Bastion" />
+        <activity
             android:name=".guard.lockdown.GuardDownActivity"
             android:exported="false"
             android:launchMode="singleTask"

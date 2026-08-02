@@ -131,7 +131,7 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
                         append("Every guarded app closes. ")
                         if (settings.lockdownFilter) append("The filter comes on. ")
                         if (settings.lockdownGrayscale) append("Colour goes. ")
-                        if (settings.lockdownLockScreen) append("Your screen locks once — not for the whole time. ")
+                        if (settings.lockdownLockScreen) append("The phone locks to a countdown and stays there. ")
                         append("\n\nThis cannot be undone before it ends.")
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -229,7 +229,7 @@ fun LockdownCompactButton(
                         append("Every guarded app closes. ")
                         if (settings.lockdownFilter) append("The filter comes on. ")
                         if (settings.lockdownGrayscale) append("Colour goes. ")
-                        if (settings.lockdownLockScreen) append("Your screen locks once — not for the whole time. ")
+                        if (settings.lockdownLockScreen) append("The phone locks to a countdown and stays there. ")
                         append("\n\nThis cannot be undone before it ends.")
                     },
                     style = MaterialTheme.typography.bodyMedium,
@@ -291,7 +291,7 @@ private fun planSummary(settings: Settings): String = buildList {
     add("apps closed")
     if (settings.lockdownFilter) add("filter")
     if (settings.lockdownGrayscale) add("greyscale")
-    if (settings.lockdownLockScreen) add("screen lock")
+    if (settings.lockdownLockScreen) add("phone locked")
     if (settings.lockdownTellPartner) add("partner told")
 }.joinToString(", ")
 
@@ -303,6 +303,11 @@ private fun LockdownPlanDialog(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    // How strong "lock the phone" actually is on this handset, so the sheet can
+    // say the true version rather than the flattering one.
+    val deviceOwner = remember {
+        com.bastion.app.guard.lockdown.DeviceOwner.canPinScreen(context)
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = BastionColors.Surface,
@@ -357,7 +362,7 @@ private fun LockdownPlanDialog(
                 PlanToggle("Drain the colour", settings.lockdownGrayscale) {
                     scope.launch { graph.settings.setLockdownGrayscale(it) }
                 }
-                PlanToggle("Lock the screen", settings.lockdownLockScreen) { wanted ->
+                PlanToggle("Lock the phone for the whole time", settings.lockdownLockScreen) { wanted ->
                     scope.launch { graph.settings.setLockdownLockScreen(wanted) }
                     // Needs a system consent screen; asking at the moment the
                     // option is chosen beats failing silently later.
@@ -371,9 +376,23 @@ private fun LockdownPlanDialog(
 
                 Spacer(Modifier.height(Space.md))
                 Text(
-                    // The obvious wish, answered before it is asked.
-                    "Android won't let any app switch the phone off — that's reserved for the system. " +
-                        "Locking the screen is the closest there is.",
+                    // What "lock the phone" now buys, and what it costs, before
+                    // he finds out at hour one. The old line here said the
+                    // screen locks once and that this was the closest Android
+                    // allows — true of the old behaviour, and now an
+                    // understatement worth correcting rather than leaving to be
+                    // discovered.
+                    if (deviceOwner) {
+                        "Locked, the phone shows a countdown and nothing else — Home, " +
+                            "Recents and notifications are all refused until it ends. " +
+                            "The lock screen stays reachable so an emergency call always can be."
+                    } else {
+                        "Locked, the phone shows a countdown and nothing else. Android will " +
+                            "ask to pin the screen, and a pin you agreed to can be undone by " +
+                            "holding Back and Recents — so it's a closed door rather than a " +
+                            "locked one. Setting Bastion as device owner is what makes it a " +
+                            "locked one."
+                    },
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
