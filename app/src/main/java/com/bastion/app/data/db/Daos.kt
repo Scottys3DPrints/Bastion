@@ -57,6 +57,16 @@ interface JourneyDao {
 
     @Query("SELECT COUNT(*) FROM urge_log WHERE resisted = 1")
     fun resistedCount(): Flow<Int>
+
+    /**
+     * The oldest day he has told the app anything about.
+     *
+     * Null until he logs something. Used to pull the start of the journey
+     * backwards when he fills in history he already lived — see
+     * [com.bastion.app.data.repo.JourneyRepository.state].
+     */
+    @Query("SELECT MIN(epochDay) FROM urge_log")
+    fun earliestUrgeDay(): Flow<Long?>
 }
 
 @Dao

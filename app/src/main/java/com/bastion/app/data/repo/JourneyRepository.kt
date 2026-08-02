@@ -35,6 +35,13 @@ data class JourneyState(
     val pointsToNextRank: Int? = null,
     val urgesResisted: Int = 0,
     val badges: Int = 0,
+    /**
+     * The day the journey effectively begins: the install date, or older if he
+     * has logged history from before it. Exposed so the calendar greys the same
+     * days the counts ignore — the two disagreeing is how "4 clean days" ends up
+     * over a calendar showing one.
+     */
+    val startEpochDay: Long = 0,
 )
 
 /**
@@ -81,46 +88,23 @@ class JourneyRepository(
             progressDao.badgeCount(),
             settings.settings,
             dayTicks,
-        ) { lessons, badges, s, today -> Aux(lessons, badges, s, today) },
+            journeyDao.earliestUrgeDay(),
+        ) { lessons, badges, s, today, earliestUrge ->
+            Aux(lessons, badges, s, today, earliestUrge)
+        },
     ) { days, habitCompletions, checkIns, resisted, aux ->
-
-        val (lessons, badges, s, today) = aux
-        val start = if (s.journeyStartEpochDay > 0) s.journeyStartEpochDay else today
-
-        // Clamped to today: a slip dated in the future would otherwise inflate
-        // the count and skew points, and no one can relapse tomorrow.
-        val slipDays = days
-            .filter { it.status == DayStatus.SLIP && it.epochDay <= today }
-            .map { it.epochDay }
-            .sorted()
-
-        val totalDays = ((today - start).toInt() + 1).coerceAtLeast(1)
-        val slipCount = slipDays.count { it >= start }
-        val totalCleanDays = (totalDays - slipCount).coerceAtLeast(0)
-
-        val lastSlip = slipDays.lastOrNull()
-        val currentStreak = if (lastSlip == null) totalDays else (today - lastSlip).toInt()
-
-        val points = totalCleanDays * RankPoints.CLEAN_DAY +
-            habitCompletions * RankPoints.HABIT_COMPLETED +
-            checkIns * RankPoints.CHECK_IN +
-            resisted * RankPoints.URGE_RESISTED +
-            lessons * RankPoints.LESSON_READ +
-            slipCount * RankPoints.SLIP_LOGGED_HONESTLY +
-            s.panicCount * RankPoints.PANIC_SESSION_COMPLETED
-
-        JourneyState(
-            currentStreak = currentStreak,
-            longestStreak = longestStreak(start, today, slipDays),
-            totalCleanDays = totalCleanDays,
-            totalDays = totalDays,
-            slipCount = slipCount,
-            points = points,
-            rank = Rank.forPoints(points),
-            progressToNextRank = Rank.progress(points),
-            pointsToNextRank = Rank.pointsToNext(points),
-            urgesResisted = resisted,
+        val (lessons, badges, s, today, earliestUrge) = aux
+        JourneyMath.derive(
+            today = today,
+            installedEpochDay = s.journeyStartEpochDay,
+            dayLogs = days.map { it.epochDay to (it.status == DayStatus.SLIP) },
+            earliestUrgeDay = earliestUrge,
+            habitCompletions = habitCompletions,
+            checkIns = checkIns,
+            resisted = resisted,
+            lessons = lessons,
             badges = badges,
+            panicCount = s.panicCount,
         )
     }
 
@@ -130,19 +114,13 @@ class JourneyRepository(
         val badges: Int,
         val settings: com.bastion.app.data.prefs.Settings,
         val today: Long,
+        /** Null until he has logged anything at all. */
+        val earliestUrge: Long?,
     )
 
     /** Longest run of consecutive days that contained no slip. */
-    private fun longestStreak(start: Long, today: Long, slipDays: List<Long>): Int {
-        val relevant = slipDays.filter { it in start..today }.sorted()
-        var best = 0
-        var cursor = start
-        for (slip in relevant) {
-            best = maxOf(best, (slip - cursor).toInt())
-            cursor = slip + 1
-        }
-        return maxOf(best, (today - cursor + 1).toInt()).coerceAtLeast(0)
-    }
+    private fun longestStreak(start: Long, today: Long, slipDays: List<Long>): Int =
+        JourneyMath.longestStreak(start, today, slipDays)
 
     suspend fun logSlip(epochDay: Long = LocalDate.now().toEpochDay(), note: String? = null) {
         // Never in the future, whatever the caller passes.

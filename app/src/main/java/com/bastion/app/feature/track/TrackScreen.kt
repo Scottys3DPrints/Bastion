@@ -115,8 +115,10 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
     val slipDays = remember(days) {
         days.filter { it.status == DayStatus.SLIP }.map { it.epochDay }.toSet()
     }
-    val marks = remember(month, slipDays, settings.journeyStartEpochDay) {
-        buildMarks(month, slipDays, settings.journeyStartEpochDay)
+    // The effective start, not the install date: backfilled history moves it,
+    // and the calendar has to grey the same days the counts ignore.
+    val marks = remember(month, slipDays, state.startEpochDay) {
+        buildMarks(month, slipDays, state.startEpochDay)
     }
     val nextMilestone = remember(state.currentStreak) {
         MILESTONES.firstOrNull { it > state.currentStreak }
@@ -783,7 +785,13 @@ private fun RecoveryFlow(
             // properly; that order is the whole argument.
             1 -> LogFlow(
                 resisted = false,
-                forDate = date ?: LocalDate.now(),
+                // Null when he came from the Log button, so the "when" step
+                // appears and a slip can be dated back like anything else. It
+                // was defaulted to today here, which meant the calendar was the
+                // only route to logging a past slip — and the one screen that
+                // asks "when was it?" skipped the question precisely when the
+                // answer was least likely to be "now".
+                forDate = date,
                 saveLabel = "Continue",
                 onCancel = { stage = 0 },
                 onSave = { entry ->
