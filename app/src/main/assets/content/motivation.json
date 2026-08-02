@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "count": 211,
+  "count": 279,
   "note": "Scripture and prayer text is taken verbatim from daily_briefs.json, content this app already ships. Quotes are public-domain and attributed. Reframes, urge lines, affirmations, stories and facts are original to Bastion.",
   "items": [
     {
@@ -1899,57 +1899,6 @@
         "discipline",
         "faith"
       ],
-      "text": "The gem cannot be polished without friction, nor man perfected without trials.",
-      "attribution": "Confucius",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "endurance"
-      ],
-      "triggers": [],
-      "moments": [
-        "relapse",
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "quote_0014",
-      "type": "quote",
-      "modes": [
-        "discipline",
-        "faith"
-      ],
-      "text": "Our greatest glory is not in never falling, but in rising every time we fall.",
-      "attribution": "Confucius",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "recovery"
-      ],
-      "triggers": [],
-      "moments": [
-        "relapse",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "quote_0015",
-      "type": "quote",
-      "modes": [
-        "discipline",
-        "faith"
-      ],
       "text": "Knowing yourself is the beginning of all wisdom.",
       "attribution": "Aristotle",
       "source": null,
@@ -1970,7 +1919,7 @@
       "verified": true
     },
     {
-      "id": "quote_0016",
+      "id": "quote_0014",
       "type": "quote",
       "modes": [
         "discipline",
@@ -1996,7 +1945,7 @@
       "verified": true
     },
     {
-      "id": "quote_0017",
+      "id": "quote_0015",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2021,7 +1970,7 @@
       "verified": true
     },
     {
-      "id": "quote_0018",
+      "id": "quote_0016",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2047,7 +1996,7 @@
       "verified": true
     },
     {
-      "id": "quote_0019",
+      "id": "quote_0017",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2074,7 +2023,7 @@
       "verified": true
     },
     {
-      "id": "quote_0020",
+      "id": "quote_0018",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2099,7 +2048,7 @@
       "verified": true
     },
     {
-      "id": "quote_0021",
+      "id": "quote_0019",
       "type": "quote",
       "modes": [
         "faith"
@@ -2126,7 +2075,7 @@
       "verified": true
     },
     {
-      "id": "quote_0022",
+      "id": "quote_0020",
       "type": "quote",
       "modes": [
         "faith"
@@ -2154,7 +2103,7 @@
       "verified": true
     },
     {
-      "id": "quote_0023",
+      "id": "quote_0021",
       "type": "quote",
       "modes": [
         "faith",
@@ -2179,7 +2128,7 @@
       "verified": true
     },
     {
-      "id": "quote_0024",
+      "id": "quote_0022",
       "type": "quote",
       "modes": [
         "faith",
@@ -2205,7 +2154,7 @@
       "verified": true
     },
     {
-      "id": "quote_0025",
+      "id": "quote_0023",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2231,7 +2180,7 @@
       "verified": true
     },
     {
-      "id": "quote_0026",
+      "id": "quote_0024",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2256,7 +2205,7 @@
       "verified": true
     },
     {
-      "id": "quote_0027",
+      "id": "quote_0025",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2283,7 +2232,7 @@
       "verified": true
     },
     {
-      "id": "quote_0028",
+      "id": "quote_0026",
       "type": "quote",
       "modes": [
         "discipline"
@@ -2307,60 +2256,7 @@
       "verified": true
     },
     {
-      "id": "quote_0029",
-      "type": "quote",
-      "modes": [
-        "discipline",
-        "faith"
-      ],
-      "text": "What lies behind us and what lies before us are tiny matters compared to what lies within us.",
-      "attribution": "Ralph Waldo Emerson",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "inner strength"
-      ],
-      "triggers": [],
-      "moments": [
-        "relapse",
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "quote_0030",
-      "type": "quote",
-      "modes": [
-        "discipline",
-        "faith"
-      ],
-      "text": "Sow a thought, reap an action; sow an action, reap a habit; sow a habit, reap a character; sow a character, reap a destiny.",
-      "attribution": "Samuel Smiles",
-      "source": "Life and Labour",
-      "sourceRef": "Life and Labour",
-      "translation": null,
-      "title": null,
-      "themes": [
-        "habit",
-        "character"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library",
-        "library"
-      ],
-      "length": "medium",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "quote_0031",
+      "id": "quote_0027",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2385,7 +2281,7 @@
       "verified": true
     },
     {
-      "id": "quote_0032",
+      "id": "quote_0028",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2411,7 +2307,7 @@
       "verified": true
     },
     {
-      "id": "quote_0033",
+      "id": "quote_0029",
       "type": "quote",
       "modes": [
         "discipline"
@@ -2435,7 +2331,7 @@
       "verified": true
     },
     {
-      "id": "quote_0034",
+      "id": "quote_0030",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2461,7 +2357,7 @@
       "verified": true
     },
     {
-      "id": "quote_0035",
+      "id": "quote_0031",
       "type": "quote",
       "modes": [
         "discipline"
@@ -2486,7 +2382,7 @@
       "verified": true
     },
     {
-      "id": "quote_0036",
+      "id": "quote_0032",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2511,7 +2407,7 @@
       "verified": true
     },
     {
-      "id": "quote_0037",
+      "id": "quote_0033",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2536,7 +2432,7 @@
       "verified": true
     },
     {
-      "id": "quote_0038",
+      "id": "quote_0034",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2562,7 +2458,7 @@
       "verified": true
     },
     {
-      "id": "quote_0039",
+      "id": "quote_0035",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2588,7 +2484,7 @@
       "verified": true
     },
     {
-      "id": "quote_0040",
+      "id": "quote_0036",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2613,7 +2509,7 @@
       "verified": true
     },
     {
-      "id": "quote_0041",
+      "id": "quote_0037",
       "type": "quote",
       "modes": [
         "discipline"
@@ -2637,7 +2533,7 @@
       "verified": true
     },
     {
-      "id": "quote_0042",
+      "id": "quote_0038",
       "type": "quote",
       "modes": [
         "discipline"
@@ -2663,7 +2559,7 @@
       "verified": true
     },
     {
-      "id": "quote_0043",
+      "id": "quote_0039",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2690,7 +2586,7 @@
       "verified": true
     },
     {
-      "id": "quote_0044",
+      "id": "quote_0040",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2715,7 +2611,7 @@
       "verified": true
     },
     {
-      "id": "quote_0045",
+      "id": "quote_0041",
       "type": "quote",
       "modes": [
         "discipline",
@@ -2735,6 +2631,2816 @@
       ],
       "moments": [
         "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0042",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The happiness of your life depends upon the quality of your thoughts.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "the mind"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0043",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Very little is needed to make a happy life; it is all within yourself, in your way of thinking.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "contentment"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0044",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Never let the future disturb you. You will meet it, if you have to, with the same weapons of reason which today arm you against the present.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "fear"
+      ],
+      "triggers": [
+        "anxiety"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0045",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "The object of life is not to be on the side of the majority, but to escape finding oneself in the ranks of the insane.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "independence"
+      ],
+      "triggers": [
+        "social_media"
+      ],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0046",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Look well into thyself; there is a source of strength which will always spring up if thou wilt always look.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "inner strength"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0047",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "How much more grievous are the consequences of anger than the causes of it.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "anger"
+      ],
+      "triggers": [
+        "anger"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0048",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Do every act of your life as if it were your last.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urgency"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0049",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Nowhere can man find a quieter or more untroubled retreat than in his own soul.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "stillness"
+      ],
+      "triggers": [
+        "stress",
+        "anxiety"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0050",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Receive without pride, let go without attachment.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "detachment"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0051",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "It is not the man who has too little, but the man who craves more, that is poor.",
+      "attribution": "Seneca",
+      "source": "Letters from a Stoic",
+      "sourceRef": "Letters from a Stoic",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "appetite"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0052",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Every night before going to sleep, we must ask ourselves: what weakness did I overcome today?",
+      "attribution": "Seneca",
+      "source": "On Anger",
+      "sourceRef": "On Anger",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "self-examination"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0053",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "He who is brave is free.",
+      "attribution": "Seneca",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "courage"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0054",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Difficulties strengthen the mind, as labour does the body.",
+      "attribution": "Seneca",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "endurance"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0055",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Begin at once to live, and count each separate day as a separate life.",
+      "attribution": "Seneca",
+      "source": "Letters from a Stoic",
+      "sourceRef": "Letters from a Stoic",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "beginnings"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0056",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Associate with those who will make a better man of you.",
+      "attribution": "Seneca",
+      "source": "Letters from a Stoic",
+      "sourceRef": "Letters from a Stoic",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "company"
+      ],
+      "triggers": [
+        "loneliness"
+      ],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0057",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "As long as you live, keep learning how to live.",
+      "attribution": "Seneca",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "growth"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0058",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "It is a rough road that leads to the heights of greatness.",
+      "attribution": "Seneca",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "struggle"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0059",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "A man is as unhappy as he has convinced himself he is.",
+      "attribution": "Seneca",
+      "source": "Letters from a Stoic",
+      "sourceRef": "Letters from a Stoic",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "perspective"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0060",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "While we are postponing, life speeds by.",
+      "attribution": "Seneca",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "time"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0061",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Men are disturbed not by things, but by the views which they take of things.",
+      "attribution": "Epictetus",
+      "source": "Enchiridion",
+      "sourceRef": "Enchiridion",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "perspective"
+      ],
+      "triggers": [
+        "stress",
+        "anxiety"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0062",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Seek not that the things which happen should happen as you wish; but wish the things which happen to be as they are.",
+      "attribution": "Epictetus",
+      "source": "Enchiridion",
+      "sourceRef": "Enchiridion",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "acceptance"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0063",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "It is not he who reviles or strikes you who insults you, but your opinion that these things are insulting.",
+      "attribution": "Epictetus",
+      "source": "Enchiridion",
+      "sourceRef": "Enchiridion",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "anger"
+      ],
+      "triggers": [
+        "anger"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0064",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "If you wish to be a writer, write. If you wish to be anything, do the thing.",
+      "attribution": "Epictetus",
+      "source": "Discourses",
+      "sourceRef": "Discourses",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "action"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0065",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Do not explain your philosophy. Embody it.",
+      "attribution": "Epictetus",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "integrity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0066",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Practice yourself in little things, and thence proceed to greater.",
+      "attribution": "Epictetus",
+      "source": "Discourses",
+      "sourceRef": "Discourses",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0067",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "When I let go of what I am, I become what I might be.",
+      "attribution": "Lao Tzu",
+      "source": "Tao Te Ching",
+      "sourceRef": "Tao Te Ching",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0068",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "To the mind that is still, the whole universe surrenders.",
+      "attribution": "Lao Tzu",
+      "source": "Tao Te Ching",
+      "sourceRef": "Tao Te Ching",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "stillness"
+      ],
+      "triggers": [
+        "anxiety",
+        "stress"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0069",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Nature does not hurry, yet everything is accomplished.",
+      "attribution": "Lao Tzu",
+      "source": "Tao Te Ching",
+      "sourceRef": "Tao Te Ching",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "patience"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0070",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Knowing others is intelligence; knowing yourself is true wisdom.",
+      "attribution": "Lao Tzu",
+      "source": "Tao Te Ching",
+      "sourceRef": "Tao Te Ching",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "self-knowledge"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0071",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "It does not matter how slowly you go so long as you do not stop.",
+      "attribution": "Confucius",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0072",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "When anger rises, think of the consequences.",
+      "attribution": "Confucius",
+      "source": "Analects",
+      "sourceRef": "Analects",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "anger"
+      ],
+      "triggers": [
+        "anger"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0073",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The man who moves a mountain begins by carrying away small stones.",
+      "attribution": "Confucius",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0074",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "To see what is right and not do it is want of courage.",
+      "attribution": "Confucius",
+      "source": "Analects",
+      "sourceRef": "Analects",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "courage"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0075",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Better than a thousand hollow words is one word that brings peace.",
+      "attribution": "The Dhammapada",
+      "source": "The Dhammapada",
+      "sourceRef": "The Dhammapada",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "stillness"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0076",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Though he should conquer a thousand men a thousand times in battle, he who conquers himself is the greatest of conquerors.",
+      "attribution": "The Dhammapada",
+      "source": "The Dhammapada",
+      "sourceRef": "The Dhammapada",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "self-control"
+      ],
+      "triggers": [],
+      "moments": [
+        "milestone",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0077",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "All that we are is the result of what we have thought.",
+      "attribution": "The Dhammapada",
+      "source": "The Dhammapada",
+      "sourceRef": "The Dhammapada",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "the mind"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0078",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Opportunities multiply as they are seized.",
+      "attribution": "Sun Tzu",
+      "source": "The Art of War",
+      "sourceRef": "The Art of War",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "momentum"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0079",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Excellence is never an accident.",
+      "attribution": "Aristotle",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0080",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "It is the mark of an educated mind to be able to entertain a thought without accepting it.",
+      "attribution": "Aristotle",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "the mind"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0081",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Pleasure in the job puts perfection in the work.",
+      "attribution": "Aristotle",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "craft"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0082",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The greatest wealth is to live content with little.",
+      "attribution": "Plato",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "contentment"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0083",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "What we achieve inwardly will change outer reality.",
+      "attribution": "Plutarch",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "inner strength"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0084",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Character is simply habit long continued.",
+      "attribution": "Plutarch",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0085",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The life given us by nature is short; but the memory of a well-spent life is eternal.",
+      "attribution": "Cicero",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "legacy"
+      ],
+      "triggers": [],
+      "moments": [
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0086",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Not to be angry is a kind of victory.",
+      "attribution": "Publilius Syrus",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "anger"
+      ],
+      "triggers": [
+        "anger"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0087",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Every man is the maker of his own fortune.",
+      "attribution": "Publilius Syrus",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "ownership"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0088",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Habits change into character.",
+      "attribution": "Ovid",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0089",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Rule your mind or it will rule you.",
+      "attribution": "Horace",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "the mind"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0090",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "He who has begun has half done. Dare to be wise; begin!",
+      "attribution": "Horace",
+      "source": "Epistles",
+      "sourceRef": "Epistles",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "beginnings"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0091",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "They can because they think they can.",
+      "attribution": "Virgil",
+      "source": "The Aeneid",
+      "sourceRef": "The Aeneid",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "belief"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0092",
+      "type": "quote",
+      "modes": [
+        "faith"
+      ],
+      "text": "Our hearts are restless until they rest in You.",
+      "attribution": "Augustine of Hippo",
+      "source": "Confessions",
+      "sourceRef": "Confessions",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "longing"
+      ],
+      "triggers": [
+        "loneliness"
+      ],
+      "moments": [
+        "urge",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0093",
+      "type": "quote",
+      "modes": [
+        "faith"
+      ],
+      "text": "Give me chastity and continence, but not yet.",
+      "attribution": "Augustine of Hippo",
+      "source": "Confessions",
+      "sourceRef": "Confessions",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "honesty"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0094",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Habit, if not resisted, soon becomes necessity.",
+      "attribution": "Augustine of Hippo",
+      "source": "Confessions",
+      "sourceRef": "Confessions",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0095",
+      "type": "quote",
+      "modes": [
+        "faith"
+      ],
+      "text": "First keep peace with yourself, then you can also bring peace to others.",
+      "attribution": "Thomas a Kempis",
+      "source": "The Imitation of Christ",
+      "sourceRef": "The Imitation of Christ",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "peace"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0096",
+      "type": "quote",
+      "modes": [
+        "faith"
+      ],
+      "text": "Be not angry that you cannot make others as you wish them to be, since you cannot make yourself as you wish to be.",
+      "attribution": "Thomas a Kempis",
+      "source": "The Imitation of Christ",
+      "sourceRef": "The Imitation of Christ",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "humility"
+      ],
+      "triggers": [
+        "anger"
+      ],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0097",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "The heart has its reasons which reason knows nothing of.",
+      "attribution": "Blaise Pascal",
+      "source": "Pensees",
+      "sourceRef": "Pensees",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "the heart"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0098",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "All of humanity's problems stem from man's inability to sit quietly in a room alone.",
+      "attribution": "Blaise Pascal",
+      "source": "Pensees",
+      "sourceRef": "Pensees",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "stillness"
+      ],
+      "triggers": [
+        "boredom",
+        "home_alone"
+      ],
+      "moments": [
+        "urge",
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0099",
+      "type": "quote",
+      "modes": [
+        "faith"
+      ],
+      "text": "You have not lived today until you have done something for someone who can never repay you.",
+      "attribution": "John Bunyan",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "service"
+      ],
+      "triggers": [
+        "loneliness"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0100",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "By perseverance the snail reached the ark.",
+      "attribution": "Charles Spurgeon",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0101",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Anxiety does not empty tomorrow of its sorrows, but only empties today of its strength.",
+      "attribution": "Charles Spurgeon",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "anxiety"
+      ],
+      "triggers": [
+        "anxiety",
+        "stress"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0102",
+      "type": "quote",
+      "modes": [
+        "faith"
+      ],
+      "text": "A little faith will bring your soul to heaven; a great faith will bring heaven to your soul.",
+      "attribution": "Charles Spurgeon",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0103",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Purity of heart is to will one thing.",
+      "attribution": "Soren Kierkegaard",
+      "source": "Purity of Heart Is to Will One Thing",
+      "sourceRef": "Purity of Heart Is to Will One Thing",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "purity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0104",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Life can only be understood backwards; but it must be lived forwards.",
+      "attribution": "Soren Kierkegaard",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "perspective"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0105",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Great works are performed not by strength but by perseverance.",
+      "attribution": "Samuel Johnson",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0106",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Lost time is never found again.",
+      "attribution": "Benjamin Franklin",
+      "source": "Poor Richard's Almanack",
+      "sourceRef": "Poor Richard's Almanack",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "time"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0107",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "It is easier to prevent bad habits than to break them.",
+      "attribution": "Benjamin Franklin",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0108",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Well done is better than well said.",
+      "attribution": "Benjamin Franklin",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "action"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0109",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The only person you are destined to become is the person you decide to be.",
+      "attribution": "Ralph Waldo Emerson",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0110",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "That which we persist in doing becomes easier — not that the nature of the task has changed, but our ability to do has increased.",
+      "attribution": "Ralph Waldo Emerson",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0111",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Finish each day and be done with it. You have done what you could.",
+      "attribution": "Ralph Waldo Emerson",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "grace"
+      ],
+      "triggers": [
+        "tiredness"
+      ],
+      "moments": [
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0112",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Go confidently in the direction of your dreams. Live the life you have imagined.",
+      "attribution": "Henry David Thoreau",
+      "source": "Walden",
+      "sourceRef": "Walden",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "vision"
+      ],
+      "triggers": [],
+      "moments": [
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0113",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "As a single footstep will not make a path on the earth, so a single thought will not make a pathway in the mind.",
+      "attribution": "Henry David Thoreau",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0114",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "It is not enough to be busy. The question is: what are we busy about?",
+      "attribution": "Henry David Thoreau",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "purpose"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0115",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "I would unite with anybody to do right and with nobody to do wrong.",
+      "attribution": "Frederick Douglass",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "integrity"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0116",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "I am a slow walker, but I never walk back.",
+      "attribution": "Abraham Lincoln",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0117",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "The secret of getting ahead is getting started.",
+      "attribution": "Mark Twain",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "beginnings"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0118",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Nothing so needs reforming as other people's habits.",
+      "attribution": "Mark Twain",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "humility"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0119",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Success is to be measured not so much by the position that one has reached in life as by the obstacles which he has overcome.",
+      "attribution": "Booker T. Washington",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "endurance"
+      ],
+      "triggers": [],
+      "moments": [
+        "milestone",
+        "relapse",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0120",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Character, not circumstances, makes the man.",
+      "attribution": "Booker T. Washington",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "character"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0121",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "The greatest weapon against stress is our ability to choose one thought over another.",
+      "attribution": "William James",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "the mind"
+      ],
+      "triggers": [
+        "stress",
+        "anxiety"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0122",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Act as if what you do makes a difference. It does.",
+      "attribution": "William James",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "action"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0123",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Sow an action and you reap a habit; sow a habit and you reap a character; sow a character and you reap a destiny.",
+      "attribution": "Charles Reade",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit",
+        "character"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0124",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Our greatest glory consists not in never falling, but in rising every time we fall.",
+      "attribution": "Oliver Goldsmith",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "recovery"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0125",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Permanence, perseverance and persistence in spite of all obstacles — this alone distinguishes the strong soul.",
+      "attribution": "Thomas Carlyle",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0126",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Our main business is not to see what lies dimly at a distance, but to do what lies clearly at hand.",
+      "attribution": "Thomas Carlyle",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "the present"
+      ],
+      "triggers": [
+        "anxiety"
+      ],
+      "moments": [
+        "daily",
+        "urge",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0127",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The highest reward for a person's toil is not what they get for it, but what they become by it.",
+      "attribution": "John Ruskin",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "milestone",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0128",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Quality is never an accident. It is always the result of intelligent effort.",
+      "attribution": "John Ruskin",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "craft"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0129",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "It is never too late to be what you might have been.",
+      "attribution": "George Eliot",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "hope"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0130",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Have a heart that never hardens, a temper that never tires, a touch that never hurts.",
+      "attribution": "Charles Dickens",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "gentleness"
+      ],
+      "triggers": [
+        "anger"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0131",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Everyone thinks of changing the world, but no one thinks of changing himself.",
+      "attribution": "Leo Tolstoy",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "self-mastery"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0132",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The two most powerful warriors are patience and time.",
+      "attribution": "Leo Tolstoy",
+      "source": "War and Peace",
+      "sourceRef": "War and Peace",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "patience"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0133",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Above all, don't lie to yourself.",
+      "attribution": "Fyodor Dostoevsky",
+      "source": "The Brothers Karamazov",
+      "sourceRef": "The Brothers Karamazov",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "honesty"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0134",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The mystery of human existence lies not in just staying alive, but in finding something to live for.",
+      "attribution": "Fyodor Dostoevsky",
+      "source": "The Brothers Karamazov",
+      "sourceRef": "The Brothers Karamazov",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "purpose"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0135",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "The snake which cannot cast its skin has to die.",
+      "attribution": "Friedrich Nietzsche",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "change"
+      ],
+      "triggers": [],
+      "moments": [
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0136",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Whoever fights monsters should see to it that in the process he does not become a monster.",
+      "attribution": "Friedrich Nietzsche",
+      "source": "Beyond Good and Evil",
+      "sourceRef": "Beyond Good and Evil",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "character"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0137",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Knowing is not enough; we must apply. Willing is not enough; we must do.",
+      "attribution": "Johann Wolfgang von Goethe",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "action"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0138",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Treat people as if they were what they ought to be, and you help them to become what they are capable of being.",
+      "attribution": "Johann Wolfgang von Goethe",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "encouragement"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0139",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Compassion is the basis of morality.",
+      "attribution": "Arthur Schopenhauer",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "compassion"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0140",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Be not afraid of growing slowly; be afraid only of standing still.",
+      "attribution": "Chinese proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0141",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "A single bracelet does not jingle.",
+      "attribution": "Congolese proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "company"
+      ],
+      "triggers": [
+        "loneliness"
+      ],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0142",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "If you want to go fast, go alone. If you want to go far, go together.",
+      "attribution": "African proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "company"
+      ],
+      "triggers": [
+        "loneliness"
+      ],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0143",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "However long the night, the dawn will break.",
+      "attribution": "African proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "hope"
+      ],
+      "triggers": [
+        "late_night"
+      ],
+      "moments": [
+        "urge",
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0144",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The obstacle is the path.",
+      "attribution": "Zen proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "endurance"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0145",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Before enlightenment, chop wood, carry water. After enlightenment, chop wood, carry water.",
+      "attribution": "Zen proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "ordinariness"
+      ],
+      "triggers": [],
+      "moments": [
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0146",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Fortune favours the bold.",
+      "attribution": "Latin proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "courage"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0147",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Little by little, a little becomes a lot.",
+      "attribution": "Tanzanian proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0148",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "He who has health has hope, and he who has hope has everything.",
+      "attribution": "Arabian proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "hope"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0149",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "A wise man makes his own decisions; an ignorant man follows public opinion.",
+      "attribution": "Chinese proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "independence"
+      ],
+      "triggers": [
+        "social_media"
+      ],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0150",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Dig the well before you are thirsty.",
+      "attribution": "Chinese proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "preparation"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0151",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Vision without action is a daydream. Action without vision is a nightmare.",
+      "attribution": "Japanese proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "action"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
         "library"
       ],
       "length": "short",
@@ -3265,400 +5971,6 @@
       "verified": true
     },
     {
-      "id": "reframe_0021",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "You are not starting from zero. You are starting from experience.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "recovery"
-      ],
-      "triggers": [],
-      "moments": [
-        "relapse",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0022",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "The goal was never a perfect record. It was becoming someone who gets up.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "relapse",
-        "milestone",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0023",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Discipline is not punishment. It is what self-respect looks like from the outside.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0024",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "You are not giving something up. You are refusing to keep paying for it.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "reframe"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0025",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Every time you do not, you are not resisting who you are. You are becoming who you are.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "milestone",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0026",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "The man you want to be is not waiting at the end. He is made in moments like this one.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "urge",
-        "daily",
-        "library"
-      ],
-      "length": "medium",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0027",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Willpower runs out. Distance does not. Put distance between you and it.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "strategy"
-      ],
-      "triggers": [],
-      "moments": [
-        "urge",
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0028",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "You do not have to want to. You only have to do it anyway.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "action"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0029",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Tiredness lies more convincingly at midnight than at noon. Judge nothing now.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "late night"
-      ],
-      "triggers": [
-        "late_night",
-        "tiredness"
-      ],
-      "moments": [
-        "urge",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0030",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Anger wants somewhere to go. Give it somewhere that costs you nothing.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "anger"
-      ],
-      "triggers": [
-        "anger"
-      ],
-      "moments": [
-        "urge",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0031",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "The feed is engineered. Losing to it is not a character flaw, it is a design outcome. Change the design.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "environment"
-      ],
-      "triggers": [
-        "social_media"
-      ],
-      "moments": [
-        "urge",
-        "library",
-        "library"
-      ],
-      "length": "medium",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0032",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Your future self is not a stranger. He is the one who has to live in what you build tonight.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "future"
-      ],
-      "triggers": [],
-      "moments": [
-        "urge",
-        "daily",
-        "library"
-      ],
-      "length": "medium",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0033",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Rest is not the same as escape. One of them leaves you emptier.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "rest"
-      ],
-      "triggers": [
-        "tiredness"
-      ],
-      "moments": [
-        "daily",
-        "library",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0034",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "If it were really about desire, satisfying it would end it. It never ends it.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "insight"
-      ],
-      "triggers": [],
-      "moments": [
-        "urge",
-        "library",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "reframe_0035",
-      "type": "reframe",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Say the honest sentence: I want to feel differently than I do. Then choose a better way to feel it.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "honesty"
-      ],
-      "triggers": [
-        "stress"
-      ],
-      "moments": [
-        "urge",
-        "library"
-      ],
-      "length": "medium",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
       "id": "urge_line_0001",
       "type": "urge_line",
       "modes": [
@@ -4172,264 +6484,6 @@
       "verified": true
     },
     {
-      "id": "urge_line_0021",
-      "type": "urge_line",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Whatever you were about to open, close it first. Decide after.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "urge"
-      ],
-      "triggers": [
-        "social_media"
-      ],
-      "moments": [
-        "urge"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "urge_line_0022",
-      "type": "urge_line",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Count backwards from a hundred in sevens. It is annoying. That is why it works.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "urge"
-      ],
-      "triggers": [
-        "anxiety"
-      ],
-      "moments": [
-        "urge"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "urge_line_0023",
-      "type": "urge_line",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Eat something. Properly. You may be running on nothing.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "urge"
-      ],
-      "triggers": [
-        "tiredness"
-      ],
-      "moments": [
-        "urge"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "urge_line_0024",
-      "type": "urge_line",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "You are allowed to just go to bed. That is a complete answer.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "urge"
-      ],
-      "triggers": [
-        "late_night",
-        "tiredness"
-      ],
-      "moments": [
-        "urge"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "urge_line_0025",
-      "type": "urge_line",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "If you are alone, do not stay alone. Ring someone.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "urge"
-      ],
-      "triggers": [
-        "loneliness",
-        "home_alone"
-      ],
-      "moments": [
-        "urge"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "urge_line_0026",
-      "type": "urge_line",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Hold something cold for thirty seconds and count them.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "urge"
-      ],
-      "triggers": [
-        "anxiety",
-        "anger"
-      ],
-      "moments": [
-        "urge"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "urge_line_0027",
-      "type": "urge_line",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "The wanting is loud right now. Loud is not the same as strong.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "urge"
-      ],
-      "triggers": [],
-      "moments": [
-        "urge"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "urge_line_0028",
-      "type": "urge_line",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "One decision. Just this one. Not the rest of your life.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "urge"
-      ],
-      "triggers": [],
-      "moments": [
-        "urge"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "urge_line_0029",
-      "type": "urge_line",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Move your body somewhere your phone is not.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "urge"
-      ],
-      "triggers": [
-        "social_media",
-        "boredom"
-      ],
-      "moments": [
-        "urge"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "urge_line_0030",
-      "type": "urge_line",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "You will be so glad, in twenty minutes, that you waited twenty minutes.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "urge"
-      ],
-      "triggers": [],
-      "moments": [
-        "urge"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
       "id": "affirmation_0001",
       "type": "affirmation",
       "modes": [
@@ -4712,331 +6766,6 @@
         "discipline"
       ],
       "text": "My body is not a vending machine for relief.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0013",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "I would rather be free than comfortable.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0014",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "I can be tired and still be honest.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0015",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "The quiet in me is worth protecting.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0016",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "I am not hiding anything today.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0017",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "I trust myself a little more than I did last week.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0018",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "I do not have to win forever. I have to win now.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0019",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "I am someone who tells his partner the truth.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0020",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "I have survived every urge I have ever had.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0021",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "I am the kind of man who stops.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0022",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "My future self is counting on this hour.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0023",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Peace is worth more than the ten minutes.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0024",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "I am not fighting alone.",
-      "attribution": "Bastion",
-      "source": null,
-      "sourceRef": null,
-      "translation": null,
-      "title": null,
-      "themes": [
-        "identity"
-      ],
-      "triggers": [],
-      "moments": [
-        "daily",
-        "library"
-      ],
-      "length": "short",
-      "publicDomain": true,
-      "verified": true
-    },
-    {
-      "id": "affirmation_0025",
-      "type": "affirmation",
-      "modes": [
-        "faith",
-        "discipline"
-      ],
-      "text": "Today I get to choose again.",
       "attribution": "Bastion",
       "source": null,
       "sourceRef": null,
