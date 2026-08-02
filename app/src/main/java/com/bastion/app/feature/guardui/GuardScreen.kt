@@ -497,6 +497,8 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                                 rule.label,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = BastionColors.TextSecondary,
+                                maxLines = 2,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                             )
                             if (detailRuleId == rule.id) {
                                 Text(
@@ -1158,7 +1160,18 @@ private fun GuardedAppRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(app.label, style = MaterialTheme.typography.titleSmall, color = BastionColors.TextPrimary)
+            Text(
+                app.label,
+                style = MaterialTheme.typography.titleSmall,
+                color = BastionColors.TextPrimary,
+                modifier = Modifier.weight(1f),
+                // App labels are whatever their developer chose. "Samsung
+                // Internet Browser Beta" at a 2x font scale is either three
+                // lines or a clipped one, and unbounded it pushed Remove off
+                // the right edge entirely.
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
             LinkButton("Remove", BastionColors.TextMuted, onRemove)
         }
         Spacer(Modifier.height(10.dp))

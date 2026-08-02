@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -128,7 +129,10 @@ fun PrimaryButton(
     Button(
         onClick = onClick,
         enabled = enabled,
-        modifier = modifier.height(54.dp),
+        // heightIn: 54dp is the minimum touch target, not a cap. At a 2x font
+        // scale a two-word label needs more room than that, and a fixed height
+        // clips it rather than growing to fit.
+        modifier = modifier.heightIn(min = 54.dp),
         shape = RoundedCornerShape(14.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = BastionColors.Bronze,
@@ -136,7 +140,9 @@ fun PrimaryButton(
             disabledContainerColor = BastionColors.SurfaceHigh,
             disabledContentColor = BastionColors.TextMuted,
         ),
-    ) { Text(text, style = MaterialTheme.typography.labelLarge) }
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
+    }
 }
 
 @Composable
@@ -148,11 +154,13 @@ fun QuietButton(
 ) {
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.height(54.dp),
+        modifier = modifier.heightIn(min = 54.dp),
         shape = RoundedCornerShape(14.dp),
         border = BorderStroke(1.dp, BastionColors.Outline),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = accent),
-    ) { Text(text, style = MaterialTheme.typography.labelLarge) }
+    ) {
+        Text(text, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
+    }
 }
 
 /**

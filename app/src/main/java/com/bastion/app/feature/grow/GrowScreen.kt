@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -414,7 +415,11 @@ private fun LessonSheet(lesson: Lesson, onDone: () -> Unit) {
         Modifier
             .padding(horizontal = 22.dp)
             .padding(bottom = 34.dp)
-            .height(600.dp)
+            // heightIn, not height. At a system font scale of 1.5-2x a fixed
+            // box holds fewer lines than it did at 1x, so the content clips
+            // mid-word — which reads as broken rendering rather than as a
+            // too-small box.
+            .heightIn(max = 600.dp)
     ) {
         Text(lesson.title, style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
         Spacer(Modifier.height(14.dp))
@@ -463,7 +468,7 @@ private fun HabitPickerSheet(graph: BastionGraph, faithMode: Boolean, onPick: (H
         Modifier
             .padding(horizontal = 22.dp)
             .padding(bottom = 34.dp)
-            .height(520.dp)
+            .heightIn(min = 320.dp, max = 560.dp)
     ) {
         Text("Add a habit", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
         Spacer(Modifier.height(14.dp))

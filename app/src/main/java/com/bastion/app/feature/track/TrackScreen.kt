@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -532,6 +533,8 @@ private fun BenefitRow(card: BenefitCard) {
                 style = MaterialTheme.typography.titleSmall,
                 color = BastionColors.TextPrimary,
                 modifier = Modifier.weight(1f),
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
             )
             ConfidenceDot(card.confidence)
         }
@@ -679,7 +682,7 @@ private fun RecoveryFlow(
                     placeholder = { Text("What would have helped, ten minutes earlier?") },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(110.dp),
+                        .heightIn(min = 110.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = sheetFieldColors(),
                 )

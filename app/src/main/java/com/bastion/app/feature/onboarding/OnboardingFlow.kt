@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -393,7 +394,9 @@ private fun WhyStep(
             label = { Text("I'm doing this because…") },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(190.dp),
+                // The reason someone is doing this deserves room to be long,
+                // and at a large font scale 190dp was not even room to be short.
+                .heightIn(min = 150.dp),
             shape = RoundedCornerShape(12.dp),
             colors = bastionFieldColors(),
         )

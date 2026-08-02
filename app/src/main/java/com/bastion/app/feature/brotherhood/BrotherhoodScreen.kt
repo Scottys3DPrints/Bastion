@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -216,7 +217,9 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit, onBack: () -> Unit) {
                 label = { Text("Anything you want to say") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(110.dp),
+                    // Grows with the text and with the font scale; a fixed
+                    // height clipped both.
+                    .heightIn(min = 110.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = fieldColors(),
             )

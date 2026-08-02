@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -229,10 +230,22 @@ private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
                                 Icon(destination.icon, contentDescription = destination.label)
                             },
                             label = {
+                                // The label's size is capped rather than left
+                                // to scale freely. A tab slot is a quarter of
+                                // the screen whatever the font scale, so at 2x
+                                // "Progress" rendered as "Progres" — a silent
+                                // truncation that reads as a typo rather than
+                                // as text that did not fit. Smaller scales are
+                                // still honoured; only the top end is held.
+                                val scale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+                                val capped = 11f * (minOf(scale, MAX_TAB_FONT_SCALE) / scale)
                                 Text(
                                     destination.label,
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = capped.sp,
+                                    ),
                                     maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                                 )
                             },
                             colors = NavigationBarItemDefaults.colors(
@@ -307,6 +320,9 @@ private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
         }
     }
 }
+
+/** Beyond this the tab labels stop growing; see the navigation bar's label slot. */
+private const val MAX_TAB_FONT_SCALE = 1.3f
 
 const val ROUTE_MENTOR = "mentor"
 const val ROUTE_PARTNER = "partner"
