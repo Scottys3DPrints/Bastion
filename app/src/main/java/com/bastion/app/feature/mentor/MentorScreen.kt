@@ -57,9 +57,11 @@ import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.LinkButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.bastion.app.core.design.BastionTopBar
 import com.bastion.app.core.design.DawnBackground
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.SectionLabel
+import com.bastion.app.core.design.Space
 import com.bastion.app.data.BastionGraph
 import com.bastion.app.data.content.MentorIntent
 import com.bastion.app.data.db.MentorMessageEntity
@@ -136,51 +138,28 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
                 .windowInsetsPadding(WindowInsets.systemBars)
                 .imePadding()
         ) {
-            // The same top bar as every other screen, even though the body
-            // below is a chat rather than a scrolling page. The header is what
-            // makes a screen feel like part of the app; the body is free to be
-            // whatever the content needs.
-            androidx.compose.material3.TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            "Mentor",
-                            style = MaterialTheme.typography.displaySmall,
-                            color = BastionColors.TextPrimary,
-                        )
-                        Text(
-                            "Offline · nothing leaves this phone",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = BastionColors.SageBright,
-                        )
-                    }
-                },
-                navigationIcon = {
-                    androidx.compose.material3.IconButton(onClick = onBack) {
-                        androidx.compose.material3.Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = BastionColors.TextSecondary,
-                        )
-                    }
-                },
-                actions = {
+            // The shared header, not a hand-rolled copy of it. The body below is
+            // a chat rather than a scrolling page — which is exactly why this
+            // screen takes the bar on its own instead of BastionScaffold, whose
+            // scrolling column cannot hold a list that fills the leftover space.
+            BastionTopBar(
+                title = "Mentor",
+                subtitle = "Offline · nothing leaves this phone",
+                subtitleColor = BastionColors.SageBright,
+                onBack = onBack,
+                action = {
                     if (history.isNotEmpty()) {
                         LinkButton("Start fresh", BastionColors.TextMuted) { confirmClear = true }
                     }
                 },
-                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
-                    containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                    scrolledContainerColor = androidx.compose.ui.graphics.Color.Transparent,
-                ),
             )
 
             LazyColumn(
                 state = listState,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
+                    .padding(horizontal = Space.gutter),
+                verticalArrangement = Arrangement.spacedBy(Space.md),
             ) {
                 items(history, key = { it.id }) { message -> MessageBubble(message) }
                 if (typing) item { TypingBubble() }
@@ -193,8 +172,8 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
                 Row(
                     Modifier
                         .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 20.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .padding(horizontal = Space.gutter, vertical = Space.md),
+                    horizontalArrangement = Arrangement.spacedBy(Space.sm),
                 ) {
                     prompts.forEach { intent ->
                         Box(
@@ -203,7 +182,7 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
                                 .background(BastionColors.Surface)
                                 .border(1.dp, BastionColors.Outline, RoundedCornerShape(18.dp))
                                 .clickable(role = Role.Button) { send(intent.label) }
-                                .padding(horizontal = 14.dp, vertical = 9.dp)
+                                .padding(horizontal = Space.lg, vertical = Space.md)
                         ) {
                             Text(
                                 intent.label,
@@ -218,7 +197,7 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
             Row(
                 Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                    .padding(horizontal = Space.gutter, vertical = Space.md),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 OutlinedTextField(
@@ -226,7 +205,7 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
                     onValueChange = { draft = it },
                     placeholder = { Text("What's going on?") },
                     modifier = Modifier.weight(1f),
-                    shape = RoundedCornerShape(14.dp),
+                    shape = RoundedCornerShape(Space.lg),
                     maxLines = 4,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = BastionColors.Bronze,
@@ -236,7 +215,7 @@ fun MentorScreen(faithMode: Boolean, onBack: () -> Unit) {
                         cursorColor = BastionColors.Bronze,
                     ),
                 )
-                Spacer(Modifier.padding(4.dp))
+                Spacer(Modifier.padding(Space.xs))
                 PrimaryButton("Send", { send(draft) }, enabled = draft.isNotBlank())
             }
         }
@@ -287,9 +266,9 @@ private fun TypingBubble() {
     )
     Box(
         Modifier
-            .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = 4.dp, bottomEnd = 18.dp))
+            .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp, bottomStart = Space.xs, bottomEnd = 18.dp))
             .background(BastionColors.Surface)
-            .padding(horizontal = 18.dp, vertical = 14.dp)
+            .padding(horizontal = Space.lg, vertical = Space.lg)
     ) {
         Text(
             "• • •",
@@ -334,9 +313,9 @@ private fun CrisisActions() {
                 )
             }
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Space.sm))
         CrisisButton("Call 988 · US & Canada") { dial("988") }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Space.sm))
         CrisisButton("Call 116 123 · UK & Ireland") { dial("116123") }
     }
 }
@@ -348,7 +327,7 @@ private fun CrisisButton(label: String, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(Space.md),
         border = androidx.compose.foundation.BorderStroke(1.dp, BastionColors.Amber),
         colors = androidx.compose.material3.ButtonDefaults.outlinedButtonColors(
             contentColor = BastionColors.BronzeBright,
@@ -358,10 +337,26 @@ private fun CrisisButton(label: String, onClick: () -> Unit) {
     }
 }
 
+/**
+ * Who said what, readable at a glance.
+ *
+ * Both sides used to be `fillMaxWidth(0.86f)` on a near-identical surface, so
+ * two bubbles differed by fourteen percent of the screen and one shade of navy —
+ * which is to say they did not differ. Scrolling back through a conversation you
+ * could not tell your own words from the Mentor's without reading them.
+ *
+ * Three things carry the distinction now, so no single one has to do it alone:
+ * the man's words are narrower and pushed right, sit on the lighter raised
+ * surface with a bronze edge — his colour everywhere else in the app — and read
+ * in full-strength text. The Mentor's are wider, flush left, flat on the base
+ * surface, and quieter. A crisis reply overrides all of it in amber, because
+ * that one must never be mistaken for conversation.
+ */
 @Composable
 private fun MessageBubble(message: MentorMessageEntity) {
     val fromUser = message.fromUser
     val isCrisis = message.intentId == "crisis"
+    val corner = 18.dp
 
     Row(
         Modifier.fillMaxWidth(),
@@ -369,13 +364,16 @@ private fun MessageBubble(message: MentorMessageEntity) {
     ) {
         Box(
             Modifier
-                .fillMaxWidth(0.86f)
+                // The crisis card holds three full-width buttons, so it is the
+                // one bubble allowed the whole column.
+                .fillMaxWidth(if (isCrisis) 1f else if (fromUser) 0.78f else 0.88f)
                 .clip(
                     RoundedCornerShape(
-                        topStart = 18.dp,
-                        topEnd = 18.dp,
-                        bottomStart = if (fromUser) 18.dp else 4.dp,
-                        bottomEnd = if (fromUser) 4.dp else 18.dp,
+                        topStart = corner,
+                        topEnd = corner,
+                        // The squared corner points back at its speaker.
+                        bottomStart = if (fromUser) corner else Space.xs,
+                        bottomEnd = if (fromUser) Space.xs else corner,
                     )
                 )
                 .background(
@@ -386,18 +384,34 @@ private fun MessageBubble(message: MentorMessageEntity) {
                     }
                 )
                 .then(
-                    if (isCrisis) Modifier.border(
-                        1.dp,
-                        BastionColors.Amber,
-                        RoundedCornerShape(18.dp),
-                    ) else Modifier
+                    when {
+                        isCrisis -> Modifier.border(
+                            1.dp,
+                            BastionColors.Amber,
+                            RoundedCornerShape(corner),
+                        )
+                        // Bronze is the man's colour throughout the app; on a
+                        // dark surface an edge separates far better than another
+                        // shade of fill.
+                        fromUser -> Modifier.border(
+                            1.dp,
+                            BastionColors.BronzeDeep,
+                            RoundedCornerShape(
+                                topStart = corner,
+                                topEnd = corner,
+                                bottomStart = corner,
+                                bottomEnd = Space.xs,
+                            ),
+                        )
+                        else -> Modifier
+                    }
                 )
-                .padding(16.dp)
+                .padding(Space.lg)
         ) {
             Column {
                 if (isCrisis) {
                     SectionLabel("Please read this", color = BastionColors.Amber)
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Space.sm))
                 }
                 Text(
                     message.text,
@@ -405,7 +419,7 @@ private fun MessageBubble(message: MentorMessageEntity) {
                     color = if (fromUser) BastionColors.TextPrimary else BastionColors.TextSecondary,
                 )
                 if (isCrisis) {
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(Space.lg))
                     CrisisActions()
                 }
             }

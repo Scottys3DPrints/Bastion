@@ -155,6 +155,12 @@ class JourneyRepository(
         journeyDao.upsertDay(DayLogEntity(epochDay = epochDay, status = DayStatus.CLEAN))
     }
 
+    /**
+     * [epochDay] exists so a slip can be recorded for the night it happened
+     * rather than the morning it gets admitted. It used to be hardcoded to
+     * today, which meant the calendar had to write slips down a second, blunter
+     * path — and the two paths disagreed about what a slip even was.
+     */
     suspend fun logUrge(
         resisted: Boolean,
         intensity: Int,
@@ -163,9 +169,11 @@ class JourneyRepository(
         contextApp: String?,
         place: String?,
         note: String?,
+        epochDay: Long = LocalDate.now().toEpochDay(),
     ) {
         val now = System.currentTimeMillis()
-        val today = LocalDate.now().toEpochDay()
+        // Never in the future, whatever the caller passes.
+        val today = epochDay.coerceAtMost(LocalDate.now().toEpochDay())
         val urge = UrgeLogEntity(
             id = UUID.randomUUID().toString(),
             timestamp = now,
@@ -181,7 +189,7 @@ class JourneyRepository(
         // The urge and the slip it became are a single fact; they are written
         // together or not at all.
         val day = if (resisted) null
-        else DayLogEntity(epochDay = today, status = DayStatus.SLIP, note = trigger)
+        else DayLogEntity(epochDay = today, status = DayStatus.SLIP, note = note ?: trigger)
 
         journeyDao.upsertUrgeAndDay(urge, day)
     }

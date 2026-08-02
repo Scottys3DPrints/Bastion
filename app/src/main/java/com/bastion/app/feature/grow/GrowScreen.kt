@@ -24,6 +24,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -57,6 +58,9 @@ import com.bastion.app.core.design.BastionScaffold
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.ProportionBar
 import com.bastion.app.core.design.QuietButton
+import com.bastion.app.core.design.BastionRow
+import com.bastion.app.core.design.EmptyState
+import com.bastion.app.core.design.Section
 import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.data.BastionGraph
 import com.bastion.app.data.content.Challenge
@@ -68,12 +72,26 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
+/**
+ * Three doors, in words a stranger already knows.
+ *
+ * There were five — Regimen, Challenges, Becoming, Library, Armory — crammed
+ * into one segmented strip, which is five screens hidden behind a control too
+ * narrow to read. Two of the labels were the app's private vocabulary: nobody
+ * arrives knowing that "Armory" holds quotes or that "Becoming" is a chart of
+ * what he has done.
+ *
+ * So: "Regimen" is Habits, because that is the word. Library absorbed the
+ * Armory — lessons and lines are both things to read, and splitting them across
+ * two tabs meant the answer to "where is that verse I kept" was a coin toss.
+ * Becoming left entirely for Progress, where a four-week record of what he
+ * actually did belongs, and which the app already defines as the place for how
+ * it is going over time.
+ */
 private enum class GrowTab(val label: String) {
-    REGIMEN("Regimen"),
+    HABITS("Habits"),
     CHALLENGES("Challenges"),
-    BECOMING("Becoming"),
     LIBRARY("Library"),
-    ARMORY("Armory"),
 }
 
 /**
@@ -90,7 +108,7 @@ fun GrowScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
     val graph = remember { BastionGraph.from(context) }
     val scope = rememberCoroutineScope()
 
-    var tab by remember { mutableStateOf(GrowTab.REGIMEN) }
+    var tab by remember { mutableStateOf(GrowTab.HABITS) }
     var showHabitPicker by remember { mutableStateOf(false) }
     var openLesson by remember { mutableStateOf<Lesson?>(null) }
 
@@ -116,11 +134,9 @@ fun GrowScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
         )
 
         when (tab) {
-            GrowTab.REGIMEN -> RegimenTab(graph, onAdd = { showHabitPicker = true })
+            GrowTab.HABITS -> RegimenTab(graph, onAdd = { showHabitPicker = true })
             GrowTab.CHALLENGES -> ChallengesTab(graph, faithMode)
-            GrowTab.BECOMING -> BecomingTab(graph)
             GrowTab.LIBRARY -> LibraryTab(graph, faithMode) { openLesson = it }
-            GrowTab.ARMORY -> ArmoryTab(graph, faithMode)
         }
     }
 
@@ -156,50 +172,68 @@ private fun RegimenTab(graph: BastionGraph, onAdd: () -> Unit) {
         style = MaterialTheme.typography.bodySmall,
         color = BastionColors.TextMuted,
     )
-    Spacer(Modifier.height(14.dp))
 
-    habits.forEach { habit ->
-        val done = today.any { it.habitId == habit.id }
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(vertical = 5.dp)
-                .clip(RoundedCornerShape(14.dp))
-                .background(if (done) BastionColors.SageDeep.copy(alpha = 0.25f) else BastionColors.Surface)
-                .border(
-                    1.dp,
-                    if (done) BastionColors.Sage else BastionColors.OutlineSoft,
-                    RoundedCornerShape(14.dp),
-                )
-                .clickable(role = Role.Button) { scope.launch2 { graph.growth.toggleHabit(habit.id, !done) } }
-                .padding(start = 16.dp, top = 16.dp, bottom = 16.dp, end = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(habit.emoji, style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.size(14.dp))
-            Column(Modifier.weight(1f)) {
-                Text(habit.name, style = MaterialTheme.typography.titleSmall, color = BastionColors.TextPrimary)
-                Text(
-                    habit.why.ifBlank { habit.domain },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
-            }
-            Box(
-                Modifier
-                    .size(26.dp)
-                    .clip(CircleShape)
-                    .background(if (done) BastionColors.Sage else BastionColors.SurfaceHigh),
-                contentAlignment = Alignment.Center,
-            ) {
-                if (done) Text("✓", color = BastionColors.MidnightDeep, style = MaterialTheme.typography.labelMedium)
-            }
-            LinkButton("Drop", BastionColors.TextMuted) { confirmDrop = habit }
-        }
+    if (habits.isEmpty()) {
+        EmptyState(
+            "No habits yet. The point of this screen is what replaces the old one.",
+            actionLabel = "Add your first habit",
+            onAction = onAdd,
+        )
     }
 
-    Spacer(Modifier.height(14.dp))
-    QuietButton("Add a habit", onAdd, Modifier.fillMaxWidth())
+    // One child of the scaffold, not one per habit.
+    //
+    // The scaffold spaces its own children by Space.section, which is right
+    // between a chart and a calendar and absurd between two rows of a list —
+    // emitted loose, three habits sat 24dp apart and read as three unrelated
+    // things. A list is one block.
+    Column(Modifier.fillMaxWidth()) {
+    habits.forEach { habit ->
+        val done = today.any { it.habitId == habit.id }
+        // The shared row, not a bordered box each. Ten habits meant ten stacked
+        // surfaces, which is the wall of boxes the whole app was cut back from —
+        // and it made a habit list look heavier than the habits.
+        BastionRow(
+            title = habit.name,
+            subtitle = habit.why.ifBlank { habit.domain },
+            leading = { Text(habit.emoji, style = MaterialTheme.typography.titleLarge) },
+            onClick = { scope.launch2 { graph.growth.toggleHabit(habit.id, !done) } },
+            trailing = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .background(if (done) BastionColors.Sage else BastionColors.SurfaceHigh),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (done) Text(
+                            "✓",
+                            color = BastionColors.MidnightDeep,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                    // Its own control with its own hit target, outside the row's
+                    // tap area. "Drop" used to sit inside the surface that
+                    // toggles the habit done, so the destructive action and the
+                    // daily one were a few millimetres apart on the same box.
+                    IconButton(onClick = { confirmDrop = habit }) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Drop ${habit.name}",
+                            tint = BastionColors.TextMuted,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+            },
+        )
+    }
+    }
+
+    if (habits.isNotEmpty()) {
+        QuietButton("Add a habit", onAdd, Modifier.fillMaxWidth())
+    }
 
     // Deactivated rather than deleted, so the four weeks of record behind the
     // Becoming profile survive a habit leaving the regimen.
@@ -224,17 +258,67 @@ private fun ChallengesTab(graph: BastionGraph, faithMode: Boolean) {
         catalogue = graph.growth.challengeCatalogue().filter { it.visibleIn(faithMode) }
     }
 
-    catalogue.forEach { challenge ->
-        val state = progress.firstOrNull { it.challengeId == challenge.id }
-        ChallengeCard(
-            challenge = challenge,
-            progress = state,
-            onStart = { scope.launch2 { graph.growth.startChallenge(challenge.id) } },
-            onCompleteToday = { day ->
-                scope.launch2 { graph.growth.completeChallengeDay(challenge.id, day) }
-            },
-        )
-        Spacer(Modifier.height(12.dp))
+    // Split rather than stacked. Every challenge used to render as a full card
+    // with its name, tagline, description and a Start button, so a catalogue of
+    // a dozen was a dozen identical boxes to scroll past — and the one he was
+    // actually doing looked exactly like the eleven he was not.
+    val started = catalogue.filter { c -> progress.any { it.challengeId == c.id && it.active } }
+    val finished = catalogue.filter { c ->
+        progress.any { it.challengeId == c.id && !it.active && it.completedAt != null }
+    }
+    val available = catalogue - started.toSet() - finished.toSet()
+
+    if (started.isNotEmpty()) {
+        Section("Underway") {
+            started.forEach { challenge ->
+                ChallengeCard(
+                    challenge = challenge,
+                    progress = progress.firstOrNull { it.challengeId == challenge.id },
+                    onStart = { scope.launch2 { graph.growth.startChallenge(challenge.id) } },
+                    onCompleteToday = { day ->
+                        scope.launch2 { graph.growth.completeChallengeDay(challenge.id, day) }
+                    },
+                )
+                Spacer(Modifier.height(Space.md))
+            }
+        }
+    }
+
+    Section(if (started.isEmpty()) "Pick one" else "More") {
+        if (available.isEmpty()) {
+            EmptyState("You've started everything here. That is its own kind of answer.")
+        }
+        available.forEach { challenge ->
+            BastionRow(
+                title = challenge.name,
+                subtitle = challenge.tagline,
+                onClick = { scope.launch2 { graph.growth.startChallenge(challenge.id) } },
+                trailing = {
+                    Text(
+                        "${challenge.days} days",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BastionColors.TextMuted,
+                    )
+                },
+            )
+        }
+    }
+
+    if (finished.isNotEmpty()) {
+        Section("Finished") {
+            finished.forEach { challenge ->
+                BastionRow(
+                    title = challenge.name,
+                    trailing = {
+                        Text(
+                            "✓",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = BastionColors.SageBright,
+                        )
+                    },
+                )
+            }
+        }
     }
 }
 
@@ -262,24 +346,24 @@ private fun ChallengeCard(
                 color = BastionColors.TextMuted,
             )
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Space.sm))
         Text(challenge.tagline, style = MaterialTheme.typography.bodySmall, color = BastionColors.BronzeBright)
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(Space.md))
         Text(challenge.description, style = MaterialTheme.typography.bodyMedium, color = BastionColors.TextSecondary)
 
         if (active) {
             val task = challenge.taskFor(currentDay)
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(Space.lg))
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(Space.md))
                     .background(BastionColors.SurfaceHigh)
-                    .padding(14.dp)
+                    .padding(Space.lg)
             ) {
                 Column {
                     SectionLabel("Day $currentDay of ${challenge.days} · $doneDays done", color = BastionColors.BronzeBright)
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Space.sm))
                     Text(
                         task?.task ?: "Keep going.",
                         style = MaterialTheme.typography.bodyLarge,
@@ -287,12 +371,12 @@ private fun ChallengeCard(
                     )
                     val detail = task?.detail
                     if (!detail.isNullOrBlank()) {
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(Space.sm))
                         Text(detail, style = MaterialTheme.typography.bodySmall, color = BastionColors.TextSecondary)
                     }
                 }
             }
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Space.md))
             PrimaryButton(
                 if (todayDone) "Day $currentDay done ✓" else "Mark day $currentDay done",
                 { onCompleteToday(currentDay) },
@@ -300,115 +384,111 @@ private fun ChallengeCard(
                 enabled = !todayDone,
             )
         } else if (progress?.completedAt != null) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Space.md))
             Text("Completed ✓", style = MaterialTheme.typography.labelLarge, color = BastionColors.SageBright)
         } else {
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(Space.lg))
             QuietButton("Start", onStart, Modifier.fillMaxWidth(), BastionColors.BronzeBright)
         }
     }
 }
 
-/** The "Man You're Becoming" profile — driven by what was done, not intended. */
-@Composable
-private fun BecomingTab(graph: BastionGraph) {
-    val habits by graph.growth.allHabits.collectAsStateWithLifecycle(initialValue = emptyList())
-    val badges by graph.growth.badges.collectAsStateWithLifecycle(initialValue = emptyList())
-    val since = remember { LocalDate.now().toEpochDay() - 28 }
-    val completionsFlow = remember(graph, since) { graph.growth.completionsSince(since) }
-    val completions by completionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-
-    val scores = remember(completions, habits) { graph.growth.domainScores(completions, habits) }
-
-    BastionCard {
-        SectionLabel("The man you're becoming")
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "Last four weeks. Moves slowly on purpose.",
-            style = MaterialTheme.typography.bodySmall,
-            color = BastionColors.TextMuted,
-        )
-        Spacer(Modifier.height(18.dp))
-
-        if (scores.isEmpty()) {
-            Text(
-                "Add habits and this fills in.",
-                style = MaterialTheme.typography.bodySmall,
-                color = BastionColors.TextMuted,
-            )
-        }
-
-        scores.entries.sortedByDescending { it.value }.forEach { (domain, score) ->
-            Column(Modifier.padding(vertical = 8.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text(domain, style = MaterialTheme.typography.titleSmall, color = BastionColors.TextPrimary)
-                    Text(
-                        "${(score * 100).toInt()}%",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = BastionColors.BronzeBright,
-                    )
-                }
-                Spacer(Modifier.height(6.dp))
-                ProportionBar(fraction = score)
-            }
-        }
-    }
-
-    Spacer(Modifier.height(12.dp))
-    BastionCard {
-        SectionLabel("Badges · ${badges.size}")
-        Spacer(Modifier.height(12.dp))
-        if (badges.isEmpty()) {
-            Text(
-                "Finish a challenge or hit a milestone and they land here.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = BastionColors.TextMuted,
-            )
-        }
-        badges.forEach { badge ->
-            Text("◇ ${badge.name}", style = MaterialTheme.typography.bodyLarge, color = BastionColors.BronzeBright)
-            Spacer(Modifier.height(6.dp))
-        }
-    }
-}
-
+/**
+ * Everything there is to read, behind one door.
+ *
+ * Lessons lived in "Library" and the 390 lines lived in "Armory", which meant
+ * the answer to "where is that verse I kept" depended on remembering which of
+ * two words the app had filed it under. They are both reading; the filter says
+ * what kind.
+ */
 @Composable
 private fun LibraryTab(graph: BastionGraph, faithMode: Boolean, onOpen: (Lesson) -> Unit) {
+    val scope = rememberCoroutineScope()
+    val settings by graph.settings.settings.collectAsStateWithLifecycle(
+        initialValue = com.bastion.app.data.prefs.Settings()
+    )
     var lessons by remember { mutableStateOf<List<Lesson>>(emptyList()) }
+    var lines by remember {
+        mutableStateOf<List<com.bastion.app.data.content.MotivationItem>>(emptyList())
+    }
+    var filter by remember { mutableStateOf(LIBRARY_ALL) }
+    var keptOnly by remember { mutableStateOf(false) }
 
     LaunchedEffect(faithMode) {
         lessons = graph.content.education().lessons.filter { it.visibleIn(faithMode) }
+        lines = graph.content.motivationFor(faithMode)
     }
 
-    lessons.groupBy { it.category }.forEach { (category, items) ->
-        SectionLabel(category)
-        Spacer(Modifier.height(10.dp))
-        items.forEach { lesson ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 5.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(BastionColors.Surface)
-                    .clickable(role = Role.Button) { onOpen(lesson) }
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    lesson.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = BastionColors.TextPrimary,
-                    modifier = Modifier.weight(1f),
-                )
-                Text(
-                    "${lesson.readMinutes} min",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = BastionColors.TextMuted,
+    val kept = settings.savedMotivation.toSet()
+    val filters = remember(lines) {
+        listOf(LIBRARY_ALL, LIBRARY_LESSONS) + lines.map { it.type }.distinct().sorted()
+    }
+    val shownLessons =
+        if (keptOnly || filter !in listOf(LIBRARY_ALL, LIBRARY_LESSONS)) emptyList() else lessons
+    val shownLines = lines
+        .filter { filter == LIBRARY_ALL || it.type == filter }
+        .filter { !keptOnly || it.id in kept }
+        .let { if (filter == LIBRARY_LESSONS) emptyList() else it }
+
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        SectionLabel("${lessons.size} lessons · ${lines.size} lines")
+        LinkButton(
+            if (keptOnly) "Show all" else "Kept only",
+            if (keptOnly) BastionColors.BronzeBright else BastionColors.TextMuted,
+        ) { keptOnly = !keptOnly }
+    }
+    Spacer(Modifier.height(Space.md))
+
+    Row(
+        Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(Space.sm),
+    ) {
+        filters.forEach { option ->
+            com.bastion.app.core.design.BastionFilterChip(
+                label = libraryLabel(option),
+                selected = filter == option,
+                onClick = { filter = option },
+            )
+        }
+    }
+    Spacer(Modifier.height(Space.md))
+
+    if (shownLessons.isEmpty() && shownLines.isEmpty()) {
+        EmptyState(
+            if (keptOnly) "Nothing kept yet. Tap Keep on a line that lands."
+            else "Nothing here in this mode.",
+        )
+    }
+
+    shownLessons.groupBy { it.category }.forEach { (category, items) ->
+        Section(category) {
+            items.forEach { lesson ->
+                BastionRow(
+                    title = lesson.title,
+                    onClick = { onOpen(lesson) },
+                    trailing = {
+                        Text(
+                            "${lesson.readMinutes} min",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = BastionColors.TextMuted,
+                        )
+                    },
                 )
             }
         }
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Space.md))
+    }
+
+    shownLines.forEach { item ->
+        ArmoryRow(
+            item = item,
+            kept = item.id in kept,
+            onToggleKeep = { scope.launch2 { graph.settings.toggleSavedMotivation(item.id) } },
+        )
     }
 }
 
@@ -416,8 +496,8 @@ private fun LibraryTab(graph: BastionGraph, faithMode: Boolean, onOpen: (Lesson)
 private fun LessonSheet(lesson: Lesson, onDone: () -> Unit) {
     Column(
         Modifier
-            .padding(horizontal = 22.dp)
-            .padding(bottom = 34.dp)
+            .padding(horizontal = Space.gutter)
+            .padding(bottom = Space.xl)
             // heightIn, not height. At a system font scale of 1.5-2x a fixed
             // box holds fewer lines than it did at 1x, so the content clips
             // mid-word — which reads as broken rendering rather than as a
@@ -425,7 +505,7 @@ private fun LessonSheet(lesson: Lesson, onDone: () -> Unit) {
             .heightIn(max = 600.dp)
     ) {
         Text(lesson.title, style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(Space.lg))
         Column(
             Modifier
                 .weight(1f)
@@ -441,21 +521,21 @@ private fun LessonSheet(lesson: Lesson, onDone: () -> Unit) {
                 } else {
                     Text(paragraph, style = MaterialTheme.typography.bodyLarge, color = BastionColors.TextSecondary)
                 }
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(Space.lg))
             }
             if (lesson.keyTakeaway.isNotBlank()) {
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(RoundedCornerShape(Space.md))
                         .background(BastionColors.SurfaceHigh)
-                        .padding(16.dp)
+                        .padding(Space.lg)
                 ) {
                     Text(lesson.keyTakeaway, style = MaterialTheme.typography.bodyLarge, color = BastionColors.TextPrimary)
                 }
             }
         }
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(Space.lg))
         PrimaryButton("Done", onDone, Modifier.fillMaxWidth())
     }
 }
@@ -469,33 +549,33 @@ private fun HabitPickerSheet(graph: BastionGraph, faithMode: Boolean, onPick: (H
 
     Column(
         Modifier
-            .padding(horizontal = 22.dp)
-            .padding(bottom = 34.dp)
+            .padding(horizontal = Space.gutter)
+            .padding(bottom = Space.xl)
             .heightIn(min = 320.dp, max = 560.dp)
     ) {
         Text("Add a habit", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(Space.lg))
         Column(Modifier.verticalScroll(rememberScrollState())) {
             catalogue.groupBy { it.domain }.forEach { (domain, items) ->
                 SectionLabel(domain)
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Space.sm))
                 items.forEach { def ->
                     Row(
                         Modifier
                             .fillMaxWidth()
                             .clickable(role = Role.Button) { onPick(def) }
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = Space.md),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(def.icon, style = MaterialTheme.typography.titleMedium)
-                        Spacer(Modifier.size(12.dp))
+                        Spacer(Modifier.size(Space.md))
                         Column {
                             Text(def.name, style = MaterialTheme.typography.bodyLarge, color = BastionColors.TextPrimary)
                             Text(def.why, style = MaterialTheme.typography.bodySmall, color = BastionColors.TextMuted)
                         }
                     }
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Space.md))
             }
         }
     }
@@ -534,86 +614,6 @@ private fun CoroutineScope.launch2(block: suspend () -> Unit) {
     launch { block() }
 }
 
-/**
- * The Armory — every line in the library, in one place.
- *
- * The other tabs are things to do. This one is things to read, and it exists
- * because the lines that actually land on a man are not predictable: the verse
- * that does nothing in March is the one he needs in November. So rather than
- * only ever rationing them out one at a time at the moments the app chooses,
- * the whole collection is browsable, and anything that hits can be kept.
- *
- * Scripture and prayer appear in Faith mode only — that filtering happens in
- * the repository, so this screen cannot get it wrong.
- */
-@Composable
-private fun ArmoryTab(graph: BastionGraph, faithMode: Boolean) {
-    val scope = rememberCoroutineScope()
-    val settings by graph.settings.settings.collectAsStateWithLifecycle(
-        initialValue = com.bastion.app.data.prefs.Settings()
-    )
-
-    var all by remember {
-        mutableStateOf<List<com.bastion.app.data.content.MotivationItem>>(emptyList())
-    }
-    LaunchedEffect(faithMode) { all = graph.content.motivationFor(faithMode) }
-
-    var type by remember { mutableStateOf(ARMORY_ALL) }
-    var savedOnly by remember { mutableStateOf(false) }
-
-    val saved = settings.savedMotivation.toSet()
-    val types = remember(all) {
-        listOf(ARMORY_ALL) + all.map { it.type }.distinct().sorted()
-    }
-    val shown = all
-        .filter { type == ARMORY_ALL || it.type == type }
-        .filter { !savedOnly || it.id in saved }
-
-    Column(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            SectionLabel("${all.size} lines")
-            LinkButton(
-                if (savedOnly) "Show all" else "Kept only",
-                if (savedOnly) BastionColors.BronzeBright else BastionColors.TextMuted,
-            ) { savedOnly = !savedOnly }
-        }
-        Spacer(Modifier.height(Space.md))
-
-        Row(
-            Modifier.horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(Space.sm),
-        ) {
-            types.forEach { option ->
-                com.bastion.app.core.design.BastionFilterChip(
-                    label = armoryLabel(option),
-                    selected = type == option,
-                    onClick = { type = option },
-                )
-            }
-        }
-        Spacer(Modifier.height(Space.md))
-
-        if (shown.isEmpty()) {
-            com.bastion.app.core.design.EmptyState(
-                text = if (savedOnly) "Nothing kept yet. Tap Keep on a line that lands."
-                else "Nothing here in this mode.",
-            )
-        }
-
-        shown.forEach { item ->
-            ArmoryRow(
-                item = item,
-                kept = item.id in saved,
-                onToggleKeep = { scope.launch2 { graph.settings.toggleSavedMotivation(item.id) } },
-            )
-        }
-    }
-}
-
 @Composable
 private fun ArmoryRow(
     item: com.bastion.app.data.content.MotivationItem,
@@ -637,7 +637,7 @@ private fun ArmoryRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                item.credit() ?: armoryLabel(item.type),
+                item.credit() ?: libraryLabel(item.type),
                 style = MaterialTheme.typography.labelSmall,
                 color = BastionColors.TextMuted,
                 modifier = Modifier.weight(1f),
@@ -654,11 +654,13 @@ private fun ArmoryRow(
     }
 }
 
-private const val ARMORY_ALL = "all"
+private const val LIBRARY_ALL = "all"
+private const val LIBRARY_LESSONS = "lessons"
 
 /** "urge_line" is what the file calls it; "Urge lines" is what a person calls it. */
-private fun armoryLabel(type: String): String = when (type) {
-    ARMORY_ALL -> "All"
+private fun libraryLabel(type: String): String = when (type) {
+    LIBRARY_ALL -> "All"
+    LIBRARY_LESSONS -> "Lessons"
     "quote" -> "Quotes"
     "scripture" -> "Scripture"
     "prayer" -> "Prayers"

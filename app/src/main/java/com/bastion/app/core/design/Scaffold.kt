@@ -102,34 +102,7 @@ fun BastionScaffold(
     DawnBackground(intensity = dawnIntensity) {
         Box(Modifier.fillMaxSize()) {
             Column(modifier.fillMaxSize()) {
-                TopAppBar(
-                    title = {
-                        Text(
-                            title,
-                            style = MaterialTheme.typography.displaySmall,
-                            color = BastionColors.TextPrimary,
-                        )
-                    },
-                    navigationIcon = {
-                        onBack?.let {
-                            IconButton(onClick = it) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back",
-                                    tint = BastionColors.TextSecondary,
-                                )
-                            }
-                        }
-                    },
-                    actions = { action?.invoke() },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        // Transparent so the dawn gradient runs unbroken behind
-                        // it. A surface-coloured bar cut the sky off at the top
-                        // of every screen.
-                        containerColor = Color.Transparent,
-                        scrolledContainerColor = Color.Transparent,
-                    ),
-                )
+                BastionTopBar(title = title, onBack = onBack, action = action)
                 Column(
                     Modifier
                         .fillMaxSize()
@@ -152,6 +125,67 @@ fun BastionScaffold(
             }
         }
     }
+}
+
+/**
+ * The header, on its own, for screens whose body cannot be a scrolling column.
+ *
+ * [BastionScaffold] is the right shape for almost everything, but it owns its
+ * body — one scrolling column with a fixed rhythm — and a chat is the one thing
+ * that cannot live inside that. The Mentor needs a list that fills the space
+ * left over and a composer pinned beneath it, which a `verticalScroll` parent
+ * cannot give a child of unbounded height.
+ *
+ * So the header comes out rather than the Mentor keeping a hand-rolled copy of
+ * it. What makes a screen feel like part of the app is the chrome at the top;
+ * the body underneath is free to be whatever the content actually is.
+ *
+ * [subtitle] is for the one screen that has something true to say under its
+ * name, and is not an invitation to start writing paragraphs into headers.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BastionTopBar(
+    title: String,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    subtitleColor: Color = BastionColors.TextMuted,
+    onBack: (() -> Unit)? = null,
+    action: @Composable (() -> Unit)? = null,
+) {
+    TopAppBar(
+        modifier = modifier,
+        title = {
+            Column {
+                Text(
+                    title,
+                    style = MaterialTheme.typography.displaySmall,
+                    color = BastionColors.TextPrimary,
+                )
+                subtitle?.let {
+                    Text(it, style = MaterialTheme.typography.labelSmall, color = subtitleColor)
+                }
+            }
+        },
+        navigationIcon = {
+            onBack?.let {
+                IconButton(onClick = it) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = BastionColors.TextSecondary,
+                    )
+                }
+            }
+        },
+        actions = { action?.invoke() },
+        colors = TopAppBarDefaults.topAppBarColors(
+            // Transparent so the dawn gradient runs unbroken behind it. A
+            // surface-coloured bar cut the sky off at the top of every screen.
+            containerColor = Color.Transparent,
+            scrolledContainerColor = Color.Transparent,
+        ),
+    )
 }
 
 /**
@@ -232,6 +266,14 @@ fun BastionRow(
                     it,
                     style = MaterialTheme.typography.labelSmall,
                     color = BastionColors.TextMuted,
+                    // A subtitle is the supporting line, not the content. Some
+                    // of them are a full sentence about why a habit is worth
+                    // keeping, and at a 2x font scale that ran to seven lines —
+                    // three habits filled the screen and the list stopped being
+                    // a list. Bounded here rather than at each call site, so no
+                    // future row can reintroduce it.
+                    maxLines = 3,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 )
             }
         }
@@ -401,6 +443,71 @@ fun GroupDivider() {
  * screen stays short; there for the person who wants to know what "Private DNS"
  * actually means before they touch it.
  */
+/**
+ * A placeholder the size of the thing that is coming.
+ *
+ * Today's word and the daily brief are read from assets after the first frame,
+ * so the screen drew itself, then grew two blocks and shoved everything below
+ * them down the page. That reflow is the single thing that most made a
+ * carefully-built app read as unfinished — and on a slow morning it moved the
+ * habit rings out from under a thumb that was already on its way down.
+ *
+ * Deliberately still. A shimmer would be motion for its own sake on a screen
+ * whose whole argument is that nothing here moves unless it earned it.
+ */
+@Composable
+fun Skeleton(lines: Int = 2, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth()) {
+        repeat(lines) { index ->
+            Spacer(
+                Modifier
+                    // The last line short, the way a paragraph ends.
+                    .fillMaxWidth(if (index == lines - 1) 0.55f else 1f)
+                    .height(Space.lg)
+                    .clip(RoundedCornerShape(Space.xs))
+                    .background(BastionColors.Surface.copy(alpha = 0.5f))
+            )
+            if (index != lines - 1) Spacer(Modifier.height(Space.sm))
+        }
+    }
+}
+
+/**
+ * The things most people should never see, folded away by default.
+ *
+ * [WhatsThis] is for a sentence a curious person might want. This is for the
+ * genuinely technical: an `adb shell` string, a DNS hostname, the mechanics of
+ * how a lock is enforced. That material has to stay reachable — a man who has
+ * locked himself in deserves to be able to read exactly what he agreed to — but
+ * putting it inline made the most important screen in the app read like a
+ * terminal, and taught everyone else to scroll past the part that matters.
+ *
+ * Collapsed, it costs one line. Open, nothing is hidden.
+ */
+@Composable
+fun Advanced(
+    modifier: Modifier = Modifier,
+    label: String = "Advanced",
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    Column(modifier.fillMaxWidth()) {
+        TextButton(
+            onClick = { open = !open },
+            contentPadding = PaddingValues(vertical = Space.sm),
+        ) {
+            Text(
+                if (open) "$label ▴" else "$label ▾",
+                style = MaterialTheme.typography.labelMedium,
+                color = BastionColors.TextMuted,
+            )
+        }
+        androidx.compose.animation.AnimatedVisibility(open) {
+            Column(content = content)
+        }
+    }
+}
+
 @Composable
 fun WhatsThis(text: String, modifier: Modifier = Modifier) {
     var open by remember { mutableStateOf(false) }

@@ -37,6 +37,9 @@ import com.bastion.app.core.design.RankMedallion
 import com.bastion.app.core.design.ScriptureCompactStyle
 import com.bastion.app.core.design.Section
 import com.bastion.app.core.design.SectionLabel
+import com.bastion.app.core.design.BastionRow
+import com.bastion.app.core.design.EmptyState
+import com.bastion.app.core.design.Skeleton
 import com.bastion.app.core.design.Space
 import com.bastion.app.data.BastionGraph
 import com.bastion.app.data.content.DailyBrief
@@ -62,6 +65,9 @@ fun WatchtowerScreen(
     faithMode: Boolean,
     onOpenProgress: () -> Unit,
     onOpenProfile: () -> Unit,
+    onOpenPartner: () -> Unit,
+    onOpenMentor: () -> Unit,
+    onOpenHabits: () -> Unit,
 ) {
     val context = LocalContext.current
     val graph = remember { BastionGraph.from(context) }
@@ -72,6 +78,7 @@ fun WatchtowerScreen(
     val habits by graph.growth.activeHabits.collectAsStateWithLifecycle(initialValue = emptyList())
     val todayFlow = remember(graph) { graph.growth.completionsToday() }
     val completions by todayFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val partner by graph.social.partner.collectAsStateWithLifecycle(initialValue = null)
 
     var brief by remember { mutableStateOf<DailyBrief?>(null) }
     var word by remember {
@@ -116,7 +123,16 @@ fun WatchtowerScreen(
     val hour = remember { java.time.LocalTime.now().hour }
 
     BastionScaffold(
-        title = "Watchtower",
+        // "Today", matching the tab that opens it.
+        //
+        // This screen was titled "Watchtower" and reached from a tab labelled
+        // "Today", on the theory that the poetry could live in the title while
+        // the plain word did the navigating. In practice a man taps one word and
+        // lands on a different one, which reads as having arrived in the wrong
+        // place — and he has no way to know the two are the same screen.
+        // Thematic names are worth having right up until they cost someone
+        // their bearings.
+        title = "Today",
         dawnIntensity = com.bastion.app.core.design.dawnIntensityForHour(hour),
         action = {
             IconButton(onClick = onOpenProfile) {
@@ -178,12 +194,23 @@ fun WatchtowerScreen(
             }
         }
 
-        word?.let { TodaysWord(it) }
+        // Placeholders rather than nothing, so the page settles into its final
+        // shape instead of growing two blocks under the reader's thumb.
+        word?.let { TodaysWord(it) } ?: Section("Today's word") { Skeleton(lines = 2) }
 
-        brief?.let { BriefCard(it, faithMode) }
+        brief?.let { BriefCard(it, faithMode) } ?: Skeleton(lines = 4)
 
-        if (habits.isNotEmpty()) {
-            Section("Today") {
+        Section("Today") {
+            if (habits.isEmpty()) {
+                // The whole block used to vanish when a man had no habits, so
+                // the screen silently lost a third of itself and never said the
+                // one thing he needed to hear: that this is the part he fills in.
+                EmptyState(
+                    "No habits yet. This is the part that replaces the old one.",
+                    actionLabel = "Add your first habit",
+                    onAction = onOpenHabits,
+                )
+            } else {
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(Space.sm),
@@ -200,6 +227,57 @@ fun WatchtowerScreen(
                     }
                 }
             }
+        }
+
+        // The people, on the screen a man actually opens.
+        //
+        // "One person who knows beats any blocker" is the app's own claim about
+        // what works, and both of the things that deliver it — his partner and
+        // the Mentor — were behind a bare avatar in the corner that gives no
+        // clue it is a menu. The feature the product says matters most was the
+        // one a new user was least likely to ever find.
+        Section("Your corner") {
+            val current = partner
+            if (current == null) {
+                BastionRow(
+                    title = "Name someone",
+                    subtitle = "Someone who'll take a message at midnight.",
+                    trailing = { Text("→", color = BastionColors.SageBright) },
+                    onClick = onOpenPartner,
+                )
+            } else {
+                BastionRow(
+                    title = current.name,
+                    subtitle = "Your partner",
+                    onClick = onOpenPartner,
+                    trailing = {
+                        // One tap to the thing that helps, rather than one tap
+                        // to a screen with the thing that helps on it.
+                        TextButton(
+                            onClick = {
+                                context.startActivity(
+                                    Intent(
+                                        Intent.ACTION_SENDTO,
+                                        android.net.Uri.parse("smsto:${current.contact}"),
+                                    ).putExtra("sms_body", "Got a minute? Could use a word.")
+                                )
+                            },
+                        ) {
+                            Text(
+                                "Message",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = BastionColors.SageBright,
+                            )
+                        }
+                    },
+                )
+            }
+            BastionRow(
+                title = "The Mentor",
+                subtitle = "Any hour, offline, stays on this phone.",
+                trailing = { Text("→", color = BastionColors.SageBright) },
+                onClick = onOpenMentor,
+            )
         }
     }
 }

@@ -87,15 +87,32 @@ fun <T> ChoiceRow(
                 // which is chosen, and the tick pushed longer labels to ellipsis.
                 icon = {},
             ) {
+                // The label's size is capped, exactly as the navigation bar's
+                // is, and for the same reason: a segment is a fixed fraction of
+                // the screen whatever the font scale. Scrolling past four fixed
+                // the count problem but not the scale one — at 2x, three
+                // options were enough to render "Challenges" as "Challeng",
+                // which reads as a broken app rather than as text that did not
+                // fit. Smaller scales are still honoured; only the top is held.
+                val scale = androidx.compose.ui.platform.LocalDensity.current.fontScale
+                val capped = 12f * (minOf(scale, MAX_SEGMENT_FONT_SCALE) / scale)
                 Text(
                     label(option),
-                    style = MaterialTheme.typography.labelMedium,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontSize = androidx.compose.ui.unit.TextUnit(
+                            capped,
+                            androidx.compose.ui.unit.TextUnitType.Sp,
+                        ),
+                    ),
                     maxLines = 1,
                 )
             }
         }
     }
 }
+
+/** Beyond this a segment's label stops growing; see [ChoiceRow]. */
+private const val MAX_SEGMENT_FONT_SCALE = 1.3f
 
 /** Multi-select — the trigger list. The platform control for "pick any of these". */
 @OptIn(ExperimentalMaterial3Api::class)

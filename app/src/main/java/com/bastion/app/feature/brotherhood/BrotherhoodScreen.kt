@@ -42,11 +42,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.BastionCard
 import com.bastion.app.core.design.BastionColors
+import com.bastion.app.core.design.BastionRow
+import com.bastion.app.core.design.EmptyState
 import com.bastion.app.core.design.LinkButton
 import com.bastion.app.core.design.BastionScaffold
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.QuietButton
+import com.bastion.app.core.design.Section
 import com.bastion.app.core.design.SectionLabel
+import com.bastion.app.core.design.Space
 import com.bastion.app.data.BastionGraph
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -75,6 +79,11 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit, onBack: () -> Unit) {
     var contact by remember { mutableStateOf("") }
     var shareSlips by remember { mutableStateOf(false) }
     var shareGuard by remember { mutableStateOf(true) }
+    // Was hardcoded true at the save call while the form offered no control for
+    // it, so a man agreed to share his check-ins by never being asked. On a
+    // screen whose whole claim is "every share is opt-in, chosen by him", a
+    // silent default is the one thing that cannot be there.
+    var shareCheckIns by remember { mutableStateOf(true) }
     var mood by remember { mutableFloatStateOf(3f) }
     var note by remember { mutableStateOf("") }
     var confirmRemove by remember { mutableStateOf(false) }
@@ -92,55 +101,63 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit, onBack: () -> Unit) {
     val removalLocked = settings.partnerLockEnabled && lockHasCode
 
     BastionScaffold(
-        title = "Brotherhood",
+        // Matches the row in Settings that opens it. It was titled
+        // "Brotherhood" and reached by tapping "Your partner", so the one
+        // screen about not being alone was also the one that left you unsure
+        // you had arrived.
+        title = "Your partner",
         dawnIntensity = 0.35f,
         onBack = onBack,
     ) {
         Text(
-        "One person who knows beats any blocker.",
-        style = MaterialTheme.typography.bodySmall,
-        color = BastionColors.TextMuted,
+            "One person who knows beats any blocker.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BastionColors.TextMuted,
         )
 
         if (current == null) {
+            // The one card on this screen, and it earns the border: it is a
+            // form, which is a single object you fill in rather than a region
+            // you read. Everything below is a Section.
             BastionCard {
-                SectionLabel("Your partner")
-                Spacer(Modifier.height(6.dp))
+                SectionLabel("Name someone")
+                Spacer(Modifier.height(Space.sm))
                 Text(
                     "Someone who'll take a message at midnight.",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Space.lg))
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
                     label = { Text("Their name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(Space.md),
                     colors = fieldColors(),
                 )
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(Space.md))
                 OutlinedTextField(
                     value = contact,
                     onValueChange = { contact = it },
                     label = { Text("Phone number") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(Space.md),
                     colors = fieldColors(),
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Space.lg))
+                ShareToggle("Tell them how I'm doing", shareCheckIns) { shareCheckIns = it }
                 ShareToggle("Tell them when I slip", shareSlips) { shareSlips = it }
                 ShareToggle("Tell them if I weaken a guard", shareGuard) { shareGuard = it }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Space.sm))
                 Text(
                     "Bastion writes the message. You press send.",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Space.lg))
                 PrimaryButton(
                     "Save",
                     {
@@ -148,7 +165,7 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit, onBack: () -> Unit) {
                             graph.social.savePartner(
                                 name = name.trim(),
                                 contact = contact.trim(),
-                                shareCheckIns = true,
+                                shareCheckIns = shareCheckIns,
                                 shareSlips = shareSlips,
                                 shareGuardChanges = shareGuard,
                             )
@@ -159,12 +176,17 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit, onBack: () -> Unit) {
                 )
             }
         } else {
-            BastionCard(accent = BastionColors.Sage) {
-                SectionLabel("Walking with you")
-                Spacer(Modifier.height(8.dp))
-                Text(current.name, style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-                Spacer(Modifier.height(14.dp))
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Section("Walking with you") {
+                Text(
+                    current.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = BastionColors.TextPrimary,
+                )
+                Spacer(Modifier.height(Space.lg))
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Space.md),
+                ) {
                     PrimaryButton(
                         "Message",
                         {
@@ -185,15 +207,9 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit, onBack: () -> Unit) {
             }
         }
 
-        if (current != null) {
-            Spacer(Modifier.height(14.dp))
-            PartnerLockCard(graph)
-        }
+        if (current != null) PartnerLockCard(graph)
 
-
-        BastionCard {
-            SectionLabel("Today's check-in")
-            Spacer(Modifier.height(10.dp))
+        Section("Today's check-in") {
             Slider(
                 value = mood,
                 onValueChange = { mood = it },
@@ -210,7 +226,7 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit, onBack: () -> Unit) {
                 style = MaterialTheme.typography.labelMedium,
                 color = BastionColors.BronzeBright,
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Space.md))
             OutlinedTextField(
                 value = note,
                 onValueChange = { note = it },
@@ -220,11 +236,14 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit, onBack: () -> Unit) {
                     // Grows with the text and with the font scale; a fixed
                     // height clipped both.
                     .heightIn(min = 110.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(Space.md),
                 colors = fieldColors(),
             )
-            Spacer(Modifier.height(14.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Spacer(Modifier.height(Space.lg))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.md),
+            ) {
                 PrimaryButton(
                     "Log it",
                     {
@@ -259,52 +278,35 @@ fun BrotherhoodScreen(onOpenMentor: () -> Unit, onBack: () -> Unit) {
             }
         }
 
-        BastionCard {
-            SectionLabel("Recent check-ins")
-            Spacer(Modifier.height(12.dp))
+        Section("Recent check-ins") {
             if (checkIns.isEmpty()) {
-                Text(
-                    "None yet.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
+                EmptyState("Nothing logged yet. The slider above takes ten seconds.")
             }
             checkIns.take(10).forEach { entry ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 7.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(Modifier.weight(1f)) {
+                BastionRow(
+                    title = moodLabel(entry.mood),
+                    subtitle = entry.note,
+                    trailing = {
                         Text(
-                            moodLabel(entry.mood),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = BastionColors.TextPrimary,
+                            checkInDate(entry.epochDay),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = BastionColors.TextMuted,
                         )
-                        entry.note?.let {
-                            Text(it, style = MaterialTheme.typography.bodySmall, color = BastionColors.TextMuted)
-                        }
-                    }
-                    Text(
-                        checkInDate(entry.epochDay),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = BastionColors.TextMuted,
-                    )
-                }
+                    },
+                )
             }
         }
 
-        BastionCard {
-            SectionLabel("No one to tell yet?")
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "That's its own kind of hard, and worth naming. The Mentor is here meanwhile.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = BastionColors.TextSecondary,
-            )
-            Spacer(Modifier.height(14.dp))
-            LinkButton("Talk to the Mentor →", BastionColors.SageBright, onOpenMentor)
+        if (current == null) {
+            Section("No one to tell yet?") {
+                Text(
+                    "That's its own kind of hard, and worth naming. The Mentor is here meanwhile.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BastionColors.TextSecondary,
+                )
+                Spacer(Modifier.height(Space.md))
+                LinkButton("Talk to the Mentor →", BastionColors.SageBright, onOpenMentor)
+            }
         }
     }
 
@@ -381,7 +383,7 @@ private fun PartnerLockCard(graph: BastionGraph) {
                     style = MaterialTheme.typography.titleMedium,
                     color = BastionColors.TextPrimary,
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(Space.xs))
                 Text(
                     if (hasCode) "Weakening a guard needs his code."
                     else "Set a code only he knows.",
@@ -406,7 +408,7 @@ private fun PartnerLockCard(graph: BastionGraph) {
         }
 
         if (needsPartner) {
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(Space.md))
             Text(
                 "Save your partner's name and number first — the code hangs off him.",
                 style = MaterialTheme.typography.bodySmall,
@@ -415,13 +417,13 @@ private fun PartnerLockCard(graph: BastionGraph) {
         }
 
         if (entering) {
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(Space.lg))
             Text(
                 "Hand him the phone. What he types here, you shouldn't know.",
                 style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.SageBright,
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(Space.md))
             OutlinedTextField(
                 value = code,
                 // Filtered rather than merely validated: the NumberPassword
@@ -442,11 +444,11 @@ private fun PartnerLockCard(graph: BastionGraph) {
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(Space.md),
                 colors = fieldColors(),
             )
-            Spacer(Modifier.height(12.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Spacer(Modifier.height(Space.md))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.md)) {
                 PrimaryButton(
                     "Lock it",
                     {
@@ -479,7 +481,7 @@ private fun ShareToggle(label: String, checked: Boolean, onChange: (Boolean) -> 
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = Space.xs),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {

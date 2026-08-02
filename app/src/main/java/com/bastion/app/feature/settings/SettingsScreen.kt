@@ -149,7 +149,7 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.bodyLarge,
                         color = BastionColors.TextPrimary,
                     )
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(Space.xs))
                     Text(
                         // State, plainly, without making anyone read the switch.
                         if (settings.briefEnabled) "On — arrives as a notification"
@@ -232,9 +232,15 @@ fun SettingsScreen(
         if (showHowItWorks) HowBastionProtectsYou { showHowItWorks = false }
 
         // --- Privacy ---
-        BastionCard(accent = BastionColors.Sage) {
-            SectionLabel("Privacy", color = BastionColors.SageBright)
-            Spacer(Modifier.height(12.dp))
+        //
+        // A group like every other group. It was the one lone Sage-accented
+        // card on a screen of grouped rows, which made the section about not
+        // collecting anything look like an advertisement for itself.
+        SettingsGroup(
+            title = "Privacy",
+            subtitle = "What Bastion does and does not know about you.",
+        ) {
+            Spacer(Modifier.height(Space.sm))
             listOf(
                 "No account, no sign-up, and nothing about you is collected",
                 "Everything stays on this phone. It is never backed up to a cloud",
@@ -242,7 +248,7 @@ fun SettingsScreen(
                 "The only time it uses the internet: checking website addresses " +
                     "against its blocklist, and looking for updates when you ask",
             ).forEach { line ->
-                Row(Modifier.padding(vertical = 4.dp)) {
+                Row(Modifier.padding(vertical = Space.xs)) {
                     Text("·  ", style = MaterialTheme.typography.bodyMedium, color = BastionColors.SageBright)
                     Text(
                         line,
@@ -251,6 +257,7 @@ fun SettingsScreen(
                     )
                 }
             }
+            Spacer(Modifier.height(Space.sm))
         }
 
         Column(Modifier.fillMaxWidth()) {
@@ -260,7 +267,7 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.TextMuted,
             )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(Space.md))
             Text(
                 "Version ${UpdateChecker.currentVersion}",
                 style = MaterialTheme.typography.labelSmall,
@@ -326,27 +333,26 @@ private fun BackupCard(graph: BastionGraph) {
         }
     }
 
-    Column(Modifier.fillMaxWidth()) {
-        SectionLabel("Backup")
-        Spacer(Modifier.height(Space.xs))
-        Text(
-            "Save a private, password-protected copy of your journey — streak, " +
-                "covenant and history — to a file only you hold. If you lose your " +
-                "phone you can restore it. Nothing is ever uploaded.",
-            style = MaterialTheme.typography.bodySmall,
-            color = BastionColors.TextMuted,
-        )
+    // The same container as every other group on this screen. It was a bare
+    // column, so the one section that can lose a man his whole history had less
+    // visual definition than the notification toggle above it.
+    SettingsGroup(
+        title = "Backup",
+        subtitle = "Save a private, password-protected copy of your journey — streak, " +
+            "covenant and history — to a file only you hold. If you lose your " +
+            "phone you can restore it. Nothing is ever uploaded.",
+    ) {
         Spacer(Modifier.height(Space.md))
-
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.md)) {
             QuietButton("Export", { mode = BackupMode.EXPORT; status = null }, Modifier.weight(1f))
             QuietButton("Restore", { mode = BackupMode.IMPORT; status = null }, Modifier.weight(1f))
         }
 
         status?.let {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Space.md))
             Text(it, style = MaterialTheme.typography.bodySmall, color = BastionColors.SageBright)
         }
+        Spacer(Modifier.height(Space.md))
     }
 
     mode?.let { current ->
@@ -371,14 +377,14 @@ private fun BackupCard(graph: BastionGraph) {
                         style = MaterialTheme.typography.bodySmall,
                         color = BastionColors.TextMuted,
                     )
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(Space.md))
                     OutlinedTextField(
                         value = passphrase,
                         onValueChange = { passphrase = it },
                         singleLine = true,
                         visualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation(),
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(Space.md),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = BastionColors.Bronze,
                             unfocusedBorderColor = BastionColors.Outline,
@@ -437,16 +443,16 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
     var progress by remember { mutableFloatStateOf(0f) }
     var ready by remember { mutableStateOf<File?>(null) }
 
-    BastionCard(accent = if (available != null) BastionColors.Bronze else null) {
-        SectionLabel("App updates")
-        Spacer(Modifier.height(10.dp))
-        Text(
-            "Bastion updates itself in place — your streak, guards and history " +
-                "are never touched.",
-            style = MaterialTheme.typography.bodySmall,
-            color = BastionColors.TextMuted,
-        )
-        Spacer(Modifier.height(8.dp))
+    // One container idiom on this screen, so a group is a group whether it holds
+    // a switch or a download. The card came back only when there is genuinely an
+    // update waiting — that is the one time this block is an event rather than a
+    // setting, and the bronze edge is how the rest of the app says so.
+    SettingsGroup(
+        title = if (available != null) "App update ready" else "App updates",
+        subtitle = "Bastion updates itself in place — your streak, guards and " +
+            "history are never touched.",
+    ) {
+        Spacer(Modifier.height(Space.sm))
         Text(
             "You have version ${UpdateChecker.currentVersion}",
             style = MaterialTheme.typography.bodyMedium,
@@ -470,14 +476,14 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
         ) { advanced = !advanced }
 
         if (advanced) {
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Space.xs))
         Text(
             "Where Bastion looks for new versions. Leave this as it is unless " +
                 "you were told to change it.",
             style = MaterialTheme.typography.bodySmall,
             color = BastionColors.TextMuted,
         )
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Space.sm))
         OutlinedTextField(
             value = url,
             onValueChange = { url = it },
@@ -485,7 +491,7 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
             placeholder = { Text("https://…/bastion-update.json") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(Space.md),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = BastionColors.Bronze,
                 unfocusedBorderColor = BastionColors.Outline,
@@ -498,7 +504,7 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
         )
 
         if (url != settings.updateManifestUrl) {
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(Space.md))
             QuietButton(
                 "Save address",
                 { scope.launch { graph.settings.setUpdateUrl(url) } },
@@ -509,7 +515,7 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
         }
 
         if (settings.updateManifestUrl.isNotBlank()) {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Space.md))
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -536,7 +542,7 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
             }
         }
 
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(Space.lg))
 
         when {
             busy -> {
@@ -545,7 +551,7 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = BastionColors.TextSecondary,
                 )
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(Space.md))
                 LinearProgressIndicator(
                     progress = { progress },
                     modifier = Modifier.fillMaxWidth(),
@@ -560,7 +566,7 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = BastionColors.SageBright,
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Space.md))
                 PrimaryButton(
                     "Install now",
                     {
@@ -579,10 +585,10 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
                     color = BastionColors.BronzeBright,
                 )
                 if (manifest.notes.isNotBlank()) {
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(Space.sm))
                     Text(manifest.notes, style = MaterialTheme.typography.bodyMedium, color = BastionColors.TextSecondary)
                 }
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Space.md))
                 PrimaryButton(
                     "Download",
                     {
@@ -602,7 +608,7 @@ private fun UpdateCard(settings: Settings, graph: BastionGraph) {
             else -> {
                 status?.let {
                     Text(it, style = MaterialTheme.typography.bodyMedium, color = BastionColors.TextSecondary)
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(Space.md))
                 }
                 QuietButton(
                     "Check for updates",
@@ -669,7 +675,7 @@ private fun HowBastionProtectsYou(onClose: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = BastionColors.TextSecondary,
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Space.lg))
                 listOf(
                     "Feed blocking" to
                         "Lets apps like Instagram open normally, but closes Reels, " +
@@ -688,13 +694,13 @@ private fun HowBastionProtectsYou(onClose: () -> Unit) {
                         style = MaterialTheme.typography.titleSmall,
                         color = BastionColors.BronzeBright,
                     )
-                    Spacer(Modifier.height(2.dp))
+                    Spacer(Modifier.height(Space.xs))
                     Text(
                         what,
                         style = MaterialTheme.typography.bodySmall,
                         color = BastionColors.TextSecondary,
                     )
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(Space.lg))
                 }
                 Text(
                     "No single layer is perfect, and Bastion will tell you where each " +

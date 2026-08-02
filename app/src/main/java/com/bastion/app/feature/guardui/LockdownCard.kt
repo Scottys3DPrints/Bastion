@@ -34,6 +34,7 @@ import com.bastion.app.core.design.BastionCard
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import com.bastion.app.core.design.BastionColors
+import com.bastion.app.core.design.Space
 import com.bastion.app.core.design.PrimaryButton
 import com.bastion.app.core.design.QuietButton
 import com.bastion.app.core.design.SectionLabel
@@ -78,14 +79,14 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
     BastionCard(accent = if (active) BastionColors.Amber else BastionColors.Bronze) {
         if (active) {
             SectionLabel("Lockdown running", color = BastionColors.Amber)
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(Space.md))
             val minutes = Lockdown.remainingMinutes(settings)
             Text(
                 if (minutes >= 60) "${minutes / 60}h ${minutes % 60}m left" else "${minutes}m left",
                 style = MaterialTheme.typography.headlineMedium,
                 color = BastionColors.TextPrimary,
             )
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Space.sm))
             Text(
                 // Says plainly that it cannot be called off, because discovering
                 // that by trying would feel like a trap rather than a decision.
@@ -96,7 +97,7 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
             )
         } else {
             SectionLabel("Panic lockdown")
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(Space.sm))
             Text(
                 "One button that shuts everything down for " +
                     "${Lockdown.describe(settings.lockdownSeconds)} — closes your " +
@@ -105,10 +106,10 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
                 style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.TextMuted,
             )
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(Space.lg))
             PrimaryButton("Lock everything down", { confirming = true }, Modifier.fillMaxWidth())
             if (showPlanLink) {
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Space.sm))
                 QuietButton("Edit the plan", { configuring = true }, Modifier.fillMaxWidth())
             }
         }
@@ -272,7 +273,7 @@ fun LockdownPlanCard(settings: Settings, graph: BastionGraph) {
         ) {
             Column(Modifier.weight(1f)) {
                 SectionLabel("Panic lockdown")
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(Space.sm))
                 Text(
                     "${Lockdown.describeShort(settings.lockdownSeconds)} · ${planSummary(settings)}",
                     style = MaterialTheme.typography.bodySmall,
@@ -309,8 +310,8 @@ private fun LockdownPlanDialog(
         text = {
             Column {
                 SectionLabel("How long")
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(Modifier.height(Space.sm))
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                     // 30 seconds is a rehearsal setting, and it is first for a
                     // reason: this plan cannot be called off once it starts, so
                     // the only safe way to find out what it actually does to
@@ -319,7 +320,7 @@ private fun LockdownPlanDialog(
                         val chosen = settings.lockdownSeconds == seconds
                         Box(
                             Modifier
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(RoundedCornerShape(Space.lg))
                                 .background(
                                     if (chosen) BastionColors.BronzeDeep
                                     else BastionColors.SurfaceRaised
@@ -327,7 +328,7 @@ private fun LockdownPlanDialog(
                                 .clickable {
                                     scope.launch { graph.settings.setLockdownSeconds(seconds) }
                                 }
-                                .padding(horizontal = 14.dp, vertical = 8.dp)
+                                .padding(horizontal = Space.lg, vertical = Space.sm)
                         ) {
                             Text(
                                 Lockdown.describeShort(seconds),
@@ -339,7 +340,7 @@ private fun LockdownPlanDialog(
                     }
                 }
                 if (settings.lockdownSeconds < 60) {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Space.sm))
                     Text(
                         "A rehearsal length. Set it back to something real once you have seen it work.",
                         style = MaterialTheme.typography.labelSmall,
@@ -347,7 +348,7 @@ private fun LockdownPlanDialog(
                     )
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Space.lg))
                 SectionLabel("What happens")
                 PlanToggle("Close every guarded app", true, enabled = false) {}
                 PlanToggle("Turn the filter on", settings.lockdownFilter) {
@@ -368,7 +369,7 @@ private fun LockdownPlanDialog(
                     scope.launch { graph.settings.setLockdownTellPartner(it) }
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Space.md))
                 Text(
                     // The obvious wish, answered before it is asked.
                     "Android won't let any app switch the phone off — that's reserved for the system. " +

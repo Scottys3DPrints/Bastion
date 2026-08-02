@@ -294,6 +294,9 @@ private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
                         faithMode = faithMode,
                         onOpenProgress = { navController.toTab(Destination.PROGRESS.route) },
                         onOpenProfile = { navController.navigate(ROUTE_PROFILE) },
+                        onOpenPartner = { navController.navigate(ROUTE_PARTNER) },
+                        onOpenMentor = { navController.navigate(ROUTE_MENTOR) },
+                        onOpenHabits = { navController.toTab(Destination.GROW.route) },
                     )
                 }
                 composable(Destination.FEED.route) {

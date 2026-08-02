@@ -45,7 +45,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.DawnBackground
+import com.bastion.app.core.design.EmptyState
 import com.bastion.app.core.design.QuietButton
+import com.bastion.app.core.design.ScriptureCompactStyle
 import com.bastion.app.core.design.ScriptureStyle
 import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.core.design.Space
@@ -68,8 +70,9 @@ import kotlinx.coroutines.launch
  * The anti-feed rules are unchanged and are what this is for: the portion is
  * finite, the last page is a real ending that points outward, nothing moves on
  * its own, there are no counts and nobody else, and reading it cannot be
- * failed. The one addition a pager allows is knowing where you are — a quiet
- * "4 / 14" — which is not a score but a promise that this stops.
+ * failed. The one thing a pager adds is a sense of how far in you are, carried
+ * by a hairline rather than a number — not a score, just a promise that this
+ * stops.
  */
 @Composable
 fun FeedScreen(onOpenProfile: () -> Unit) {
@@ -81,11 +84,16 @@ fun FeedScreen(onOpenProfile: () -> Unit) {
     var cards by remember { mutableStateOf<List<FeedRepository.Card>>(emptyList()) }
     var extra by remember { mutableStateOf(0) }
     var dry by remember { mutableStateOf(false) }
+    // Distinct from "empty", which they were not before: an unloaded Well and an
+    // exhausted one both rendered as a black screen, so the first thing a man
+    // saw on opening the tab was something that looked broken.
+    var loading by remember { mutableStateOf(true) }
 
     LaunchedEffect(settings.faithMode, extra) {
         cards = graph.feed.dailyFeed(settings, extra)
         dry = graph.feed.hasRunDry(settings)
         graph.feed.markServed(cards)
+        loading = false
     }
 
     val hour = remember { java.time.LocalTime.now().hour }
@@ -93,6 +101,42 @@ fun FeedScreen(onOpenProfile: () -> Unit) {
 
     DawnBackground(intensity = com.bastion.app.core.design.dawnIntensityForHour(hour)) {
         Box(Modifier.fillMaxSize()) {
+
+            if (loading || cards.isEmpty()) {
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.systemBars)
+                        .padding(horizontal = Space.section),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (loading) {
+                        // The same mark the app draws while it is starting up.
+                        // One thing to look at beats a rectangle of nothing.
+                        Text(
+                            "◇",
+                            style = MaterialTheme.typography.displayMedium,
+                            color = BastionColors.BronzeDeep,
+                        )
+                    } else {
+                        EmptyState(
+                            "The Well is dry for today.",
+                            actionLabel = "Draw from it again",
+                            onAction = {
+                                scope.launch {
+                                    graph.feed.drawAgain()
+                                    extra = 0
+                                    loading = true
+                                    cards = graph.feed.dailyFeed(settings)
+                                    dry = false
+                                    graph.feed.markServed(cards)
+                                    loading = false
+                                }
+                            },
+                        )
+                    }
+                }
+            }
 
             VerticalPager(
                 state = pager,
@@ -147,9 +191,21 @@ fun FeedScreen(onOpenProfile: () -> Unit) {
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.systemBars)
                     .padding(horizontal = Space.lg, vertical = Space.sm),
-                horizontalArrangement = Arrangement.End,
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // The one tab with no name on it — a first-timer met a quote on
+                // a black screen with no idea what he had opened or why. So the
+                // Well introduces itself on the page where he arrives, and then
+                // stops: a permanent title would be exactly the furniture this
+                // screen was stripped of.
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = pager.currentPage == 0,
+                    enter = androidx.compose.animation.fadeIn(),
+                    exit = androidx.compose.animation.fadeOut(),
+                ) {
+                    SectionLabel("The Well", color = BastionColors.TextMuted)
+                }
                 IconButton(onClick = onOpenProfile) {
                     Icon(
                         Icons.Filled.AccountCircle,
@@ -202,10 +258,12 @@ private fun WordsPage(item: MotivationItem, saved: Boolean, onSave: () -> Unit) 
         }
         Text(
             item.text,
-            // Stories are long enough that display type would push them off the
-            // page; everything else gets the full treatment.
-            style = if (item.length == "long") MaterialTheme.typography.bodyLarge
-            else ScriptureStyle,
+            // A story is long enough that full display size would push it off
+            // the page, so it steps down the ramp — but stays on Fraunces.
+            // Dropping to the body face made the page look like it belonged to
+            // a different app every time a story came up, which is a worse
+            // problem than a long page.
+            style = if (item.length == "long") ScriptureCompactStyle else ScriptureStyle,
             color = BastionColors.TextPrimary,
             textAlign = TextAlign.Center,
         )

@@ -223,7 +223,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         style = MaterialTheme.typography.titleMedium,
                         color = BastionColors.TextPrimary,
                     )
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(Space.sm))
                     Text(
                         // How long matters more than the fact: "since just now"
                         // is a slip, "for 3 days" is a decision.
@@ -231,13 +231,13 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall,
                         color = BastionColors.TextMuted,
                     )
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(Space.lg))
                     PrimaryButton(
                         "Turn it back on",
                         { BastionAccessibilityService.openSettings(context) },
                         Modifier.fillMaxWidth(),
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Space.sm))
                     // Written, never sent — the same rule as the rest of Brotherhood.
                     QuietButton(
                         "Tell my partner",
@@ -250,7 +250,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         Modifier.fillMaxWidth(),
                         BastionColors.SageBright,
                     )
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(Space.xs))
                     // The honest exit. Without it the only way to stop the
                     // six-hourly nag was to clear the app's data, which takes
                     // the whole journey with it.
@@ -349,7 +349,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         color = BastionColors.TextPrimary,
                     )
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Space.sm))
                 Text(
                     if (serviceRunning) "On — apps open normally, their feeds don't."
                     else "Off — Reels, Shorts and For You are not being blocked.",
@@ -357,7 +357,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                     color = BastionColors.TextMuted,
                 )
                 if (!serviceRunning) {
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(Space.md))
                     Text(
                         // Android's own wording for this permission sounds far
                         // more alarming than what is actually being granted, and
@@ -371,20 +371,20 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall,
                         color = BastionColors.TextMuted,
                     )
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(Space.sm))
                     Text(
                         "You're looking for \"Bastion Guard\" in the list, then the " +
                             "switch at the top.",
                         style = MaterialTheme.typography.labelSmall,
                         color = BastionColors.SageBright,
                     )
-                    Spacer(Modifier.height(14.dp))
+                    Spacer(Modifier.height(Space.lg))
                     PrimaryButton(
                         "Turn on in Settings",
                         { BastionAccessibilityService.openSettings(context) },
                         Modifier.fillMaxWidth(),
                     )
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Space.sm))
                     // Android 13 hides accessibility behind "restricted settings"
                     // for sideloaded apps, and the option to lift it is buried in
                     // App info under the overflow menu. Updates install through a
@@ -412,7 +412,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                     style = MaterialTheme.typography.titleMedium,
                     color = BastionColors.TextPrimary,
                 )
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(Space.xs))
                         Text(
                             if (filterRunning) "On · $blockedCount lookups blocked"
                             else "Blocks adult domains across every app and browser",
@@ -437,7 +437,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         colors = switchColors(),
                     )
                 }
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(Space.md))
                 Text(
                     "Android will ask for \"VPN\" permission. Bastion isn't sending " +
                         "your traffic anywhere — it uses that only to check website " +
@@ -447,7 +447,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Space.md))
                 QuietButton(
                     "Open Bastion browser",
                     {
@@ -491,7 +491,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                     SectionLabel("Guarded apps")
                     LinkButton("Add →") { showAppPicker = true }
                 }
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(Space.lg))
 
                 if (guardedApps.isEmpty()) {
                     Text(
@@ -521,7 +521,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         },
                         onRemove = { confirmUnguard = app },
                     )
-                    Spacer(Modifier.height(10.dp))
+                    Spacer(Modifier.height(Space.md))
                 }
             }
 
@@ -536,7 +536,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                     SectionLabel("Feed rules · ${feedRules.count { it.enabled }} active")
                     LinkButton("Learn →") { showLearnMode = true }
                 }
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(Space.sm))
                 // Collapsed by default. Two dozen rows of matcher internals is
                 // the single densest thing on this screen and almost never what
                 // someone came here to change — the summary answers "is it
@@ -562,13 +562,13 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                     )
                 }
                 if (rulesExpanded) {
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(Space.lg))
                 Text(
                     "A rule stopped firing? Learn it again in seconds.",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(Space.lg))
                 feedRules.groupBy { it.packageName }.forEach { (pkg, rules) ->
                     Text(
                         feedGroupName(pkg, rules),
@@ -626,7 +626,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                             )
                         }
                     }
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Space.sm))
                 }
                 }
             }
@@ -646,7 +646,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         // thing it does for you, which is the only reason to
                         // turn it on.
                         SectionLabel("Make changes hard to undo")
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(Space.sm))
                         Text(
                             "Turning protection OFF waits before it happens, so a " +
                                 "weak moment can't undo your setup in seconds. " +
@@ -654,7 +654,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                             style = MaterialTheme.typography.bodySmall,
                             color = BastionColors.TextMuted,
                         )
-                        Spacer(Modifier.height(6.dp))
+                        Spacer(Modifier.height(Space.sm))
                         Text(
                             // The two states are named plainly, because the whole
                             // point is knowing which one you are in before you
@@ -688,7 +688,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         colors = switchColors(),
                     )
                 }
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(Space.md))
                 Text(
                     // Never "cannot be turned off". The accessibility toggle stays
                     // reachable no matter what — Android keeps it that way on
@@ -701,64 +701,72 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Guard itself can always be switched off in Android's settings. " +
-                        "Locked in, that puts a wall in front of you that needs the partner's " +
-                        "code or the wait — and Bastion keeps putting it back. Home still " +
-                        "leaves it unless the command below has been run. A wall, not a cage.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
-
-                if (!com.bastion.app.guard.lockdown.DeviceOwner.isDeviceOwner(context)) {
-                    Spacer(Modifier.height(10.dp))
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            "Close uninstall and factory reset — one adb command, once:",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = BastionColors.TextMuted,
-                            modifier = Modifier.weight(1f),
-                        )
-                        LinkButton(if (ownerCommandCopied) "Copied" else "Copy") {
-                            ownerClipboard.setText(
-                                androidx.compose.ui.text.AnnotatedString(
-                                    com.bastion.app.guard.lockdown.DeviceOwner.setupCommand(context)
-                                )
-                            )
-                            ownerCommandCopied = true
-                        }
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(BastionColors.MidnightDeep)
-                            .padding(12.dp)
-                    ) {
-                        Text(
-                            com.bastion.app.guard.lockdown.DeviceOwner.setupCommand(context),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = BastionColors.SageBright,
-                        )
-                    }
-                    Spacer(Modifier.height(6.dp))
+                // The mechanics, folded away. This used to run inline: four
+                // paragraphs about what Android does and does not permit, then
+                // a black box containing an `adb shell` command. Almost nobody
+                // will ever run that command, and putting it on the face of the
+                // screen taught everyone else that Guard is a page to scroll
+                // past. It stays one tap away, because a man locking himself in
+                // is owed the exact terms.
+                com.bastion.app.core.design.Advanced(label = "How this is enforced") {
                     Text(
-                        "Only works on a phone with no accounts added yet, so it is a " +
-                            "fresh-device thing. Without it, everything above still applies " +
-                            "except the uninstall and reset blocks.",
-                        style = MaterialTheme.typography.labelSmall,
+                        "Guard itself can always be switched off in Android's settings. " +
+                            "Locked in, that puts a wall in front of you that needs the partner's " +
+                            "code or the wait — and Bastion keeps putting it back. Home still " +
+                            "leaves it unless the command below has been run. A wall, not a cage.",
+                        style = MaterialTheme.typography.bodySmall,
                         color = BastionColors.TextMuted,
                     )
+
+                    if (!com.bastion.app.guard.lockdown.DeviceOwner.isDeviceOwner(context)) {
+                        Spacer(Modifier.height(Space.md))
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                "Close uninstall and factory reset — one adb command, once:",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = BastionColors.TextMuted,
+                                modifier = Modifier.weight(1f),
+                            )
+                            LinkButton(if (ownerCommandCopied) "Copied" else "Copy") {
+                                ownerClipboard.setText(
+                                    androidx.compose.ui.text.AnnotatedString(
+                                        com.bastion.app.guard.lockdown.DeviceOwner.setupCommand(context)
+                                    )
+                                )
+                                ownerCommandCopied = true
+                            }
+                        }
+                        Spacer(Modifier.height(Space.sm))
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(Space.md))
+                                .background(BastionColors.MidnightDeep)
+                                .padding(Space.md)
+                        ) {
+                            Text(
+                                com.bastion.app.guard.lockdown.DeviceOwner.setupCommand(context),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = BastionColors.SageBright,
+                            )
+                        }
+                        Spacer(Modifier.height(Space.sm))
+                        Text(
+                            "Only works on a phone with no accounts added yet, so it is a " +
+                                "fresh-device thing. Without it, everything above still applies " +
+                                "except the uninstall and reset blocks.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = BastionColors.TextMuted,
+                        )
+                    }
                 }
 
-                Spacer(Modifier.height(14.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(Modifier.height(Space.lg))
+                Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                     listOf(1, 2, 6, 24).forEach { hours ->
                         HourChip(hours, settings.coolingOffHours == hours) {
                             scope.launch {
@@ -775,15 +783,15 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 }
 
                 if (pendingChanges.isNotEmpty()) {
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(Space.lg))
                     SectionLabel("Waiting", color = BastionColors.Amber)
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Space.sm))
                     pendingChanges.forEach { change ->
                         val remaining = ((change.effectiveAt - now) / 60_000L).coerceAtLeast(0)
                         Row(
                             Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 6.dp),
+                                .padding(vertical = Space.sm),
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Column(Modifier.weight(1f)) {
@@ -1012,7 +1020,7 @@ private fun PrivateDnsCard() {
         // "Close the DNS-over-HTTPS gap" is accurate and means nothing to
         // anyone who has not implemented a resolver.
         SectionLabel("Extra website blocking (recommended)")
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(Space.sm))
         Text(
             when {
                 isOff -> "Off. You had this set to ${settings.dnsHostname} — " +
@@ -1035,24 +1043,38 @@ private fun PrivateDnsCard() {
                 BastionColors.TextMuted,
             ) { scope.launch { com.bastion.app.guard.GuardWatchdog.standDownDns(context) } }
         }
-        Spacer(Modifier.height(12.dp))
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(BastionColors.MidnightDeep)
-                .padding(12.dp)
-        ) {
+        Spacer(Modifier.height(Space.md))
+        // Setting it up is two taps: copy the hostname, open the settings
+        // screen. That much stays on the surface because it is what a man
+        // actually does. What the hostname *is* — a resolver address he will
+        // never type twice — sits behind the disclosure with the rest of the
+        // machinery.
+        com.bastion.app.core.design.Advanced(label = "The address") {
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Space.md))
+                    .background(BastionColors.MidnightDeep)
+                    .padding(Space.md)
+            ) {
+                Text(
+                    PRIVATE_DNS_HOST,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.SageBright,
+                )
+            }
+            Spacer(Modifier.height(Space.sm))
             Text(
-                PRIVATE_DNS_HOST,
-                style = MaterialTheme.typography.bodySmall,
-                color = BastionColors.SageBright,
+                "Cloudflare's family resolver. It answers DNS lookups for adult " +
+                    "domains with nothing, below the layer any app can reach.",
+                style = MaterialTheme.typography.labelSmall,
+                color = BastionColors.TextMuted,
             )
         }
-        Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Spacer(Modifier.height(Space.md))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.md)) {
             QuietButton(
-                text = if (copied) "Copied" else "Copy",
+                text = if (copied) "Copied" else "Copy the address",
                 onClick = {
                     clipboard.setText(androidx.compose.ui.text.AnnotatedString(PRIVATE_DNS_HOST))
                     copied = true
@@ -1106,7 +1128,7 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
                     style = MaterialTheme.typography.titleMedium,
                     color = BastionColors.TextPrimary,
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(Space.xs))
                 Text(
                     "A dimming veil over guarded apps",
                     style = MaterialTheme.typography.bodySmall,
@@ -1119,7 +1141,7 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
                 colors = switchColors(),
             )
         }
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(Space.md))
         Text(
             // What it is, with no overclaim. The card used to offer an adb
             // command to grant WRITE_SECURE_SETTINGS and promise "true
@@ -1215,7 +1237,7 @@ private fun PasscodeDialog(
                     style = MaterialTheme.typography.bodyMedium,
                     color = BastionColors.TextSecondary,
                 )
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Space.lg))
                 OutlinedTextField(
                     value = code,
                     onValueChange = { code = it; wrong = false },
@@ -1243,7 +1265,7 @@ private fun PasscodeDialog(
                         else -> null
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(Space.md),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = BastionColors.Bronze,
                         unfocusedBorderColor = BastionColors.Outline,
@@ -1295,68 +1317,72 @@ private fun StatusDot(active: Boolean) {
     )
 }
 
+/**
+ * One guarded app: what it is and what is happening to it, on one line.
+ *
+ * Every app used to be a raised bordered box holding a title, a segmented
+ * control and a sentence — so a man guarding six apps scrolled six identical
+ * blocks of configuration to read six app names. The name and the mode are what
+ * he came to check; changing the mode is the rarer thing, so it waits behind a
+ * tap.
+ */
 @Composable
 private fun GuardedAppRow(
     app: GuardedAppEntity,
     onModeChange: (BlockMode) -> Unit,
     onRemove: () -> Unit,
 ) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(BastionColors.SurfaceRaised)
-            .padding(14.dp)
-    ) {
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                app.label,
-                style = MaterialTheme.typography.titleSmall,
-                color = BastionColors.TextPrimary,
-                modifier = Modifier.weight(1f),
-                // App labels are whatever their developer chose. "Samsung
-                // Internet Browser Beta" at a 2x font scale is either three
-                // lines or a clipped one, and unbounded it pushed Remove off
-                // the right edge entirely.
-                maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            )
-            LinkButton("Remove", BastionColors.TextMuted, onRemove)
-        }
-        Spacer(Modifier.height(10.dp))
-        // SCHEDULE and TIME_LIMIT are deliberately absent.
-        //
-        // Both need a parameter — a window, or a number of minutes — and there
-        // is nowhere to set either, so choosing them silently applied defaults
-        // of 00:00-00:00 and a fixed cap. The options looked like features and
-        // behaved like dead ends, which is worse than not offering them. They
-        // come back when their editors do. A mode an older build already set
-        // stays listed, so the row keeps telling the truth about what is running.
-        val modes = buildList {
-            add(BlockMode.FEED_ONLY)
-            add(BlockMode.FULL)
-            if (app.mode !in this) add(app.mode)
-        }
-        ChoiceRow(
-            options = modes,
-            selected = app.mode,
-            // The segmented control has room for two words, so it gets the
-            // short form; the sentence explaining the choice sits under it,
-            // where there is room to finish it.
-            label = { it.shortLabel() },
-            onSelect = onModeChange,
-            modifier = Modifier.fillMaxWidth(),
+    var open by remember(app.packageName) { mutableStateOf(false) }
+
+    Column(Modifier.fillMaxWidth()) {
+        BastionRow(
+            title = app.label,
+            subtitle = app.mode.shortLabel(),
+            onClick = { open = !open },
+            trailing = {
+                Text(
+                    if (open) "▴" else "▾",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = BastionColors.TextMuted,
+                )
+            },
         )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            app.mode.explain(),
-            style = MaterialTheme.typography.labelSmall,
-            color = BastionColors.TextMuted,
-        )
+        androidx.compose.animation.AnimatedVisibility(open) {
+            Column(Modifier.padding(bottom = Space.md)) {
+                // SCHEDULE and TIME_LIMIT are deliberately absent.
+                //
+                // Both need a parameter — a window, or a number of minutes — and
+                // there is nowhere to set either, so choosing them silently
+                // applied defaults of 00:00-00:00 and a fixed cap. The options
+                // looked like features and behaved like dead ends, which is
+                // worse than not offering them. They come back when their
+                // editors do. A mode an older build already set stays listed, so
+                // the row keeps telling the truth about what is running.
+                val modes = buildList {
+                    add(BlockMode.FEED_ONLY)
+                    add(BlockMode.FULL)
+                    if (app.mode !in this) add(app.mode)
+                }
+                ChoiceRow(
+                    options = modes,
+                    selected = app.mode,
+                    // The segmented control has room for two words, so it gets
+                    // the short form; the sentence explaining the choice sits
+                    // under it, where there is room to finish it.
+                    label = { it.shortLabel() },
+                    onSelect = onModeChange,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(Space.sm))
+                Text(
+                    app.mode.explain(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = BastionColors.TextMuted,
+                )
+                Spacer(Modifier.height(Space.sm))
+                LinkButton("Stop guarding ${app.label}", BastionColors.TextMuted, onRemove)
+            }
+        }
     }
 }
 
@@ -1412,14 +1438,14 @@ private fun AppPickerSheet(
             .height(520.dp)
     ) {
         Text("Guard an app", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(Space.md))
         OutlinedTextField(
             value = query,
             onValueChange = { query = it },
             label = { Text("Search") },
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(Space.md),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = BastionColors.Bronze,
                 unfocusedBorderColor = BastionColors.Outline,
@@ -1427,7 +1453,7 @@ private fun AppPickerSheet(
                 unfocusedTextColor = BastionColors.TextPrimary,
             ),
         )
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(Space.lg))
         Column(Modifier.verticalScroll(rememberScrollState())) {
             apps.filter { it.second.contains(query, ignoreCase = true) }
                 .filterNot { alreadyGuarded.contains(it.first) }
@@ -1438,7 +1464,7 @@ private fun AppPickerSheet(
                         Modifier
                             .fillMaxWidth()
                             .clickable { onPick(pkg, label, suggested) }
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = Space.md),
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(label, style = MaterialTheme.typography.bodyLarge, color = BastionColors.TextPrimary)
@@ -1578,7 +1604,7 @@ private fun LearnModeSheet(onClose: () -> Unit) {
                 }
             }
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(Space.md))
         QuietButton("Done", onClose, Modifier.fillMaxWidth())
     }
 }

@@ -51,6 +51,8 @@ import com.bastion.app.core.design.Bar
 import com.bastion.app.core.design.BarChart
 import com.bastion.app.core.design.BastionBottomSheet
 import com.bastion.app.core.design.BastionCard
+import com.bastion.app.core.design.BastionRow
+import com.bastion.app.core.design.ProportionBar
 import com.bastion.app.core.design.BastionScaffold
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.BastionFilterChip
@@ -267,6 +269,8 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
                 benefits.take(6).forEach { card -> BenefitRow(card) }
             }
         }
+
+        BecomingSection(graph)
     }
 
     if (showLogChoice) {
@@ -300,28 +304,58 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
         }
     }
 
+    // Tapping a day in the calendar.
+    //
+    // A day already marked as a slip opens the small correction sheet, because
+    // the reason to tap one is almost always a mis-tap rather than a wish to go
+    // back through it. A day not yet marked opens the same grace-first flow the
+    // Log button opens — the two used to differ, so whether a man met "You're
+    // human." or a blunt "Log a slip" button depended on which control he
+    // happened to reach for. Same event, same treatment.
     editingDay?.let { date ->
         val existing = remember(days, date) {
             days.firstOrNull { it.epochDay == date.toEpochDay() }
         }
         BastionBottomSheet(onDismiss = { editingDay = null }) {
-            DayLogSheet(
-                date = date,
-                status = existing?.status,
-                note = existing?.note,
-                onSlip = { note ->
-                    scope.launch {
-                        graph.journey.logSlip(date.toEpochDay(), note)
-                        editingDay = null
-                    }
-                },
-                onClean = {
-                    scope.launch {
-                        graph.journey.clearDay(date.toEpochDay())
-                        editingDay = null
-                    }
-                },
-            )
+            if (existing?.status == DayStatus.SLIP) {
+                DayLogSheet(
+                    date = date,
+                    note = existing.note,
+                    onUpdateNote = { note ->
+                        scope.launch {
+                            graph.journey.logSlip(date.toEpochDay(), note)
+                            editingDay = null
+                        }
+                    },
+                    onClean = {
+                        scope.launch {
+                            graph.journey.clearDay(date.toEpochDay())
+                            editingDay = null
+                        }
+                    },
+                )
+            } else {
+                RecoveryFlow(
+                    faithMode = faithMode,
+                    rankName = state.rank.displayName(faithMode),
+                    date = date,
+                    onDone = { trigger, reflection ->
+                        scope.launch {
+                            graph.journey.logUrge(
+                                resisted = false,
+                                intensity = 5,
+                                mood = null,
+                                trigger = trigger,
+                                contextApp = null,
+                                place = null,
+                                note = reflection,
+                                epochDay = date.toEpochDay(),
+                            )
+                            editingDay = null
+                        }
+                    },
+                )
+            }
         }
     }
 
@@ -350,27 +384,22 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
 }
 
 /**
- * Logging a day that has already happened.
+ * Correcting a day that is already marked.
  *
- * Bastion derives the streak from logged slips rather than from daily
- * check-ins, which is what lets a man close the app for a week without being
- * told he failed — but it also meant a slip he did not log at the time could
- * never be entered afterwards. The honest history is the one recorded when he
- * is ready to record it, not only the one he was in a state to type at 2am.
- *
- * Deliberately two buttons and an optional line of text. Asking a man to relive
- * a bad night in detail, days later, is the shame loop this app exists to avoid.
+ * This used to be the whole calendar path: a terse sheet with a "Log a slip"
+ * button that wrote the day and closed. Recording a slip now goes through the
+ * same grace-first flow as every other route to the same event, so what is left
+ * here is only the correction — undo first, because the commonest reason to open
+ * a marked day is a mis-tap rather than a wish to revisit the night.
  */
 @Composable
 private fun DayLogSheet(
     date: LocalDate,
-    status: DayStatus?,
     note: String?,
-    onSlip: (String?) -> Unit,
+    onUpdateNote: (String?) -> Unit,
     onClean: () -> Unit,
 ) {
     var text by remember(date) { mutableStateOf(note.orEmpty()) }
-    val isSlip = status == DayStatus.SLIP
     val today = LocalDate.now()
 
     Column {
@@ -383,20 +412,20 @@ private fun DayLogSheet(
             style = MaterialTheme.typography.titleLarge,
             color = BastionColors.TextPrimary,
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Space.sm))
         Text(
-            if (isSlip) "Logged as a slip." else "Nothing logged.",
+            "Logged as a slip.",
             style = MaterialTheme.typography.bodySmall,
-            color = if (isSlip) BastionColors.Amber else BastionColors.TextMuted,
+            color = BastionColors.Amber,
         )
 
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(Space.lg))
         OutlinedTextField(
             value = text,
             onValueChange = { text = it },
             label = { Text("What was going on? (optional)") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(Space.md),
             minLines = 2,
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = BastionColors.Bronze,
@@ -407,26 +436,15 @@ private fun DayLogSheet(
             ),
         )
 
-        Spacer(Modifier.height(16.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (isSlip) {
-                // Undo, offered first, because the commonest reason to open a
-                // past day is a mis-tap rather than a confession.
-                PrimaryButton("Mark clean", onClean, Modifier.weight(1f))
-                QuietButton(
-                    "Update note",
-                    { onSlip(text.trim().takeIf(String::isNotBlank)) },
-                    Modifier.weight(1f),
-                    BastionColors.Amber,
-                )
-            } else {
-                QuietButton(
-                    "Log a slip",
-                    { onSlip(text.trim().takeIf(String::isNotBlank)) },
-                    Modifier.weight(1f),
-                    BastionColors.Amber,
-                )
-            }
+        Spacer(Modifier.height(Space.lg))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.md)) {
+            PrimaryButton("Mark clean", onClean, Modifier.weight(1f))
+            QuietButton(
+                "Update note",
+                { onUpdateNote(text.trim().takeIf(String::isNotBlank)) },
+                Modifier.weight(1f),
+                BastionColors.Amber,
+            )
         }
     }
 }
@@ -449,6 +467,61 @@ private fun LogChoiceSheet(
         PrimaryButton("I felt it and held", onResisted, Modifier.fillMaxWidth())
         Spacer(Modifier.height(Space.md))
         QuietButton("I slipped", onSlipped, Modifier.fillMaxWidth(), BastionColors.Amber)
+    }
+}
+
+/**
+ * The man he is becoming — four weeks of what was actually done.
+ *
+ * Lived in Grow behind a segment called "Becoming", which is the app's private
+ * word for it and told a stranger nothing. It is a record of the past four
+ * weeks, and this screen is where the app already says the past lives.
+ */
+@Composable
+private fun BecomingSection(graph: BastionGraph) {
+    val habits by graph.growth.allHabits.collectAsStateWithLifecycle(initialValue = emptyList())
+    val badges by graph.growth.badges.collectAsStateWithLifecycle(initialValue = emptyList())
+    val since = remember { LocalDate.now().toEpochDay() - 28 }
+    val completionsFlow = remember(graph, since) { graph.growth.completionsSince(since) }
+    val completions by completionsFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val scores = remember(completions, habits) { graph.growth.domainScores(completions, habits) }
+
+    Section("The man you're becoming") {
+        Text(
+            "Last four weeks. Moves slowly on purpose.",
+            style = MaterialTheme.typography.bodySmall,
+            color = BastionColors.TextMuted,
+        )
+        Spacer(Modifier.height(Space.lg))
+
+        if (scores.isEmpty()) {
+            EmptyState("Keep a habit or two and this fills in.")
+        }
+
+        scores.entries.sortedByDescending { it.value }.forEach { (domain, score) ->
+            Column(Modifier.padding(vertical = Space.sm)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(domain, style = MaterialTheme.typography.titleSmall, color = BastionColors.TextPrimary)
+                    Text(
+                        "${(score * 100).toInt()}%",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = BastionColors.BronzeBright,
+                    )
+                }
+                Spacer(Modifier.height(Space.sm))
+                ProportionBar(fraction = score)
+            }
+        }
+    }
+
+    if (badges.isNotEmpty()) {
+        Section("Badges") {
+            badges.forEach { badge ->
+                BastionRow(title = badge.name, leading = {
+                    Text("◇", color = BastionColors.BronzeBright)
+                })
+            }
+        }
     }
 }
 
@@ -501,49 +574,45 @@ private fun weekdayBars(urges: List<UrgeLogEntity>): List<Bar> {
 
 // --- pieces ----------------------------------------------------------------
 
+/**
+ * A benefit unlocked by days clean.
+ *
+ * Was a hand-rolled row with its own padding and its own idea of where the
+ * trailing mark sits; it now goes through [BastionRow] like every other repeated
+ * thing in the app, so the tap target, the semantics and the rhythm come from
+ * one place. What is bespoke is only what is genuinely particular to it: the day
+ * number in a circle, and the confidence dot.
+ */
 @Composable
 private fun BenefitRow(card: BenefitCard) {
     var expanded by remember { mutableStateOf(false) }
-    // A row, not a card. Six of these stacked as bordered surfaces was half the
-    // reason this screen read as a wall of boxes.
     Column(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .clickable { expanded = !expanded }
-                .padding(vertical = Space.md),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
-                Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(ChartColors.Clean.copy(alpha = 0.18f)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    "${card.day}",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = ChartColors.Clean,
-                )
-            }
-            Spacer(Modifier.size(12.dp))
-            Text(
-                card.title,
-                style = MaterialTheme.typography.titleSmall,
-                color = BastionColors.TextPrimary,
-                modifier = Modifier.weight(1f),
-                maxLines = 2,
-                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-            )
-            ConfidenceDot(card.confidence)
-        }
-        if (expanded) {
-            Spacer(Modifier.height(10.dp))
+        BastionRow(
+            title = card.title,
+            onClick = { expanded = !expanded },
+            leading = {
+                Box(
+                    Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(ChartColors.Clean.copy(alpha = 0.18f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        "${card.day}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = ChartColors.Clean,
+                    )
+                }
+            },
+            trailing = { ConfidenceDot(card.confidence) },
+        )
+        androidx.compose.animation.AnimatedVisibility(expanded) {
             Text(
                 card.body,
                 style = MaterialTheme.typography.bodyMedium,
                 color = BastionColors.TextSecondary,
+                modifier = Modifier.padding(bottom = Space.md),
             )
         }
     }
@@ -581,7 +650,7 @@ private fun UrgeLogSheet(
 
     Column {
         Text("You resisted", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(Space.lg))
 
         SectionLabel("Strength")
         Slider(
@@ -599,7 +668,7 @@ private fun UrgeLogSheet(
         Spacer(Modifier.height(10.dp))
         SectionLabel("Trigger")
         Spacer(Modifier.height(10.dp))
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
             TRIGGERS.forEach { option ->
                 BastionFilterChip(
                     label = option,
@@ -615,11 +684,11 @@ private fun UrgeLogSheet(
             onValueChange = { note = it },
             placeholder = { Text("Note (optional)") },
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(Space.md),
             colors = sheetFieldColors(),
         )
 
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(Space.lg))
         PrimaryButton(
             "Save",
             { onSave(intensity.toInt(), trigger, note.takeIf { it.isNotBlank() }) },
@@ -642,6 +711,8 @@ private fun UrgeLogSheet(
 private fun RecoveryFlow(
     faithMode: Boolean,
     rankName: String,
+    /** The night being recorded. Null means now, which is the common case. */
+    date: LocalDate? = null,
     onDone: (trigger: String?, reflection: String?) -> Unit,
 ) {
     var stage by remember { mutableIntStateOf(0) }
@@ -668,7 +739,18 @@ private fun RecoveryFlow(
         when (stage) {
             0 -> {
                 Text("You're human.", style = MaterialTheme.typography.headlineMedium, color = BastionColors.TextPrimary)
-                Spacer(Modifier.height(12.dp))
+                // Naming the day when it is not today, so a man logging Tuesday
+                // on Friday can see he is not about to break this week's streak.
+                date?.takeIf { it != LocalDate.now() }?.let {
+                    Spacer(Modifier.height(Space.xs))
+                    Text(
+                        "Recording " + if (it == LocalDate.now().minusDays(1)) "yesterday"
+                        else it.format(DateTimeFormatter.ofPattern("EEEE d MMMM")),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = BastionColors.TextMuted,
+                    )
+                }
+                Spacer(Modifier.height(Space.md))
                 Text(
                     if (faithMode) "No condemnation here. You're not back at the beginning."
                     else "A data point, not a verdict. You're not back at the beginning.",
@@ -676,7 +758,7 @@ private fun RecoveryFlow(
                     color = BastionColors.TextSecondary,
                 )
                 grace?.let { item ->
-                    Spacer(Modifier.height(18.dp))
+                    Spacer(Modifier.height(Space.lg))
                     Text(
                         item.text,
                         style = com.bastion.app.core.design.ScriptureCompactStyle,
@@ -691,14 +773,14 @@ private fun RecoveryFlow(
                         )
                     }
                 }
-                Spacer(Modifier.height(22.dp))
+                Spacer(Modifier.height(Space.section))
                 PrimaryButton("Look at it", { stage = 1 }, Modifier.fillMaxWidth())
             }
 
             1 -> {
                 Text("What was happening?", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-                Spacer(Modifier.height(16.dp))
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(Modifier.height(Space.lg))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                     TRIGGERS.forEach { option ->
                         BastionFilterChip(
                             label = option,
@@ -707,7 +789,7 @@ private fun RecoveryFlow(
                         )
                     }
                 }
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(Space.lg))
                 OutlinedTextField(
                     value = reflection,
                     onValueChange = { reflection = it },
@@ -715,24 +797,24 @@ private fun RecoveryFlow(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 110.dp),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(Space.md),
                     colors = sheetFieldColors(),
                 )
-                Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(Space.lg))
                 PrimaryButton("Continue", { stage = 2 }, Modifier.fillMaxWidth())
             }
 
             else -> {
                 Text("Your lever", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(Space.md))
                 Text(tipFor(trigger), style = MaterialTheme.typography.bodyLarge, color = BastionColors.TextSecondary)
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(Space.section))
                 Box(
                     Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
+                        .clip(RoundedCornerShape(Space.lg))
                         .background(BastionColors.SurfaceHigh)
-                        .padding(16.dp)
+                        .padding(Space.lg)
                 ) {
                     Text(
                         "Streak restarts. Rank stays $rankName.",
@@ -740,7 +822,7 @@ private fun RecoveryFlow(
                         color = BastionColors.TextPrimary,
                     )
                 }
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(Space.section))
                 PrimaryButton(
                     "Keep walking",
                     { onDone(trigger, reflection.takeIf { it.isNotBlank() }) },

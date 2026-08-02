@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.bastion.app.core.design.BastionCard
 import com.bastion.app.core.design.BastionColors
+import com.bastion.app.core.design.Space
 import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.data.prefs.Settings
 import com.bastion.app.guard.accessibility.BastionAccessibilityService
@@ -161,9 +162,9 @@ fun GuardStrengthCard(
             )
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(Space.md))
         StrengthMeter(on = on, total = total)
-        Spacer(Modifier.height(14.dp))
+        Spacer(Modifier.height(Space.lg))
 
         layers.forEach { state ->
             LayerRow(state = state, onArm = { onArm(state.layer) })
@@ -179,7 +180,7 @@ private fun StrengthMeter(on: Int, total: Int) {
         on >= total / 2 -> BastionColors.Bronze
         else -> BastionColors.Amber
     }
-    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
         repeat(total) { index ->
             Canvas(Modifier.size(10.dp)) {
                 drawCircle(
@@ -201,7 +202,7 @@ private fun LayerRow(state: LayerState, onArm: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .then(if (state.on) Modifier else Modifier.clickable(onClick = onArm))
-            .padding(vertical = 7.dp),
+            .padding(vertical = Space.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(Modifier.size(14.dp), contentAlignment = Alignment.Center) {
@@ -217,7 +218,7 @@ private fun LayerRow(state: LayerState, onArm: () -> Unit) {
                 )
             }
         }
-        Spacer(Modifier.size(10.dp))
+        Spacer(Modifier.size(Space.md))
         Column(Modifier.weight(1f)) {
             Text(
                 state.layer.label,
