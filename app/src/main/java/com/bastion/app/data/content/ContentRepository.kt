@@ -26,6 +26,7 @@ class ContentRepository(private val context: Context) {
     private var mentor: MentorScript? = null
     private var habits: HabitCatalogue? = null
     private var blocklist: Blocklist? = null
+    private var motivation: MotivationLibrary? = null
 
     suspend fun dailyBriefs(): DailyBriefs = briefs
         ?: load("daily_briefs.json", DailyBriefs()).also { briefs = it }
@@ -59,6 +60,56 @@ class ContentRepository(private val context: Context) {
         if (exact != null) return exact
         val index = ((dayOfJourney - 1).coerceAtLeast(0)) % all.size
         return all[index]
+    }
+
+    suspend fun motivation(): MotivationLibrary = motivation
+        ?: load("motivation.json", MotivationLibrary()).also { motivation = it }
+
+    /**
+     * Everything this man is allowed to see.
+     *
+     * Unverified items are filtered out here rather than at each call site, so
+     * there is exactly one place where "has this been checked" is enforced and
+     * no new surface can accidentally skip it.
+     */
+    suspend fun motivationFor(faithMode: Boolean): List<MotivationItem> =
+        motivation().items.filter { it.verified && it.visibleIn(faithMode) }
+
+    /**
+     * One line for a moment.
+     *
+     * Prefers items tagged with a trigger the man actually has, which is what
+     * makes this better than a random quote generator — the same ninety
+     * seconds hits differently when the words name the thing he is in.
+     *
+     * @param avoidId the line shown last time, so the same one never lands
+     *   twice running; on a small pool this is the difference between the
+     *   feature feeling alive and feeling broken.
+     * @param daySeed pass an epoch day to make the choice stable for a whole
+     *   day — "today's word" must not change every time the home screen
+     *   recomposes.
+     */
+    suspend fun motivationForMoment(
+        faithMode: Boolean,
+        moment: String,
+        userTriggers: Set<String> = emptySet(),
+        avoidId: String? = null,
+        daySeed: Long? = null,
+        maxLength: String? = null,
+    ): MotivationItem? {
+        val pool = motivationFor(faithMode)
+            .filter { moment in it.moments && it.id != avoidId }
+            .filter { maxLength == null || it.length == maxLength }
+        // Falling back to the unfiltered pool rather than returning null: a
+        // panic screen with no words on it is the worst possible failure, so
+        // every filter here is a preference, not a requirement.
+        val usable = pool.ifEmpty {
+            motivationFor(faithMode).filter { moment in it.moments }
+        }
+        if (usable.isEmpty()) return null
+
+        val focused = usable.filter { it.triggers.any(userTriggers::contains) }.ifEmpty { usable }
+        return if (daySeed != null) focused[daySeed.mod(focused.size)] else focused.random()
     }
 
     /** Benefit cards earned so far, newest unlock first. */

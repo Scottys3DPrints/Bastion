@@ -74,6 +74,9 @@ fun WatchtowerScreen(
     val completions by todayFlow.collectAsStateWithLifecycle(initialValue = emptyList())
 
     var brief by remember { mutableStateOf<DailyBrief?>(null) }
+    var word by remember {
+        mutableStateOf<com.bastion.app.data.content.MotivationItem?>(null)
+    }
 
     // Crossing a rank threshold is the emotional payoff of the whole model, so
     // it gets a moment rather than silently incrementing a number. Compared
@@ -96,6 +99,18 @@ fun WatchtowerScreen(
 
     LaunchedEffect(state.currentStreak, state.totalDays) {
         brief = graph.content.briefForDay(graph.journey.dayOfJourney())
+    }
+
+    // Today's word. Keyed on the epoch day, so it is the same line all day and
+    // a different one tomorrow — a home screen whose quote changes every time
+    // you glance at it teaches you not to read it.
+    val today = remember { java.time.LocalDate.now().toEpochDay() }
+    LaunchedEffect(today, faithMode) {
+        word = graph.content.motivationForMoment(
+            faithMode = faithMode,
+            moment = "daily",
+            daySeed = today,
+        )
     }
 
     val hour = remember { java.time.LocalTime.now().hour }
@@ -163,6 +178,8 @@ fun WatchtowerScreen(
             }
         }
 
+        word?.let { TodaysWord(it) }
+
         brief?.let { BriefCard(it, faithMode) }
 
         if (habits.isNotEmpty()) {
@@ -183,6 +200,32 @@ fun WatchtowerScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Today's word: one line, its credit, and nothing else.
+ *
+ * A Section rather than a card on purpose. The brief below it is already a
+ * bordered surface, and two boxed blocks stacked would be exactly the density
+ * this screen was cut back from.
+ */
+@Composable
+private fun TodaysWord(item: com.bastion.app.data.content.MotivationItem) {
+    Section("Today's word") {
+        Text(
+            item.text,
+            style = com.bastion.app.core.design.ScriptureCompactStyle,
+            color = BastionColors.TextPrimary,
+        )
+        item.credit()?.let {
+            Spacer(Modifier.height(Space.sm))
+            Text(
+                it,
+                style = MaterialTheme.typography.labelSmall,
+                color = BastionColors.BronzeBright,
+            )
         }
     }
 }

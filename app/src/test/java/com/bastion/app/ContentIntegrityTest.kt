@@ -7,6 +7,7 @@ import com.bastion.app.data.content.DailyBriefs
 import com.bastion.app.data.content.Education
 import com.bastion.app.data.content.HabitCatalogue
 import com.bastion.app.data.content.MentorScript
+import com.bastion.app.data.content.MotivationLibrary
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -180,5 +181,114 @@ class ContentIntegrityTest {
         // A bare "sex" keyword would block sexual-health and education resources.
         // Over-blocking is not a neutral failure, so this stays out by design.
         assertTrue("'sex' must not be a bare keyword", blocklist.keywords.none { it == "sex" })
+    }
+
+    // --- the motivation library ------------------------------------------
+    //
+    // The library is bundled read-only content that six surfaces now read
+    // from, including the panic screen. A typo in a mode or a moment would not
+    // crash anything — it would quietly make one of those surfaces come up
+    // empty, which is the failure nobody notices until it matters.
+
+    private val motivation: MotivationLibrary by lazy {
+        json.decodeFromString(asset("motivation.json"))
+    }
+
+    private val allowedTypes = setOf(
+        "quote", "scripture", "prayer", "reframe",
+        "urge_line", "affirmation", "story", "fact",
+    )
+    private val allowedModes = setOf("faith", "discipline")
+    private val allowedMoments = setOf("urge", "daily", "relapse", "milestone", "library")
+    private val allowedTriggers = setOf(
+        "late_night", "boredom", "stress", "loneliness", "tiredness",
+        "social_media", "anger", "home_alone", "anxiety", "alcohol",
+    )
+
+    @Test
+    fun `motivation library decodes and counts itself honestly`() {
+        assertTrue("library is empty", motivation.items.isNotEmpty())
+        assertEquals("count must match items", motivation.items.size, motivation.count)
+    }
+
+    @Test
+    fun `every item uses the controlled vocabularies`() {
+        motivation.items.forEach { item ->
+            assertTrue("blank text on ${item.id}", item.text.isNotBlank())
+            assertTrue("bad type on ${item.id}: ${item.type}", item.type in allowedTypes)
+            assertTrue("no modes on ${item.id}", item.modes.isNotEmpty())
+            item.modes.forEach { assertTrue("bad mode on ${item.id}: $it", it in allowedModes) }
+            assertTrue("no moments on ${item.id}", item.moments.isNotEmpty())
+            item.moments.forEach { assertTrue("bad moment on ${item.id}: $it", it in allowedMoments) }
+            item.triggers.forEach { assertTrue("bad trigger on ${item.id}: $it", it in allowedTriggers) }
+            assertTrue("bad length on ${item.id}", item.length in setOf("short", "medium", "long"))
+        }
+    }
+
+    @Test
+    fun `ids and text are unique`() {
+        val ids = motivation.items.map { it.id }
+        assertEquals("duplicate ids", ids.size, ids.toSet().size)
+        val texts = motivation.items.map { it.text.lowercase() }
+        assertEquals("duplicate text", texts.size, texts.toSet().size)
+    }
+
+    /**
+     * The panic screen falls back to the daily brief and then to a hard-coded
+     * line, so it can never be blank — but if this pool ever empties, the
+     * trigger-matched wording silently stops happening and nothing says so.
+     */
+    @Test
+    fun `both modes have a real pool of urge lines`() {
+        listOf(true, false).forEach { faith ->
+            val mode = if (faith) "faith" else "discipline"
+            val pool = motivation.items.filter {
+                it.verified && it.visibleIn(faith) && "urge" in it.moments
+            }
+            assertTrue("only ${pool.size} urge items in $mode mode", pool.size >= 20)
+        }
+    }
+
+    @Test
+    fun `every moment can be served in both modes`() {
+        allowedMoments.forEach { moment ->
+            listOf(true, false).forEach { faith ->
+                val pool = motivation.items.filter {
+                    it.verified && it.visibleIn(faith) && moment in it.moments
+                }
+                val mode = if (faith) "faith" else "discipline"
+                assertTrue("no $moment items in $mode mode", pool.isNotEmpty())
+            }
+        }
+    }
+
+    /** Scripture and prayer are devotional; they have no business in Discipline mode. */
+    @Test
+    fun `scripture and prayer are faith only`() {
+        motivation.items
+            .filter { it.type == "scripture" || it.type == "prayer" }
+            .forEach { assertEquals("${it.id} leaks into discipline", listOf("faith"), it.modes) }
+    }
+
+    /** Anything quoting a real person or a translation must say where it came from. */
+    @Test
+    fun `quotes and scripture carry their attribution`() {
+        motivation.items
+            .filter { it.type == "quote" || it.type == "scripture" }
+            .forEach {
+                assertTrue("${it.id} has no attribution", !it.attribution.isNullOrBlank())
+                if (it.type == "scripture") {
+                    assertEquals("${it.id} must name its translation", "WEB", it.translation)
+                    assertTrue("${it.id} has no reference", !it.sourceRef.isNullOrBlank())
+                }
+            }
+    }
+
+    /** A short item has to actually be short — the widget has one line for it. */
+    @Test
+    fun `short items fit where short items go`() {
+        motivation.items.filter { it.length == "short" }.forEach {
+            assertTrue("${it.id} is too long to be short", it.text.length <= 120)
+        }
     }
 }

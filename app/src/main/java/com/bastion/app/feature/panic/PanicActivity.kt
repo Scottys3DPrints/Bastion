@@ -102,9 +102,29 @@ private fun PanicFlow(onClose: () -> Unit) {
 
     LaunchedEffect(Unit) {
         covenant = graph.growth.covenantOnce()
-        val brief = graph.content.briefForDay(graph.journey.dayOfJourney())
-        val side = brief?.side(settings.faithMode)
-        if (side != null) anchor = side.anchor to side.anchorRef
+
+        // The library first, because it is tagged with the triggers this man
+        // actually reported — the same ninety seconds lands very differently
+        // when the words name the thing he is in rather than being the same
+        // verse everyone gets on day nine.
+        val current = graph.settings.current()
+        val item = graph.content.motivationForMoment(
+            faithMode = current.faithMode,
+            moment = "urge",
+            userTriggers = com.bastion.app.data.content.TriggerKeys.of(current.triggers),
+            avoidId = current.lastUrgeItemId.takeIf { it.isNotBlank() },
+        )
+        if (item != null) {
+            anchor = item.text to (item.credit() ?: "")
+            graph.settings.setLastUrgeItem(item.id)
+        } else {
+            // The day's brief is the fallback, and there is a hard-coded line
+            // behind even that. A panic screen with nothing on it is the one
+            // failure this flow must never have.
+            val brief = graph.content.briefForDay(graph.journey.dayOfJourney())
+            val side = brief?.side(current.faithMode)
+            if (side != null) anchor = side.anchor to side.anchorRef
+        }
     }
 
     DawnBackground {

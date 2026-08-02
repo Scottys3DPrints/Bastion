@@ -329,7 +329,7 @@ private fun LockdownPlanDialog(
                     // Needs a system consent screen; asking at the moment the
                     // option is chosen beats failing silently later.
                     if (wanted && !BastionDeviceAdmin.isActive(context)) {
-                        runCatching { context.startActivity(BastionDeviceAdmin.activationIntent(context)) }
+                        BastionDeviceAdmin.requestActivation(context)
                     }
                 }
                 PlanToggle("Tell my partner", settings.lockdownTellPartner) {

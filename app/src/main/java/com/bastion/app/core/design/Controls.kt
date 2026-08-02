@@ -1,5 +1,6 @@
 package com.bastion.app.core.design
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material3.ButtonDefaults
@@ -12,6 +13,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,7 +59,17 @@ fun <T> ChoiceRow(
     onSelect: (T) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    SingleChoiceSegmentedButtonRow(modifier) {
+    // Four options fill the width; five or more scroll instead.
+    //
+    // A segmented row divides the width evenly and clips whatever does not
+    // fit, so a fifth option turned "Challenges" into "Challeng" and "Becoming"
+    // into "Becomin" — text that reads as a rendering fault rather than as a
+    // label that ran out of room. Scrolling keeps the standard control and the
+    // whole word.
+    val scrolls = options.size > 4
+    SingleChoiceSegmentedButtonRow(
+        if (scrolls) modifier.horizontalScroll(rememberScrollState()) else modifier
+    ) {
         options.forEachIndexed { index, option ->
             SegmentedButton(
                 selected = option == selected,

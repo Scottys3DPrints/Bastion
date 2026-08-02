@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.BastionCard
 import com.bastion.app.core.design.BastionColors
+import com.bastion.app.core.design.Space
 import com.bastion.app.core.design.ChoiceRow
 import com.bastion.app.core.design.LinkButton
 import com.bastion.app.core.design.BastionBottomSheet
@@ -72,6 +73,7 @@ private enum class GrowTab(val label: String) {
     CHALLENGES("Challenges"),
     BECOMING("Becoming"),
     LIBRARY("Library"),
+    ARMORY("Armory"),
 }
 
 /**
@@ -118,6 +120,7 @@ fun GrowScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
             GrowTab.CHALLENGES -> ChallengesTab(graph, faithMode)
             GrowTab.BECOMING -> BecomingTab(graph)
             GrowTab.LIBRARY -> LibraryTab(graph, faithMode) { openLesson = it }
+            GrowTab.ARMORY -> ArmoryTab(graph, faithMode)
         }
     }
 
@@ -529,4 +532,140 @@ private fun ConfirmDialog(
 /** Small helper so tab bodies stay readable rather than nesting scope plumbing. */
 private fun CoroutineScope.launch2(block: suspend () -> Unit) {
     launch { block() }
+}
+
+/**
+ * The Armory — every line in the library, in one place.
+ *
+ * The other tabs are things to do. This one is things to read, and it exists
+ * because the lines that actually land on a man are not predictable: the verse
+ * that does nothing in March is the one he needs in November. So rather than
+ * only ever rationing them out one at a time at the moments the app chooses,
+ * the whole collection is browsable, and anything that hits can be kept.
+ *
+ * Scripture and prayer appear in Faith mode only — that filtering happens in
+ * the repository, so this screen cannot get it wrong.
+ */
+@Composable
+private fun ArmoryTab(graph: BastionGraph, faithMode: Boolean) {
+    val scope = rememberCoroutineScope()
+    val settings by graph.settings.settings.collectAsStateWithLifecycle(
+        initialValue = com.bastion.app.data.prefs.Settings()
+    )
+
+    var all by remember {
+        mutableStateOf<List<com.bastion.app.data.content.MotivationItem>>(emptyList())
+    }
+    LaunchedEffect(faithMode) { all = graph.content.motivationFor(faithMode) }
+
+    var type by remember { mutableStateOf(ARMORY_ALL) }
+    var savedOnly by remember { mutableStateOf(false) }
+
+    val saved = settings.savedMotivation.toSet()
+    val types = remember(all) {
+        listOf(ARMORY_ALL) + all.map { it.type }.distinct().sorted()
+    }
+    val shown = all
+        .filter { type == ARMORY_ALL || it.type == type }
+        .filter { !savedOnly || it.id in saved }
+
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SectionLabel("${all.size} lines")
+            LinkButton(
+                if (savedOnly) "Show all" else "Kept only",
+                if (savedOnly) BastionColors.BronzeBright else BastionColors.TextMuted,
+            ) { savedOnly = !savedOnly }
+        }
+        Spacer(Modifier.height(Space.md))
+
+        Row(
+            Modifier.horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(Space.sm),
+        ) {
+            types.forEach { option ->
+                com.bastion.app.core.design.BastionFilterChip(
+                    label = armoryLabel(option),
+                    selected = type == option,
+                    onClick = { type = option },
+                )
+            }
+        }
+        Spacer(Modifier.height(Space.md))
+
+        if (shown.isEmpty()) {
+            com.bastion.app.core.design.EmptyState(
+                text = if (savedOnly) "Nothing kept yet. Tap Keep on a line that lands."
+                else "Nothing here in this mode.",
+            )
+        }
+
+        shown.forEach { item ->
+            ArmoryRow(
+                item = item,
+                kept = item.id in saved,
+                onToggleKeep = { scope.launch2 { graph.settings.toggleSavedMotivation(item.id) } },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ArmoryRow(
+    item: com.bastion.app.data.content.MotivationItem,
+    kept: Boolean,
+    onToggleKeep: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().padding(vertical = Space.md)) {
+        item.title?.let {
+            Text(it, style = MaterialTheme.typography.titleSmall, color = BastionColors.TextPrimary)
+            Spacer(Modifier.height(Space.xs))
+        }
+        Text(
+            item.text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = BastionColors.TextSecondary,
+        )
+        Spacer(Modifier.height(Space.sm))
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                item.credit() ?: armoryLabel(item.type),
+                style = MaterialTheme.typography.labelSmall,
+                color = BastionColors.TextMuted,
+                modifier = Modifier.weight(1f),
+                maxLines = 2,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            )
+            LinkButton(
+                if (kept) "Kept" else "Keep",
+                if (kept) BastionColors.BronzeBright else BastionColors.TextMuted,
+                onToggleKeep,
+            )
+        }
+        com.bastion.app.core.design.RowDivider()
+    }
+}
+
+private const val ARMORY_ALL = "all"
+
+/** "urge_line" is what the file calls it; "Urge lines" is what a person calls it. */
+private fun armoryLabel(type: String): String = when (type) {
+    ARMORY_ALL -> "All"
+    "quote" -> "Quotes"
+    "scripture" -> "Scripture"
+    "prayer" -> "Prayers"
+    "reframe" -> "Reframes"
+    "urge_line" -> "Urge lines"
+    "affirmation" -> "Affirmations"
+    "story" -> "Stories"
+    "fact" -> "Facts"
+    else -> type.replace('_', ' ').replaceFirstChar(Char::uppercase)
 }

@@ -1,0 +1,5469 @@
+{
+  "version": 1,
+  "count": 211,
+  "note": "Scripture and prayer text is taken verbatim from daily_briefs.json, content this app already ships. Quotes are public-domain and attributed. Reframes, urge lines, affirmations, stories and facts are original to Bastion.",
+  "items": [
+    {
+      "id": "scripture_0001",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "I have made a covenant with my eyes; why then should I look at a young woman?",
+      "attribution": "The Bible",
+      "source": "Job 31:1",
+      "sourceRef": "Job 31:1",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "the eyes",
+        "covenant"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0001",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Father, You know exactly what I am carrying and You have not turned away. Give me one honest day. Make me the kind of man who keeps his word to You.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0002",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "God is our refuge and strength, a very present help in trouble.",
+      "attribution": "The Bible",
+      "source": "Psalm 46:1",
+      "sourceRef": "Psalm 46:1",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "strength"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0002",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, be present help, not distant judge. When the pull comes, remind me You are nearer than the craving is loud.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0003",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "No temptation has overtaken you that is not common to man. God is faithful, and he will not let you be tempted beyond your ability, but with the temptation he will also provide the way of escape, that you may be able to endure it.",
+      "attribution": "The Bible",
+      "source": "1 Corinthians 10:13",
+      "sourceRef": "1 Corinthians 10:13",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "temptation"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0003",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Father, thank You that this is not beyond me and I am not beyond You. Show me the door tonight, and give me the courage to walk through it.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0004",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "And the angel of the LORD came again a second time and touched him and said, Arise and eat, for the journey is too great for you.",
+      "attribution": "The Bible",
+      "source": "1 Kings 19:7",
+      "sourceRef": "1 Kings 19:7",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0004",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, You know I am dust and You are not disappointed by it. Feed me, steady me, and let my rest tonight be part of my obedience.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0005",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "But if we walk in the light, as he is in the light, we have fellowship with one another, and the blood of Jesus his Son cleanses us from all sin.",
+      "attribution": "The Bible",
+      "source": "1 John 1:7",
+      "sourceRef": "1 John 1:7",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "light"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge",
+        "relapse"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0005",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "God, You have never been shocked by me. Give me the nerve to be known by someone who will walk with me, and let me stay in the light.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0006",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "The steadfast love of the LORD never ceases; his mercies never come to an end; they are new every morning; great is your faithfulness.",
+      "attribution": "The Bible",
+      "source": "Lamentations 3:22-23",
+      "sourceRef": "Lamentations 3:22-23",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge",
+        "relapse"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0006",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Father, thank You that Your mercy is not rationed. I am not going to hide or wallow. Meet me here and walk me forward today.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0007",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "He makes me lie down in green pastures. He leads me beside still waters. He restores my soul.",
+      "attribution": "The Bible",
+      "source": "Psalm 23:2-3",
+      "sourceRef": "Psalm 23:2-3",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge",
+        "relapse"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0007",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Shepherd, I have been braced for a long time. Make me lie down. Restore what this has cost me and teach me to rest without guilt.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0008",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Put on the new self, created after the likeness of God in true righteousness and holiness.",
+      "attribution": "The Bible",
+      "source": "Ephesians 4:24",
+      "sourceRef": "Ephesians 4:24",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0008",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, You do not just take things away, You give. Show me what to put in the empty hour, and make the new man in me feel like the real one.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0009",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Keep your heart with all vigilance, for from it flow the springs of life.",
+      "attribution": "The Bible",
+      "source": "Proverbs 4:23",
+      "sourceRef": "Proverbs 4:23",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "the heart"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0009",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Father, give me the humility to build fences rather than trust my own strength. Guard my heart where I cannot guard it myself.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0010",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "And rising very early in the morning, while it was still dark, he departed and went out to a desolate place, and there he prayed.",
+      "attribution": "The Bible",
+      "source": "Mark 1:35",
+      "sourceRef": "Mark 1:35",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0010",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, let my first thought tomorrow be toward You rather than a screen. Set the tone of the day before anything else can.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0011",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "For while bodily training is of some value, godliness is of value in every way, as it holds promise for the present life and also for the life to come.",
+      "attribution": "The Bible",
+      "source": "1 Timothy 4:8",
+      "sourceRef": "1 Timothy 4:8",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0011",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, thank You for a body, not just a soul. Teach me to steward it, and let the strength I build serve something beyond myself.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0012",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "In peace I will both lie down and sleep; for you alone, O LORD, make me dwell in safety.",
+      "attribution": "The Bible",
+      "source": "Psalm 4:8",
+      "sourceRef": "Psalm 4:8",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0012",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, You keep watch when I sleep. Let me lie down in peace tonight rather than in tension, and guard my mind through the dark hours.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0013",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Whatever you do, work heartily, as for the Lord and not for men.",
+      "attribution": "The Bible",
+      "source": "Colossians 3:23",
+      "sourceRef": "Colossians 3:23",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "the heart"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0013",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, You worked and called it good. Let my work today be offered to You, and let it draw out the best of me rather than the least.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0014",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Do not be conformed to this world, but be transformed by the renewal of your mind, that by testing you may discern what is the will of God, what is good and acceptable and perfect.",
+      "attribution": "The Bible",
+      "source": "Romans 12:2",
+      "sourceRef": "Romans 12:2",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "the mind"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0014",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Father, renew my mind where I cannot reach it. Change what I want, not just what I do, and give me patience with the pace of it.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0015",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Search me, O God, and know my heart! Try me and know my thoughts! And see if there be any grievous way in me, and lead me in the way everlasting!",
+      "attribution": "The Bible",
+      "source": "Psalm 139:23-24",
+      "sourceRef": "Psalm 139:23-24",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "the heart"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0015",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Search me, God, and be gentle with what You find. Show me what I have been running from, and lead me somewhere better than escape.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0016",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Then the LORD God said, It is not good that the man should be alone; I will make him a helper fit for him.",
+      "attribution": "The Bible",
+      "source": "Genesis 2:18",
+      "sourceRef": "Genesis 2:18",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0016",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Father, You said it is not good for me to be alone and You meant it. Give me courage to reach for real people instead of a substitute.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0017",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Therefore, confess your sins to one another and pray for one another, that you may be healed.",
+      "attribution": "The Bible",
+      "source": "James 5:16",
+      "sourceRef": "James 5:16",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0017",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, You put us in a body, not in solitary confinement. Give me one or two honest men, and make me that kind of man for someone else.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0018",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "So teach us to number our days that we may get a heart of wisdom.",
+      "attribution": "The Bible",
+      "source": "Psalm 90:12",
+      "sourceRef": "Psalm 90:12",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "the heart"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0018",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, teach me to number my days. Slow me down enough to be present with You in the quiet instead of always reaching for noise.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0019",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Come to me, all who labor and are heavy laden, and I will give you rest. Take my yoke upon you, and learn from me, for I am gentle and lowly in heart, and you will find rest for your souls.",
+      "attribution": "The Bible",
+      "source": "Matthew 11:28-29",
+      "sourceRef": "Matthew 11:28-29",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "the heart"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0019",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Jesus, You called the exhausted, not the impressive. I bring the pressure I have been carrying to You instead of to my old escape.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0020",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Delight yourself in the LORD, and he will give you the desires of your heart.",
+      "attribution": "The Bible",
+      "source": "Psalm 37:4",
+      "sourceRef": "Psalm 37:4",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "the heart",
+        "light"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0020",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, my wants are not too big, they are too small. Reshape my desires until the real thing looks better than the substitute.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0021",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "There is therefore now no condemnation for those who are in Christ Jesus.",
+      "attribution": "The Bible",
+      "source": "Romans 8:1",
+      "sourceRef": "Romans 8:1",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0021",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Father, thank You that there is no condemnation left for me. Let me feel honest sorrow without drowning, and let Your kindness lead me forward.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0022",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Therefore, if anyone is in Christ, he is a new creation. The old has passed away; behold, the new has come.",
+      "attribution": "The Bible",
+      "source": "2 Corinthians 5:17",
+      "sourceRef": "2 Corinthians 5:17",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0022",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, You call me new before I feel new. Help me live out of what You have already said about me rather than what I have done.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0023",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Let what you say be simply Yes or No; anything more than this comes from evil.",
+      "attribution": "The Bible",
+      "source": "Matthew 5:37",
+      "sourceRef": "Matthew 5:37",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0023",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, make my yes mean yes. Rebuild my integrity in the small hidden places, and let my word be worth something because Yours is.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0024",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "For you were called to freedom, brothers. Only do not use your freedom as an opportunity for the flesh, but through love serve one another.",
+      "attribution": "The Bible",
+      "source": "Galatians 5:13",
+      "sourceRef": "Galatians 5:13",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith",
+        "freedom"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0024",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, You set me free for something, not just from something. Show me one person to serve today and let me do it without needing credit.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0025",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Treat older women as mothers, younger women as sisters, in all purity.",
+      "attribution": "The Bible",
+      "source": "1 Timothy 5:2",
+      "sourceRef": "1 Timothy 5:2",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0025",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Father, give me clean eyes. Teach me to see women as Your daughters, and let honour become my reflex rather than appetite.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0026",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "For we are his workmanship, created in Christ Jesus for good works, which God prepared beforehand, that we should walk in them.",
+      "attribution": "The Bible",
+      "source": "Ephesians 2:10",
+      "sourceRef": "Ephesians 2:10",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0026",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, You made me for something and prepared it in advance. Give me clear eyes for the work in front of me and the energy to walk in it.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0027",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "The prudent sees danger and hides himself, but the simple go on and suffer for it.",
+      "attribution": "The Bible",
+      "source": "Proverbs 27:12",
+      "sourceRef": "Proverbs 27:12",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0027",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, give me the foresight to prepare rather than presume. When the hard day comes, let me find the plan already made and Your help already there.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0028",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "In all things I have shown you that by working hard in this way we must help the weak and remember the words of the Lord Jesus, how he himself said, It is more blessed to give than to receive.",
+      "attribution": "The Bible",
+      "source": "Acts 20:35",
+      "sourceRef": "Acts 20:35",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0028",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, let what has cost me something become useful to someone else. Give me the humility to speak plainly and the wisdom to know when.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0029",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "Therefore, since we are surrounded by so great a cloud of witnesses, let us also lay aside every weight, and sin which clings so closely, and let us run with endurance the race that is set before us.",
+      "attribution": "The Bible",
+      "source": "Hebrews 12:1",
+      "sourceRef": "Hebrews 12:1",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0029",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Lord, thank You that I am not running this alone or unseen. Help me lay aside what slows me and give me endurance rather than speed.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "scripture_0030",
+      "type": "scripture",
+      "modes": [
+        "faith"
+      ],
+      "text": "And let us not grow weary of doing good, for in due season we will reap, if we do not give up.",
+      "attribution": "The Bible",
+      "source": "Galatians 6:9",
+      "sourceRef": "Galatians 6:9",
+      "translation": "WEB",
+      "title": null,
+      "themes": [
+        "faith"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "urge"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "prayer_0030",
+      "type": "prayer",
+      "modes": [
+        "faith"
+      ],
+      "text": "Father, thank You for these thirty days, the good ones and the failures. Keep me from growing weary, and keep me walking with You into the next stretch.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prayer",
+        "help"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0001",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "You have power over your mind — not outside events. Realize this, and you will find strength.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "control",
+        "the mind"
+      ],
+      "triggers": [
+        "stress",
+        "anxiety"
+      ],
+      "moments": [
+        "urge",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0002",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "If it is not right, do not do it; if it is not true, do not say it.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "integrity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0003",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "The best revenge is not to be like your enemy.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "character"
+      ],
+      "triggers": [
+        "anger"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0004",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Waste no more time arguing what a good man should be. Be one.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0005",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Confine yourself to the present.",
+      "attribution": "Marcus Aurelius",
+      "source": "Meditations",
+      "sourceRef": "Meditations",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "the present"
+      ],
+      "triggers": [
+        "anxiety"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0006",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "It is not that we have a short time to live, but that we waste a lot of it.",
+      "attribution": "Seneca",
+      "source": "On the Shortness of Life",
+      "sourceRef": "On the Shortness of Life",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "time"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0007",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "We suffer more often in imagination than in reality.",
+      "attribution": "Seneca",
+      "source": "Letters from a Stoic",
+      "sourceRef": "Letters from a Stoic",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "fear"
+      ],
+      "triggers": [
+        "anxiety",
+        "stress"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0008",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Drunkenness is nothing but a condition of insanity purposely assumed.",
+      "attribution": "Seneca",
+      "source": "Letters from a Stoic",
+      "sourceRef": "Letters from a Stoic",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "sobriety"
+      ],
+      "triggers": [
+        "alcohol"
+      ],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0009",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "No man is free who is not master of himself.",
+      "attribution": "Epictetus",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "freedom",
+        "self-control"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0010",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "First say to yourself what you would be; and then do what you have to do.",
+      "attribution": "Epictetus",
+      "source": "Discourses",
+      "sourceRef": "Discourses",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0011",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "It is impossible for a man to learn what he thinks he already knows.",
+      "attribution": "Epictetus",
+      "source": "Discourses",
+      "sourceRef": "Discourses",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "humility"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0012",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "He who conquers himself is the mightiest warrior.",
+      "attribution": "Confucius",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "self-control"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0013",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The gem cannot be polished without friction, nor man perfected without trials.",
+      "attribution": "Confucius",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "endurance"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0014",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Our greatest glory is not in never falling, but in rising every time we fall.",
+      "attribution": "Confucius",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "recovery"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0015",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Knowing yourself is the beginning of all wisdom.",
+      "attribution": "Aristotle",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "self-knowledge"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0016",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "We are what we repeatedly do. Excellence, then, is not an act, but a habit.",
+      "attribution": "Will Durant",
+      "source": "The Story of Philosophy",
+      "sourceRef": "The Story of Philosophy",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0017",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Mastering others is strength. Mastering yourself is true power.",
+      "attribution": "Lao Tzu",
+      "source": "Tao Te Ching",
+      "sourceRef": "Tao Te Ching",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "self-control"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0018",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "A journey of a thousand miles begins with a single step.",
+      "attribution": "Lao Tzu",
+      "source": "Tao Te Ching",
+      "sourceRef": "Tao Te Ching",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "beginnings"
+      ],
+      "triggers": [],
+      "moments": [
+        "milestone",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0019",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "He who is contented is rich.",
+      "attribution": "Lao Tzu",
+      "source": "Tao Te Ching",
+      "sourceRef": "Tao Te Ching",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "contentment"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0020",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The unexamined life is not worth living.",
+      "attribution": "Socrates",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "self-knowledge"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0021",
+      "type": "quote",
+      "modes": [
+        "faith"
+      ],
+      "text": "Whoever is patient has great understanding, but one who is quick-tempered displays folly.",
+      "attribution": "Proverbs 14:29",
+      "source": "Proverbs 14:29",
+      "sourceRef": "Proverbs 14:29",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "patience"
+      ],
+      "triggers": [
+        "anger"
+      ],
+      "moments": [
+        "urge",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0022",
+      "type": "quote",
+      "modes": [
+        "faith"
+      ],
+      "text": "Better a patient person than a warrior, one with self-control than one who takes a city.",
+      "attribution": "Proverbs 16:32",
+      "source": "Proverbs 16:32",
+      "sourceRef": "Proverbs 16:32",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "self-control"
+      ],
+      "triggers": [
+        "anger"
+      ],
+      "moments": [
+        "urge",
+        "daily",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0023",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Nothing is so strong as gentleness, nothing so gentle as real strength.",
+      "attribution": "Francis de Sales",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "gentleness"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0024",
+      "type": "quote",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Have patience with all things, but chiefly have patience with yourself.",
+      "attribution": "Francis de Sales",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "patience",
+        "self-compassion"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0025",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Character is like a tree and reputation like a shadow. The shadow is what we think of it; the tree is the real thing.",
+      "attribution": "Abraham Lincoln",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "character"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0026",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Whatever you are, be a good one.",
+      "attribution": "Abraham Lincoln",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "character"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0027",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The best way out is always through.",
+      "attribution": "Robert Frost",
+      "source": "A Servant to Servants",
+      "sourceRef": "A Servant to Servants",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "endurance"
+      ],
+      "triggers": [
+        "stress"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0028",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Do not go where the path may lead, go instead where there is no path and leave a trail.",
+      "attribution": "Ralph Waldo Emerson",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "courage"
+      ],
+      "triggers": [],
+      "moments": [
+        "milestone",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0029",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "What lies behind us and what lies before us are tiny matters compared to what lies within us.",
+      "attribution": "Ralph Waldo Emerson",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "inner strength"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0030",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Sow a thought, reap an action; sow an action, reap a habit; sow a habit, reap a character; sow a character, reap a destiny.",
+      "attribution": "Samuel Smiles",
+      "source": "Life and Labour",
+      "sourceRef": "Life and Labour",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit",
+        "character"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0031",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Nothing worth having comes without some kind of fight.",
+      "attribution": "Frederick Douglass",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "struggle"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0032",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "If there is no struggle, there is no progress.",
+      "attribution": "Frederick Douglass",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "struggle"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0033",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "It is easier to build strong children than to repair broken men.",
+      "attribution": "Frederick Douglass",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "prevention"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0034",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The chains of habit are too weak to be felt until they are too strong to be broken.",
+      "attribution": "Samuel Johnson",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0035",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "He who has a why to live can bear almost any how.",
+      "attribution": "Friedrich Nietzsche",
+      "source": "Twilight of the Idols",
+      "sourceRef": "Twilight of the Idols",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "purpose"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0036",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Fall seven times, stand up eight.",
+      "attribution": "Japanese proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "recovery"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0037",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The bamboo that bends is stronger than the oak that resists.",
+      "attribution": "Japanese proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "flexibility"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0038",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "A smooth sea never made a skilled sailor.",
+      "attribution": "English proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "endurance"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0039",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The best time to plant a tree was twenty years ago. The second best time is now.",
+      "attribution": "Proverb",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "beginnings"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0040",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Little strokes fell great oaks.",
+      "attribution": "Benjamin Franklin",
+      "source": "Poor Richard's Almanack",
+      "sourceRef": "Poor Richard's Almanack",
+      "translation": null,
+      "title": null,
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0041",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Energy and persistence conquer all things.",
+      "attribution": "Benjamin Franklin",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0042",
+      "type": "quote",
+      "modes": [
+        "discipline"
+      ],
+      "text": "Either you run the day or the day runs you.",
+      "attribution": "Jim Rohn",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "ownership"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0043",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Courage is resistance to fear, mastery of fear — not absence of fear.",
+      "attribution": "Mark Twain",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "courage"
+      ],
+      "triggers": [
+        "anxiety"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0044",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "Habit is either the best of servants or the worst of masters.",
+      "attribution": "Nathaniel Emmons",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "quote_0045",
+      "type": "quote",
+      "modes": [
+        "discipline",
+        "faith"
+      ],
+      "text": "The greatest remedy for anger is delay.",
+      "attribution": "Seneca",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "delay"
+      ],
+      "triggers": [
+        "anger"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0001",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "An urge is a wave, not an order. It rises, it peaks, it falls — and it falls whether or not you obey it.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "temptation"
+      ],
+      "triggers": [
+        "stress"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0002",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "You are not fighting a craving. You are outlasting one.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "endurance"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0003",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "The feeling is real. The story it is telling you about what you need is not.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "honesty"
+      ],
+      "triggers": [
+        "anxiety"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0004",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Nothing about this moment is an emergency. It only has the shape of one.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "calm"
+      ],
+      "triggers": [
+        "anxiety",
+        "stress"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0005",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "You have felt exactly this before and it passed. That is evidence, not hope.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "evidence"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0006",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Wanting it and choosing it are two different acts. Only one of them is yours to make.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "choice"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0007",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "It is not asking for pleasure. It is asking for relief. Name what actually needs relieving.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "insight"
+      ],
+      "triggers": [
+        "stress",
+        "loneliness"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0008",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "The urge always promises this once. It has never once meant it.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "honesty"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0009",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Ten minutes from now you will be a man who waited ten minutes. Start there.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "delay"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0010",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Your body is not betraying you. It is doing what it was trained to do. Training can change.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "compassion"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0011",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "The version of you that wants this is tired, not evil. Put him to bed.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "compassion"
+      ],
+      "triggers": [
+        "tiredness",
+        "late_night"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0012",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Boredom is not a reason. It is an empty room. Walk into a different one.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "boredom"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0013",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Loneliness is asking for a person. A screen is not a person.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "connection"
+      ],
+      "triggers": [
+        "loneliness",
+        "home_alone"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0014",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "If you would not do it with the door open, the problem is not the door.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "integrity"
+      ],
+      "triggers": [
+        "home_alone"
+      ],
+      "moments": [
+        "urge",
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0015",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "A slip is a data point, not a verdict.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "recovery"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0016",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "You did not lose everything. You lost a day. Those are very different sizes.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "perspective"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0017",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "The streak broke. The man who built it did not.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0018",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Shame will offer to punish you and call it accountability. Decline.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "grace"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0019",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "What you do in the next hour matters more than what you did in the last one.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "recovery"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0020",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Getting back up today is worth more than never having fallen.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "recovery"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0021",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "You are not starting from zero. You are starting from experience.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "recovery"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0022",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "The goal was never a perfect record. It was becoming someone who gets up.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0023",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Discipline is not punishment. It is what self-respect looks like from the outside.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0024",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "You are not giving something up. You are refusing to keep paying for it.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "reframe"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0025",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Every time you do not, you are not resisting who you are. You are becoming who you are.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "milestone",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0026",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "The man you want to be is not waiting at the end. He is made in moments like this one.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0027",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Willpower runs out. Distance does not. Put distance between you and it.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "strategy"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0028",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "You do not have to want to. You only have to do it anyway.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "action"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0029",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Tiredness lies more convincingly at midnight than at noon. Judge nothing now.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "late night"
+      ],
+      "triggers": [
+        "late_night",
+        "tiredness"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0030",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Anger wants somewhere to go. Give it somewhere that costs you nothing.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "anger"
+      ],
+      "triggers": [
+        "anger"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0031",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "The feed is engineered. Losing to it is not a character flaw, it is a design outcome. Change the design.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "environment"
+      ],
+      "triggers": [
+        "social_media"
+      ],
+      "moments": [
+        "urge",
+        "library",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0032",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Your future self is not a stranger. He is the one who has to live in what you build tonight.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "future"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0033",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Rest is not the same as escape. One of them leaves you emptier.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "rest"
+      ],
+      "triggers": [
+        "tiredness"
+      ],
+      "moments": [
+        "daily",
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0034",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "If it were really about desire, satisfying it would end it. It never ends it.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "insight"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "library",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "reframe_0035",
+      "type": "reframe",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Say the honest sentence: I want to feel differently than I do. Then choose a better way to feel it.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "honesty"
+      ],
+      "triggers": [
+        "stress"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0001",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Not tonight. Not this.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0002",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Stand up. Leave the room. That is the whole plan.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0003",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Breathe out longer than you breathe in. Four times.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "anxiety",
+        "stress"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0004",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "This peaks in about ten minutes. You can do ten minutes.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0005",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Put the phone in another room. Right now, before you finish reading this.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "social_media"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0006",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Cold water on your face. Go.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "tiredness",
+        "late_night"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0007",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Name three things you can hear. Then three you can see.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "anxiety"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0008",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "You are not in danger. You are in discomfort. They feel the same and they are not.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "anxiety"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0009",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Text your partner one word. Any word.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "loneliness",
+        "home_alone"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0010",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Twenty press-ups. Not for fitness. To change the channel.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "anger",
+        "stress"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0011",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Say it out loud: this will pass. Out loud.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0012",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Go outside. Even for ninety seconds. Even in your slippers.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "boredom",
+        "home_alone"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0013",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Drink a full glass of water before you decide anything.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "tiredness"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0014",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "You have already done the hard part — you opened this instead.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0015",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Do not negotiate. Negotiation is how it wins.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0016",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Set a timer for ten minutes and simply do not act until it rings.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0017",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Lie down on the floor for two minutes. It is a strange enough thing to break the loop.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "tiredness",
+        "late_night"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0018",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Turn the light on. All of it.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "late_night",
+        "home_alone"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0019",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Write down what actually happened in the last hour. Just facts.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "stress"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0020",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Put your shoes on. You do not have to go anywhere yet.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "boredom"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0021",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Whatever you were about to open, close it first. Decide after.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "social_media"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0022",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Count backwards from a hundred in sevens. It is annoying. That is why it works.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "anxiety"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0023",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Eat something. Properly. You may be running on nothing.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "tiredness"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0024",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "You are allowed to just go to bed. That is a complete answer.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "late_night",
+        "tiredness"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0025",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "If you are alone, do not stay alone. Ring someone.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "loneliness",
+        "home_alone"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0026",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Hold something cold for thirty seconds and count them.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "anxiety",
+        "anger"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0027",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "The wanting is loud right now. Loud is not the same as strong.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0028",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "One decision. Just this one. Not the rest of your life.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0029",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Move your body somewhere your phone is not.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [
+        "social_media",
+        "boredom"
+      ],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "urge_line_0030",
+      "type": "urge_line",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "You will be so glad, in twenty minutes, that you waited twenty minutes.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urge"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0001",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I am not the man I was, and I am not finished.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0002",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I keep my word to myself.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0003",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "My attention is mine to give.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0004",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I do not owe an urge anything.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0005",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I can feel something and not obey it.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0006",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I am building someone worth being.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0007",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Discipline is how I show myself respect.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0008",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I am allowed to begin again this morning.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0009",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "What I do repeatedly is who I become.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0010",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I choose the harder right over the easier wrong.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0011",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I do not need to be perfect to be serious.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0012",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "My body is not a vending machine for relief.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0013",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I would rather be free than comfortable.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0014",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I can be tired and still be honest.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0015",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "The quiet in me is worth protecting.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0016",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I am not hiding anything today.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0017",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I trust myself a little more than I did last week.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0018",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I do not have to win forever. I have to win now.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0019",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I am someone who tells his partner the truth.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0020",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I have survived every urge I have ever had.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0021",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I am the kind of man who stops.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0022",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "My future self is counting on this hour.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0023",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Peace is worth more than the ten minutes.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0024",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "I am not fighting alone.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "affirmation_0025",
+      "type": "affirmation",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Today I get to choose again.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "short",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "story_0001",
+      "type": "story",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "A swimmer caught in a rip current is told the same thing every time: do not swim against it. Swim across it, and wait. The current is enormous and it is also narrow. Men drown fighting the water in a straight line when three strokes sideways would have freed them. An urge is a rip current. You are not going to out-muscle it head on. Move sideways — a different room, a different task, a phone call — and let it carry itself out.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": "The Wave",
+      "themes": [
+        "temptation"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "daily"
+      ],
+      "length": "long",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "story_0002",
+      "type": "story",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "An old man tells his grandson there are two wolves fighting inside him. One is anger, envy, self-pity, and appetite. The other is peace, patience, honesty, and kindness. The boy asks which one wins. The old man says: the one you feed. It is an old story and men repeat it because it is the only mechanism that has ever mattered. You are not choosing who you are in one heroic moment. You are choosing what you feed, tonight, and again tomorrow night.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": "The Two Wolves",
+      "themes": [
+        "identity"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "daily"
+      ],
+      "length": "long",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "story_0003",
+      "type": "story",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Two woodcutters worked the same forest. One swung all day without stopping. The other stopped every hour and sat down. By evening the one who rested had cut twice as much. Asked how, he said: I was sharpening my axe. Men who never rest do not become more disciplined, they become blunt. Sleep is not the opposite of discipline. It is the maintenance discipline runs on.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": "The Woodcutter",
+      "themes": [
+        "rest"
+      ],
+      "triggers": [],
+      "moments": [
+        "library"
+      ],
+      "length": "long",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "story_0004",
+      "type": "story",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "A man who wanted to stop drinking did not rely on willpower at the moment of thirst. He gave the key of the cabinet to his neighbour. He was not weak for doing it; he was accurate. He knew which version of himself would be making the decision at nine at night, and he made sure that version had nothing to decide. This is what guards are. Not distrust of yourself — an honest appointment with who you are when it is late.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": "The Locked Cabinet",
+      "themes": [
+        "environment"
+      ],
+      "triggers": [],
+      "moments": [
+        "library"
+      ],
+      "length": "long",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "story_0005",
+      "type": "story",
+      "modes": [
+        "faith"
+      ],
+      "text": "A wall around an old city fell in a single season and took fifty-two days to rebuild. Not fifty-two years. The men who rebuilt it worked with a tool in one hand and a weapon in the other, because rebuilding and defending had to happen at the same time. If you have fallen, you do not get a quiet period first in which to recover before life resumes. You rebuild while carrying on. It is done in far less time than shame tells you.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": "The Rebuilt Wall",
+      "themes": [
+        "recovery"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "long",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "story_0006",
+      "type": "story",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Nobody admires the first week. It is the two-hundredth day that changes a man, and nothing about the two-hundredth day feels dramatic. It feels like an ordinary Tuesday on which you did not do the thing. That is the whole secret and it is why so few people find it: the transformation is made entirely of unremarkable evenings.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": "The Long Obedience",
+      "themes": [
+        "persistence"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "milestone"
+      ],
+      "length": "long",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "story_0007",
+      "type": "story",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "A soldier's medal came back from a war dented. He was offered a new one and refused it. The dent, he said, is the part that proves it was carried. A record without a slip in it says only that you were never tested. Your rank is not lowered by the day you fell. It is made of the days you got up.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": "The Dented Medal",
+      "themes": [
+        "recovery"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "milestone",
+        "library"
+      ],
+      "length": "long",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "story_0008",
+      "type": "story",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "For years he handled it alone, and alone he lost, quietly, on a schedule. The thing that finally moved was not a new blocker or a better plan. It was one sentence said to one friend: this is what I am dealing with. Nothing about the urge changed. What changed is that it stopped being a secret, and secrecy was most of its strength.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": "The Man Who Told Someone",
+      "themes": [
+        "accountability"
+      ],
+      "triggers": [],
+      "moments": [
+        "library",
+        "relapse"
+      ],
+      "length": "long",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "fact_0001",
+      "type": "fact",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Most urges peak and subside within about twenty minutes. Riding one out is not endless — it has a shape, and the shape ends.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "urges"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "fact_0002",
+      "type": "fact",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Deliberately slowing your out-breath so it is longer than your in-breath activates the body's own calming response. It is one of the few switches you can reach directly.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "the body"
+      ],
+      "triggers": [
+        "anxiety",
+        "stress"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "fact_0003",
+      "type": "fact",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Changing your physical location interrupts a craving more reliably than trying to argue with it. The context is doing more of the work than the thought is.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "environment"
+      ],
+      "triggers": [],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "fact_0004",
+      "type": "fact",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Sleep loss measurably reduces impulse control. A bad night is not a character failing, it is a handicap you can plan around.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "rest"
+      ],
+      "triggers": [
+        "tiredness",
+        "late_night"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "fact_0005",
+      "type": "fact",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Habits are driven by cues far more than by decisions. Removing the cue is easier and more effective than resisting it every time.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "habit"
+      ],
+      "triggers": [
+        "social_media"
+      ],
+      "moments": [
+        "daily",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "fact_0006",
+      "type": "fact",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Naming an emotion in words reduces its intensity. Saying what you actually feel is not soft — it is a lever.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "honesty"
+      ],
+      "triggers": [
+        "stress",
+        "anger"
+      ],
+      "moments": [
+        "urge",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "fact_0007",
+      "type": "fact",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "People who tell one other person about a goal relapse less often than people who keep it entirely private. Secrecy is a risk factor in its own right.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "accountability"
+      ],
+      "triggers": [
+        "loneliness"
+      ],
+      "moments": [
+        "library",
+        "relapse"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    },
+    {
+      "id": "fact_0008",
+      "type": "fact",
+      "modes": [
+        "faith",
+        "discipline"
+      ],
+      "text": "Self-compassion after a lapse predicts getting back on track better than self-criticism does. Being hard on yourself is not the more serious option — it is the less effective one.",
+      "attribution": "Bastion",
+      "source": null,
+      "sourceRef": null,
+      "translation": null,
+      "title": null,
+      "themes": [
+        "grace"
+      ],
+      "triggers": [],
+      "moments": [
+        "relapse",
+        "library"
+      ],
+      "length": "medium",
+      "publicDomain": true,
+      "verified": true
+    }
+  ]
+}

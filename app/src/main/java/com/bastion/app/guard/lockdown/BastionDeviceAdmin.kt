@@ -34,8 +34,25 @@ class BastionDeviceAdmin : DeviceAdminReceiver() {
             context.getSystemService(DevicePolicyManager::class.java)
                 ?.isAdminActive(component(context)) == true
 
-        /** The system's own consent screen; there is no way to self-grant this. */
-        fun activationIntent(context: Context): Intent =
+        /**
+         * Opens the system's consent screen. There is no way to self-grant this.
+         *
+         * Callers must not reach for the intent and add flags to it, which is
+         * why this exists and [activationIntent] is now private: adding
+         * FLAG_ACTIVITY_NEW_TASK makes the screen refuse to appear at all.
+         * Android's own DeviceAdminAdd logs "Cannot start ADD_DEVICE_ADMIN as a
+         * new task" and finishes immediately, so the button looked dead — it
+         * launched something that killed itself before drawing a frame.
+         *
+         * @return false if there is no activity to show it, so the caller can
+         * say so instead of appearing to do nothing.
+         */
+        fun requestActivation(context: Context): Boolean = runCatching {
+            context.startActivity(activationIntent(context))
+            true
+        }.getOrDefault(false)
+
+        private fun activationIntent(context: Context): Intent =
             Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN)
                 .putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component(context))
                 .putExtra(

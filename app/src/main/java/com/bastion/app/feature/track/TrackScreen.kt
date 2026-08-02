@@ -648,6 +648,22 @@ private fun RecoveryFlow(
     var trigger by remember { mutableStateOf<String?>(null) }
     var reflection by remember { mutableStateOf("") }
 
+    // A grace-first line for the worst moment to be reading anything. Loaded
+    // rather than hard-coded so the words are not the same every single time a
+    // man ends up here — which, for someone using this flow often, would make
+    // it feel like a form rather than a hand.
+    val graceContext = LocalContext.current
+    val graceGraph = remember { BastionGraph.from(graceContext) }
+    var grace by remember {
+        mutableStateOf<com.bastion.app.data.content.MotivationItem?>(null)
+    }
+    LaunchedEffect(faithMode) {
+        grace = graceGraph.content.motivationForMoment(
+            faithMode = faithMode,
+            moment = "relapse",
+        )
+    }
+
     Column {
         when (stage) {
             0 -> {
@@ -659,6 +675,22 @@ private fun RecoveryFlow(
                     style = MaterialTheme.typography.bodyLarge,
                     color = BastionColors.TextSecondary,
                 )
+                grace?.let { item ->
+                    Spacer(Modifier.height(18.dp))
+                    Text(
+                        item.text,
+                        style = com.bastion.app.core.design.ScriptureCompactStyle,
+                        color = BastionColors.TextPrimary,
+                    )
+                    item.credit()?.let {
+                        Spacer(Modifier.height(Space.sm))
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = BastionColors.BronzeBright,
+                        )
+                    }
+                }
                 Spacer(Modifier.height(22.dp))
                 PrimaryButton("Look at it", { stage = 1 }, Modifier.fillMaxWidth())
             }

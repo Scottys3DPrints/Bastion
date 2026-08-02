@@ -32,7 +32,21 @@ class BastionAlarmReceiver : BroadcastReceiver() {
                 if (settings.briefEnabled) {
                     val day = graph.journey.dayOfJourney()
                     val brief = graph.content.briefForDay(day)?.side(settings.faithMode)
-                    if (brief != null) notifyBrief(appContext, day, brief.title, brief.microChallenge)
+                    if (brief != null) {
+                        // Today's word rides along under the day's one action,
+                        // so the motivation arrives even on the mornings the
+                        // app never gets opened. Same day seed as the home
+                        // screen and the widget, so all three agree.
+                        val word = graph.content.motivationForMoment(
+                            faithMode = settings.faithMode,
+                            moment = "daily",
+                            daySeed = java.time.LocalDate.now().toEpochDay(),
+                            maxLength = "short",
+                        )
+                        val body = listOfNotNull(brief.microChallenge, word?.text)
+                            .joinToString("\n\n")
+                        notifyBrief(appContext, day, brief.title, body)
+                    }
                 }
 
                 // Cooling-off requests come due here rather than needing the app open.

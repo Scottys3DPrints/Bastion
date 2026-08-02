@@ -280,12 +280,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                             }
                         }
                         GuardLayer.PRIVATE_DNS -> openPrivateDnsSettings(context)
-                        GuardLayer.SCREEN_LOCK -> runCatching {
-                            context.startActivity(
-                                BastionDeviceAdmin.activationIntent(context)
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            )
-                        }
+                        GuardLayer.SCREEN_LOCK -> BastionDeviceAdmin.requestActivation(context)
                         // One tap, and that is the whole feature. This used to
                         // offer an adb command as the "upgrade" once the switch
                         // was already on — for a stronger mode that was never

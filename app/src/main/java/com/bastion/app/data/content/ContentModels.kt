@@ -156,3 +156,59 @@ data class Blocklist(
     /** Substrings that mark a domain as adult when no allow-list entry matches. */
     val keywords: List<String> = emptyList(),
 )
+
+/**
+ * One line from the motivation library.
+ *
+ * Flat and forgiving on purpose, like every other content model here: the JSON
+ * is the product and it is expected to grow from a couple of hundred items to
+ * a few thousand without a single line of this file changing. Every field
+ * except [id], [type] and [text] has a default, so a future asset with new
+ * keys can never crash a build already on someone's phone.
+ */
+@Serializable
+data class MotivationItem(
+    val id: String,
+    /** quote | scripture | prayer | reframe | urge_line | affirmation | story | fact */
+    val type: String,
+    val modes: List<String> = listOf("faith", "discipline"),
+    val text: String,
+    val attribution: String? = null,
+    val source: String? = null,
+    val sourceRef: String? = null,
+    /** Scripture only; the translation the text was taken from. */
+    val translation: String? = null,
+    /** Stories only. */
+    val title: String? = null,
+    val themes: List<String> = emptyList(),
+    /** The app's own trigger taxonomy, so a line can be matched to a man's pattern. */
+    val triggers: List<String> = emptyList(),
+    /** urge | daily | relapse | milestone | library */
+    val moments: List<String> = emptyList(),
+    val length: String = "short",
+    val publicDomain: Boolean = true,
+    /**
+     * False means it has not been checked against its source yet, and the app
+     * will not show it. Anything quoting a real person or a translation is
+     * guilty until verified — a blocker that misattributes a line has no
+     * business asking anyone to trust the rest of what it says.
+     */
+    val verified: Boolean = true,
+) {
+    fun visibleIn(faithMode: Boolean) =
+        modes.contains(if (faithMode) "faith" else "discipline")
+
+    /** "Marcus Aurelius · Meditations", or just the one that exists. */
+    fun credit(): String? = listOfNotNull(
+        attribution?.takeIf { it.isNotBlank() },
+        sourceRef?.takeIf { it.isNotBlank() && it != attribution },
+    ).joinToString(" · ").takeIf { it.isNotBlank() }
+}
+
+@Serializable
+data class MotivationLibrary(
+    val version: Int = 1,
+    val count: Int = 0,
+    val note: String = "",
+    val items: List<MotivationItem> = emptyList(),
+)

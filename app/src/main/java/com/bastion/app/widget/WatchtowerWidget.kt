@@ -43,19 +43,31 @@ class WatchtowerWidget : GlanceAppWidget() {
         val state = graph.journey.state.first()
         val faithMode = graph.settings.current().faithMode
 
+        // The same line the home screen is showing, chosen by the same day
+        // seed — the widget exists so the words reach him without opening
+        // anything, and two different "today's words" would just be noise.
+        // Short items only: there is room for one line here, not a paragraph.
+        val word = graph.content.motivationForMoment(
+            faithMode = faithMode,
+            moment = "daily",
+            daySeed = java.time.LocalDate.now().toEpochDay(),
+            maxLength = "short",
+        )
+
         provideContent {
             GlanceTheme {
                 WidgetBody(
                     streak = state.currentStreak,
                     rankName = state.rank.displayName(faithMode),
                     points = state.points,
+                    word = word?.text,
                 )
             }
         }
     }
 
     @Composable
-    private fun WidgetBody(streak: Int, rankName: String, points: Int) {
+    private fun WidgetBody(streak: Int, rankName: String, points: Int, word: String?) {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -89,6 +101,18 @@ class WatchtowerWidget : GlanceAppWidget() {
                         color = ColorProvider(Color(0xFF96A0BA)),
                         fontSize = androidx.compose.ui.unit.TextUnit(13f, androidx.compose.ui.unit.TextUnitType.Sp),
                     ),
+                )
+            }
+            word?.let {
+                Spacer(GlanceModifier.height(8.dp))
+                Text(
+                    text = it,
+                    style = TextStyle(
+                        color = ColorProvider(Color(0xFF96A0BA)),
+                        fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp),
+                        textAlign = androidx.glance.text.TextAlign.Center,
+                    ),
+                    maxLines = 3,
                 )
             }
             Spacer(GlanceModifier.height(10.dp))

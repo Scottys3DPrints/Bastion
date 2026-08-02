@@ -56,6 +56,22 @@ data class Settings(
      * empty" posted a fresh opener over real history each time.
      */
     val mentorOpenerSent: Boolean = false,
+    /**
+     * The motivation line shown last time the urge screen opened.
+     *
+     * Persisted rather than held in memory: the panic screen is a fresh
+     * activity every time, so an in-memory guard would let the same words
+     * greet a man twice running — which is exactly when he stops reading them.
+     */
+    val lastUrgeItemId: String = "",
+    /**
+     * Lines from the library he has kept.
+     *
+     * Ids only, in DataStore rather than the database: the items themselves
+     * are bundled read-only content, so the only thing worth persisting is
+     * which of them mattered to him — and that needs no migration.
+     */
+    val savedMotivation: List<String> = emptyList(),
     /** Guards seed data from returning after a deliberate clear-out. */
     val guardSeeded: Boolean = false,
     /**
@@ -152,6 +168,8 @@ class SettingsStore(private val context: Context) {
         val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
         val MENTOR_OPENER_SENT = booleanPreferencesKey("mentor_opener_sent")
         val GUARD_SEEDED = booleanPreferencesKey("guard_seeded")
+        val LAST_URGE_ITEM = stringPreferencesKey("last_urge_item")
+        val SAVED_MOTIVATION = stringPreferencesKey("saved_motivation")
         val LAST_SEEN_RANK = intPreferencesKey("last_seen_rank_tier")
         val GUARD_INTENDED_ON = booleanPreferencesKey("guard_intended_on")
         val GUARD_OFF_NOTIFIED = longPreferencesKey("guard_off_notified_at")
@@ -192,6 +210,8 @@ class SettingsStore(private val context: Context) {
             lastUpdateCheck = p[Keys.LAST_UPDATE_CHECK] ?: 0L,
             mentorOpenerSent = p[Keys.MENTOR_OPENER_SENT] ?: false,
             guardSeeded = p[Keys.GUARD_SEEDED] ?: false,
+            lastUrgeItemId = p[Keys.LAST_URGE_ITEM] ?: "",
+            savedMotivation = p[Keys.SAVED_MOTIVATION].decodeTriggers(),
             lastSeenRankTier = p[Keys.LAST_SEEN_RANK] ?: 1,
             guardIntendedOn = p[Keys.GUARD_INTENDED_ON] ?: false,
             guardOffNotifiedAt = p[Keys.GUARD_OFF_NOTIFIED] ?: 0L,
@@ -239,6 +259,14 @@ class SettingsStore(private val context: Context) {
     suspend fun markUpdateChecked() = edit { it[Keys.LAST_UPDATE_CHECK] = System.currentTimeMillis() }
     suspend fun setMentorOpenerSent(value: Boolean) = edit { it[Keys.MENTOR_OPENER_SENT] = value }
     suspend fun setGuardSeeded(value: Boolean) = edit { it[Keys.GUARD_SEEDED] = value }
+    suspend fun setLastUrgeItem(value: String) = edit { it[Keys.LAST_URGE_ITEM] = value }
+
+    /** Keeps or un-keeps one line. Reuses the trigger list encoding. */
+    suspend fun toggleSavedMotivation(id: String) = edit { prefs ->
+        val current = prefs[Keys.SAVED_MOTIVATION].decodeTriggers()
+        val next = if (id in current) current - id else current + id
+        prefs[Keys.SAVED_MOTIVATION] = Json.encodeToString(next)
+    }
     suspend fun setLastSeenRankTier(value: Int) = edit { it[Keys.LAST_SEEN_RANK] = value }
     suspend fun setGuardIntendedOn(value: Boolean) = edit { it[Keys.GUARD_INTENDED_ON] = value }
     suspend fun setGuardOffNotifiedAt(value: Long) = edit { it[Keys.GUARD_OFF_NOTIFIED] = value }
