@@ -146,6 +146,9 @@ private fun BastionRoot(openTarget: String? = null) {
             com.bastion.app.guard.lockdown.DeviceOwner.apply(context, lockedIn)
             com.bastion.app.core.alarm.LockInWatchScheduler.sync(context, lockedIn)
             com.bastion.app.guard.GuardWatchdog.enforceIfLockedIn(context)
+            // Policy-level blocking for the apps set to FULL, so switching the
+            // accessibility service off does not open them.
+            com.bastion.app.guard.GuardWatchdog.holdFullBlocks(context)
         }
         onPauseOrDispose { }
     }

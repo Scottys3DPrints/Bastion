@@ -9,9 +9,16 @@ import android.os.UserManager
  *
  * Be clear about the one it will not: **no ordinary app can stop a user
  * disabling its own accessibility service.** Google keeps that toggle reachable
- * on purpose, for safety, and there is no public API to hold it down. Any app
- * promising otherwise is either lying or requires root, and Bastion's whole
- * credibility rests on not doing either.
+ * on purpose, for safety, and there is no public API to hold it down — checked
+ * against the SDK rather than assumed, and there is no `DISALLOW_CONFIG_
+ * ACCESSIBILITY` to be found. Any app promising otherwise is either lying or
+ * requires root, and Bastion's whole credibility rests on not doing either.
+ *
+ * What a Device Owner *can* do is make flipping it pointless. An app suspended
+ * by policy will not launch at all, with no accessibility service in the loop,
+ * so the apps a man set to Fully blocked stay shut whatever he does on that
+ * screen — see [suspendApps] and GuardWatchdog.holdFullBlocks. The toggle is
+ * still reachable. It just stops being a way out.
  *
  * So the goal is not an impossible hard lock. It is to close every *other*
  * escape hatch, which turns out to be most of them. Previous reviews found that
@@ -71,7 +78,15 @@ object DeviceOwner {
         UserManager.DISALLOW_ADD_USER,
         // A second VPN would take the tunnel away from whatever is filtering.
         UserManager.DISALLOW_CONFIG_VPN,
-
+        // Force-stopping Bastion from App info kills the accessibility service
+        // and the watchdog until something launches the app again — a two-tap
+        // way to switch the guard off that never touches the accessibility
+        // screen at all. This closes the whole App info page.
+        //
+        // The cost is real and worth stating: while locked in, no app on the
+        // phone can be force-stopped or uninstalled from Settings. It is
+        // cleared the moment lock-in is lifted.
+        UserManager.DISALLOW_APPS_CONTROL,
         // DISALLOW_INSTALL_APPS and DISALLOW_INSTALL_UNKNOWN_SOURCES are
         // deliberately NOT here, though the obvious bypass is "I'll install a
         // different browser".
@@ -316,15 +331,19 @@ object DeviceOwner {
         !isDeviceOwner(context) ->
             "Uninstall and factory reset are still open. One adb command closes them."
         lockedIn && privateDnsHeld ->
-            "Held while you're locked in: Private DNS can't be switched off, Chrome " +
-                "forces SafeSearch and won't go incognito, and uninstall, data-clear, " +
-                "factory reset, safe boot, new installs and other VPNs are blocked."
+            "Held while you're locked in: apps you set to Fully blocked can't be " +
+                "opened at all — the phone refuses them, so switching Guard off in " +
+                "Accessibility doesn't bring them back. Private DNS can't be changed, " +
+                "Chrome forces SafeSearch and won't go incognito, and uninstall, " +
+                "data-clear, force-stop, factory reset, safe boot and other VPNs are " +
+                "blocked."
         lockedIn ->
             // Everything except the DNS hold, and it says which is missing.
-            "Held while you're locked in: Chrome forces SafeSearch and won't go " +
-                "incognito, and uninstall, data-clear, factory reset, safe boot, new " +
-                "installs and other VPNs are blocked. Private DNS could not be held — " +
-                "the phone couldn't reach $HELD_DNS_HOSTNAME to check it."
+            "Held while you're locked in: apps you set to Fully blocked can't be " +
+                "opened at all, Chrome forces SafeSearch and won't go incognito, and " +
+                "uninstall, data-clear, force-stop, factory reset, safe boot and other " +
+                "VPNs are blocked. Private DNS could not be held — the phone couldn't " +
+                "reach $HELD_DNS_HOSTNAME to check it."
         else ->
             "Ready. These apply the moment you lock in."
     }

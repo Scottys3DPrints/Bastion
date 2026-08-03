@@ -77,6 +77,46 @@ class NoUngatedOffSwitchTest {
     }
 
     /**
+     * The answer to "I can just turn it off in Accessibility".
+     *
+     * Android will not let any app hold that toggle down — checked against the
+     * SDK, there is no such restriction — so the answer is not to block the
+     * switch but to make it not worth flipping: a Device Owner can suspend a
+     * package, and a suspended app does not launch at all, with no accessibility
+     * service in the loop.
+     *
+     * That only holds if it is actually called. `suspendApps` existed for a long
+     * time and had no caller anywhere in the app — a real capability, built and
+     * then never wired up, which is exactly the sort of thing that looks like
+     * protection in a code review and is not.
+     */
+    @Test
+    fun `fully-blocked apps are suspended by policy, not just by the service`() {
+        val watchdog = source("guard/GuardWatchdog.kt")
+        val body = watchdog.substringAfter("suspend fun holdFullBlocks")
+            .substringBefore("\n    suspend fun")
+
+        assertTrue(
+            "holdFullBlocks must suspend only FULL-mode apps — suspending feed-only " +
+                "guards would turn every partial block into a total one",
+            body.contains("BlockMode.FULL"),
+        )
+        assertTrue("holdFullBlocks must actually call suspendApps", body.contains("suspendApps"))
+        assertTrue(
+            "it must also unsuspend, or an app stays dead after the reason for it is gone",
+            body.contains("false)"),
+        )
+
+        // The capability is worthless unless something calls it.
+        listOf("MainActivity.kt", "core/alarm/BastionBootReceiver.kt").forEach { path ->
+            assertTrue(
+                "$path must call holdFullBlocks, or the suspension never happens",
+                source(path).contains("holdFullBlocks"),
+            )
+        }
+    }
+
+    /**
      * A snapshot of every place the UI touches a protection setting, so a new
      * one cannot appear unreviewed.
      *

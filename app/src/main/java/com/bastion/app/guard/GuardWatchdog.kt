@@ -221,6 +221,49 @@ object GuardWatchdog {
      * screen because a setting changed, without being asked to, is malware
      * with good intentions.
      */
+    /**
+     * Blocks the fully-guarded apps with policy instead of with a service.
+     *
+     * The accessibility toggle cannot be held down — Android keeps it reachable
+     * on purpose and there is no API to stop it, whatever an app claims. Every
+     * answer to that so far has been reactive: notice the service went off, put
+     * a wall in front of it, ask for it back. All of which happens *after* the
+     * apps have already opened.
+     *
+     * A Device Owner can suspend a package outright. A suspended app does not
+     * launch at all — the system refuses it, with no accessibility service in
+     * the loop and nothing for Bastion to react to. So the toggle stays
+     * flippable and stops being worth flipping: turning Guard off no longer
+     * opens anything that was set to be fully blocked.
+     *
+     * Only FULL-mode apps. Feed-only guarding is a scalpel — Instagram minus
+     * Reels — and needs the service reading the screen; suspending those would
+     * turn every partial block into a total one, which is not what was chosen.
+     * Those still degrade to nothing when the service is off, and the wall is
+     * still the answer there. The difference is that the apps a man said he
+     * never wants to open are now the ones that cannot be.
+     */
+    suspend fun holdFullBlocks(context: Context) {
+        val graph = BastionGraph.from(context)
+        val lockedIn = graph.settings.current().tamperLockEnabled
+        val guarded = graph.guard.enabledGuardedApps()
+        val full = guarded
+            .filter { it.mode == com.bastion.app.data.db.BlockMode.FULL }
+            .map { it.packageName }
+
+        // Unsuspend on the way out, always, and unsuspend anything that has
+        // since been downgraded or removed — otherwise an app stays dead after
+        // the reason for it is gone, which is the kind of leftover that makes
+        // someone reinstall the phone.
+        val stale = guarded
+            .map { it.packageName }
+            .filterNot { lockedIn && it in full }
+        com.bastion.app.guard.lockdown.DeviceOwner.suspendApps(context, stale, false)
+        if (lockedIn && full.isNotEmpty()) {
+            com.bastion.app.guard.lockdown.DeviceOwner.suspendApps(context, full, true)
+        }
+    }
+
     suspend fun enforceIfLockedIn(context: Context) {
         val settings = BastionGraph.from(context).settings.current()
         if (!settings.tamperLockEnabled) return
