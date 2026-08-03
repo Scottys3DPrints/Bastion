@@ -280,6 +280,23 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         color = BastionColors.TextMuted,
                     )
                     Spacer(Modifier.height(Space.md))
+                    // Dropping Bastion's filter is only a lateral move if the
+                    // resolver actually filters. Otherwise it is a weakening
+                    // wearing a helpful label, and it goes through the same gate
+                    // as every other one.
+                    val dnsActuallyFilters =
+                        com.bastion.app.guard.vpn.DnsFilters.privateDnsFilters(context)
+
+                    if (!dnsActuallyFilters) {
+                        Text(
+                            "That resolver isn't one Bastion knows to block adult sites, " +
+                                "so turning its own filter off would leave you with neither. " +
+                                "Point Private DNS at family.cloudflare-dns.com instead.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = BastionColors.Amber,
+                        )
+                        Spacer(Modifier.height(Space.md))
+                    }
                     PrimaryButton(
                         "Turn Bastion's filter off",
                         {
@@ -287,9 +304,16 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                             // below the app layer and survives Bastion being
                             // killed. Bastion cannot switch it on for you, but
                             // it can get out of its way.
-                            scope.launch {
-                                graph.settings.setVpnEnabled(false)
-                                BastionVpnService.stop(context)
+                            if (dnsActuallyFilters) {
+                                scope.launch {
+                                    graph.settings.setVpnEnabled(false)
+                                    BastionVpnService.stop(context)
+                                }
+                            } else {
+                                weakenOrQueue("Turn off the content filter", "vpn:off") {
+                                    graph.settings.setVpnEnabled(false)
+                                    BastionVpnService.stop(context)
+                                }
                             }
                         },
                         Modifier.fillMaxWidth(),
@@ -1013,6 +1037,7 @@ private fun PrivateDnsCard() {
         }
     }
 
+    var queuedDnsStandDown by remember { mutableStateOf(false) }
     val watching = settings.dnsIntendedOn
     val isOff = watching && live == null
 
@@ -1041,7 +1066,20 @@ private fun PrivateDnsCard() {
             com.bastion.app.core.design.LinkButton(
                 "I'm done with Private DNS",
                 BastionColors.TextMuted,
-            ) { scope.launch { com.bastion.app.guard.GuardWatchdog.standDownDns(context) } }
+            ) {
+                scope.launch {
+                    queuedDnsStandDown =
+                        !com.bastion.app.guard.GuardWatchdog.standDownDns(context)
+                }
+            }
+            if (queuedDnsStandDown) {
+                Text(
+                    "Queued. It stops watching once the cooling-off wait is served — " +
+                        "the same delay every other off-switch takes.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.Amber,
+                )
+            }
         }
         Spacer(Modifier.height(Space.md))
         // Setting it up is two taps: copy the hostname, open the settings

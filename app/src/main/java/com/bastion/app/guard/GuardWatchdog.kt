@@ -180,11 +180,34 @@ object GuardWatchdog {
      * genuinely stopped using Private DNS would be walled forever — the same
      * trap [standDown] exists to avoid for Guard.
      */
-    suspend fun standDownDns(context: Context) {
+    /**
+     * @return false when the request was queued behind the cooling-off wait
+     * instead of being applied, which the caller has to tell the user about.
+     */
+    suspend fun standDownDns(context: Context): Boolean {
         val graph = BastionGraph.from(context)
+        val settings = graph.settings.current()
+
+        // Locked in, this waits like every other off-switch.
+        //
+        // It was the last ungated one, and it was a single tap on the Guard
+        // screen labelled "I'm done with Private DNS" — no code, no delay, no
+        // record. Bastion would stop watching the filter, the wall would stop
+        // appearing, and nothing about the screen would look any different
+        // afterwards. A protection with an unguarded off-switch beside it is a
+        // protection with an off-switch.
+        if (settings.tamperLockEnabled) {
+            graph.guard.requestWeakening("Stop watching Private DNS", PAYLOAD_STAND_DOWN_DNS)
+            return false
+        }
+
         graph.settings.setDnsIntendedOn(false)
         graph.settings.setDnsOffSince(0L)
+        return true
     }
+
+    /** Applied by [GuardRepository.applyMaturedChanges] once the wait is served. */
+    const val PAYLOAD_STAND_DOWN_DNS = "stand_down_dns"
 
     /**
      * Puts the wall in front of a locked-in user whose Guard has gone down.

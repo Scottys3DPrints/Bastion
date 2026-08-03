@@ -44,6 +44,7 @@ class BackupRepository(
     private val backupDao: BackupDao,
     private val covenantDao: CovenantDao,
     private val socialDao: SocialDao,
+    private val settings: com.bastion.app.data.prefs.SettingsStore,
 ) {
 
     @Serializable
@@ -99,6 +100,28 @@ class BackupRepository(
         val decoded = BackupCodec.decrypt(payload, passphrase)
         val backup = json.decodeFromString<Backup>(decoded.decodeToString())
 
+        // While locked in, a restore brings back the history and nothing that
+        // guards him.
+        //
+        // This was the quietest way out of the whole app, and it needed no
+        // permission, no wait and no code. Every row goes back by @Upsert on its
+        // own key, so an older file does not delete a guard — it *overwrites*
+        // one. Export a backup today, guard Instagram tomorrow, restore the file
+        // on Friday, and Instagram's row reverts to whatever it was: a weaker
+        // mode, or `enabled = false`. The cooling-off timer never sees it.
+        //
+        // Worse, `partner` carries `lockPasscodeHash`. A backup taken before the
+        // partner set his code restores a row where that hash is null — which
+        // silently lifts the partner lock, the one protection built specifically
+        // so that the man setting it up cannot be the man who undoes it.
+        //
+        // So the rule is simply what a backup is honestly for: it exists so a
+        // lost phone does not cost him the covenant and the counted days. It was
+        // never meant to be a way to roll the guards back, and unlocked it still
+        // restores everything.
+        val locked = settings.current().tamperLockEnabled ||
+            com.bastion.app.guard.lockdown.Lockdown.isActive(settings.current())
+
         backupDao.restore(
             days = backup.days,
             urges = backup.urges,
@@ -109,13 +132,25 @@ class BackupRepository(
             checkIns = backup.checkIns,
             visionItems = backup.visionItems,
             lessonsRead = backup.lessonsRead,
-            guardedApps = backup.guardedApps,
-            learnedRules = backup.learnedRules,
-            userDomains = backup.userDomains,
+            guardedApps = if (locked) emptyList() else backup.guardedApps,
+            learnedRules = if (locked) emptyList() else backup.learnedRules,
+            userDomains = if (locked) emptyList() else backup.userDomains,
             covenant = backup.covenant,
-            partner = backup.partner,
+            // Name and number are harmless; the hash is the lock. Restoring the
+            // row while keeping whatever hash is currently set means a man can
+            // still recover his partner's details without recovering his way
+            // past them.
+            partner = backup.partner?.let { restored ->
+                if (!locked) restored
+                else restored.copy(lockPasscodeHash = socialDao.partnerOnce()?.lockPasscodeHash)
+            },
         )
         backup.days.size
+    }
+
+    /** True when a restore would leave the guards alone; drives the warning in Settings. */
+    suspend fun restoreIsLimited(): Boolean = settings.current().let {
+        it.tamperLockEnabled || com.bastion.app.guard.lockdown.Lockdown.isActive(it)
     }
 
     fun suggestedFileName(): String {

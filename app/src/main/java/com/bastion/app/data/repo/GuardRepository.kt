@@ -172,6 +172,11 @@ class GuardRepository(
                     settings.setVpnEnabled(false)
                     stopFilter = true
                 }
+                // "I'm done with Private DNS", once the wait has been served.
+                com.bastion.app.guard.GuardWatchdog.PAYLOAD_STAND_DOWN_DNS -> {
+                    settings.setDnsIntendedOn(false)
+                    settings.setDnsOffSince(0L)
+                }
             }
             markApplied(change.id)
         }

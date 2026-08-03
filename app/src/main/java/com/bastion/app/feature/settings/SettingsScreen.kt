@@ -24,6 +24,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -336,6 +337,9 @@ private fun BackupCard(graph: BastionGraph) {
     // The same container as every other group on this screen. It was a bare
     // column, so the one section that can lose a man his whole history had less
     // visual definition than the notification toggle above it.
+    var restoreLimited by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { restoreLimited = graph.backup.restoreIsLimited() }
+
     SettingsGroup(
         title = "Backup",
         subtitle = "Save a private, password-protected copy of your journey — streak, " +
@@ -343,6 +347,17 @@ private fun BackupCard(graph: BastionGraph) {
             "phone you can restore it. Nothing is ever uploaded.",
     ) {
         Spacer(Modifier.height(Space.md))
+        // Said before he restores, not discovered afterwards. Restoring used to
+        // be the quietest way out of the app — see BackupRepository.import.
+        if (restoreLimited) {
+            Text(
+                "While you're locked in, restoring brings back your history only. " +
+                    "Guarded apps, blocked sites and your partner's code stay as they are.",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.SageBright,
+            )
+            Spacer(Modifier.height(Space.md))
+        }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.md)) {
             QuietButton("Export", { mode = BackupMode.EXPORT; status = null }, Modifier.weight(1f))
             QuietButton("Restore", { mode = BackupMode.IMPORT; status = null }, Modifier.weight(1f))

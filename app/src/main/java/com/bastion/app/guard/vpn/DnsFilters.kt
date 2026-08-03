@@ -49,4 +49,35 @@ object DnsFilters {
      */
     fun bothRunning(context: Context, bastionFilterOn: Boolean): Boolean =
         bastionFilterOn && privateDnsIsSet(context)
+
+    /**
+     * Resolvers that actually block adult content, as opposed to merely being
+     * set.
+     *
+     * This distinction was a one-tap way out of the whole filter, and it did not
+     * look like one. The conflict card offers "keep Private DNS, drop Bastion's
+     * filter" whenever both are running, on the reasoning that Private DNS is
+     * the stronger of the two — but "running" only ever meant *a* hostname was
+     * present. Point Private DNS at dns.google, which filters nothing, and the
+     * card appears, and one tap disables Bastion's filter with no wait and no
+     * partner code. The man ends up with no filtering at all, having pressed a
+     * button that said it was keeping the better one.
+     *
+     * Deliberately a short list of resolvers whose whole purpose is this, rather
+     * than a guess. Anything unrecognised is treated as "not known to filter",
+     * which is the honest reading — including NextDNS and personal AdGuard
+     * profiles, whose blocking depends on a configuration Bastion cannot see.
+     */
+    private val FILTERING_RESOLVERS = setOf(
+        "family.cloudflare-dns.com",
+        "familyshield.opendns.com",
+        "family-filter-dns.cleanbrowsing.org",
+        "adult-filter-dns.cleanbrowsing.org",
+        "family.adguard-dns.com",
+        "dns-family.adguard.com",
+    )
+
+    /** Whether the resolver Android is set to is one that blocks adult content. */
+    fun privateDnsFilters(context: Context): Boolean =
+        privateDnsHostname(context)?.lowercase()?.trim() in FILTERING_RESOLVERS
 }

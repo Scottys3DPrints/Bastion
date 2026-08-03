@@ -66,6 +66,7 @@ class BastionGraph(context: Context) {
             backupDao = database.backupDao(),
             covenantDao = database.covenantDao(),
             socialDao = database.socialDao(),
+            settings = settings,
         )
     }
 
