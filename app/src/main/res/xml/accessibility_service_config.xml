@@ -1,10 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  notificationTimeout is zero on purpose, and it is the difference between a
+  wall that comes back and one that comes back *instantly*.
+
+  It is the minimum period the system holds between delivering two events of
+  the same type, and it was 100ms — a tenth of a second of latency imposed
+  before Bastion had even been told the screen had changed, on top of whatever
+  the launch itself costs. Nothing here wanted that budget: the expensive work
+  is the tree walk in evaluate(), and that is already throttled in the service
+  by SCAN_THROTTLE_MS, where it can be applied to the scans that are costly
+  rather than to every event including the cheap ones.
+
+  So the throttle moves inward rather than disappearing. Feed detection is
+  unchanged — it is governed by the 350ms scan throttle, not by this — and the
+  lockdown wall stops paying for a delay that was never protecting anything.
+-->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewScrolled"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:accessibilityFlags="flagDefault|flagReportViewIds|flagRetrieveInteractiveWindows|flagIncludeNotImportantViews"
     android:canRetrieveWindowContent="true"
     android:canPerformGestures="true"
-    android:notificationTimeout="100"
+    android:notificationTimeout="0"
     android:description="@string/accessibility_description"
     android:summary="@string/accessibility_summary" />

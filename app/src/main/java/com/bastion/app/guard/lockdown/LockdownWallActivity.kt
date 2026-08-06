@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -74,6 +75,12 @@ class LockdownWallActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // The wall is up, so the notification that existed only to open it has
+        // nothing left to say. Left behind, it would sit in the shade for the
+        // whole lockdown as a permanent "tap here" for a screen already in front
+        // of him.
+        LockdownNotices.clearWallCall(this)
+
         // Deliberately NOT showWhenLocked.
         //
         // It was set at first, and it quietly cancelled the emergency path: the
@@ -119,6 +126,7 @@ class LockdownWallActivity : ComponentActivity() {
 
     private fun release() {
         runCatching { stopLockTask() }
+        LockdownNotices.clearWallCall(this)
         finish()
     }
 
@@ -126,14 +134,29 @@ class LockdownWallActivity : ComponentActivity() {
         /**
          * Raises the wall. Safe to call when one is already up — `singleTask`
          * means the running instance is reused rather than stacked.
+         *
+         * [fromBackground] is for the callers with no screen of their own: the
+         * nightly alarm and the boot receiver. Android 10 onwards refuses to let
+         * a background receiver take over the display — the system says so out
+         * loud, `Background activity launch blocked!` — and that refusal is not
+         * something Bastion gets an exception from. The one door left open is a
+         * full-screen intent, so the background path knocks on both: the direct
+         * start for when Bastion happens to be in front already, and the
+         * notification for when it is not. Where the system honours the
+         * full-screen intent the wall comes up by itself; where it does not —
+         * Android 14 keeps that for calling and alarm apps — it lands as a
+         * heads-up that raises the wall on a tap.
+         *
+         * A notification you have to tap is weaker than a screen you cannot
+         * leave. It is also what is actually available, and the rest of the
+         * lockdown — apps closed, filter on, colour drained — is already in
+         * force by the time this is called, because none of that needs a window.
          */
-        fun raise(context: Context) {
-            runCatching {
-                context.startActivity(
-                    Intent(context, LockdownWallActivity::class.java)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                )
-            }
+        fun raise(context: Context, fromBackground: Boolean = false) {
+            val wall = Intent(context, LockdownWallActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            runCatching { context.startActivity(wall) }
+            if (fromBackground) LockdownNotices.callToWall(context, wall)
         }
     }
 }
@@ -153,6 +176,14 @@ private fun LockdownWallScreen(pinned: Boolean, onDone: () -> Unit) {
     val graph = remember { BastionGraph.from(context) }
     var settings by remember { mutableStateOf<Settings?>(null) }
     var remaining by remember { mutableLongStateOf(0L) }
+
+    // Read live rather than captured once. What this screen can honestly claim
+    // changes the instant Guard is switched off, and a wall still promising to
+    // come back after it has stopped being able to is the one lie that would
+    // cost the most — the man who finds out by walking away learns that
+    // everything else the app says is negotiable too.
+    val guardHeld by com.bastion.app.guard.accessibility.BastionAccessibilityService
+        .isRunning.collectAsState()
 
     LaunchedEffect(Unit) {
         // Polled rather than observed: the whole screen is a countdown, so it
@@ -209,15 +240,24 @@ private fun LockdownWallScreen(pinned: Boolean, onDone: () -> Unit) {
 
                 Spacer(Modifier.height(Space.section))
                 Text(
-                    if (pinned) {
-                        "Hold the power button for an emergency call."
-                    } else {
-                        // Never claim the stronger version. Someone who finds out
-                        // by escaping learns the app overstates itself, and then
-                        // nothing else it says lands either.
-                        "Hold the power button for an emergency call.\n\n" +
-                            "This phone isn't fully locked — set Bastion as device owner " +
-                            "and this screen can't be left at all."
+                    // Three states, three different true sentences. Never claim
+                    // the stronger version: someone who finds out by escaping
+                    // learns the app overstates itself, and then nothing else it
+                    // says lands either.
+                    when {
+                        pinned -> "Hold the power button for an emergency call."
+                        // Leavable, but not for long, and saying exactly how
+                        // long is the point. The gesture works; the wall is
+                        // back before the home screen has finished drawing.
+                        guardHeld ->
+                            "Hold the power button for an emergency call.\n\n" +
+                                "You can leave this screen — and Guard will put it " +
+                                "straight back, until the clock runs out."
+                        else ->
+                            "Hold the power button for an emergency call.\n\n" +
+                                "This phone isn't locked and Guard is off, so this " +
+                                "screen can simply be left. Turn Guard on, or set " +
+                                "Bastion as device owner."
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,

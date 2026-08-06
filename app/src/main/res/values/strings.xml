@@ -12,4 +12,6 @@
     <string name="notif_channel_daily_desc">Your morning brief and check-in reminder.</string>
     <string name="notif_channel_partner">Brotherhood</string>
     <string name="notif_channel_partner_desc">Check-ins and alerts you have chosen to share.</string>
+    <string name="notif_channel_lockdown">Lockdown</string>
+    <string name="notif_channel_lockdown_desc">Raises the lockdown screen when a scheduled lockout starts. Keep this on, or a scheduled lockdown cannot take the screen.</string>
 </resources>

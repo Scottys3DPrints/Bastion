@@ -142,7 +142,13 @@ private fun BastionRoot(openTarget: String? = null) {
             // the path that lifts the restrictions when a cooling-off unlock
             // finally matures — without it, deciding to stop being locked in
             // would leave uninstall blocked and the minute watch running.
-            val lockedIn = graph.settings.current().tamperLockEnabled
+            val current = graph.settings.current()
+            // Cheap insurance on every resume, exactly like the lock-in watch
+            // below: manufacturers drop alarms, and a nightly lockout that
+            // silently stopped being armed is worse than one that was never set
+            // up, because he believes it is there.
+            com.bastion.app.core.alarm.ScheduledLockdownScheduler.sync(context, current)
+            val lockedIn = current.tamperLockEnabled
             com.bastion.app.guard.lockdown.DeviceOwner.apply(context, lockedIn)
             com.bastion.app.core.alarm.LockInWatchScheduler.sync(context, lockedIn)
             com.bastion.app.guard.GuardWatchdog.enforceIfLockedIn(context)

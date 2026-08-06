@@ -133,10 +133,49 @@ data class Settings(
     val lockdownUntil: Long = 0L,
     /** Monotonic twin of [lockdownUntil]; the user cannot move this one. */
     val lockdownEndElapsed: Long = 0L,
+    /**
+     * How long the lockdown that is currently running was asked for.
+     *
+     * Not the same thing as [lockdownSeconds], which is only what the *button*
+     * would ask for next time. The two parted company when the nightly schedule
+     * arrived with a length of its own: a one-hour scheduled lockout running
+     * against a 30-second button setting would have had its monotonic clock
+     * thrown away as nonsense, because that check measures the remainder against
+     * the lockdown's own length. 0 means "never recorded", and the old field is
+     * used instead — which is exactly the pre-schedule behaviour.
+     */
+    val lockdownSpanSeconds: Int = 0,
     val lockdownLockScreen: Boolean = true,
     val lockdownFilter: Boolean = true,
     val lockdownGrayscale: Boolean = true,
     val lockdownTellPartner: Boolean = true,
+
+    // --- Lockdown: the same plan, on a clock --------------------------------
+    //
+    // The button is for the bad moment that arrives unannounced. This is for the
+    // one that arrives every night at the same time — and which therefore does
+    // not need a man to be watching for it, only to have decided about it once.
+    /** Whether the nightly lockout runs at all. */
+    val scheduledLockdownEnabled: Boolean = false,
+    /** When it starts, on a 24-hour clock. Defaults to the hour most people mean. */
+    val scheduledLockdownHour: Int = 22,
+    val scheduledLockdownMinute: Int = 0,
+    /**
+     * How long it holds, in seconds — its own length, not the button's.
+     *
+     * A panic lockdown defaults to a day because the moment it answers is a
+     * crisis. A nightly one that defaulted to a day would swallow the next day
+     * whole, and the man who set it would only find that out once.
+     */
+    val scheduledLockdownSeconds: Int = 60 * 60,
+    /**
+     * Epoch millis of the last window this schedule has settled — served, or
+     * deliberately skipped because the user was still setting it up inside one.
+     *
+     * The whole reason the catch-up after a reboot can tell a missed night from
+     * a night already handled. 0 means it has never run.
+     */
+    val scheduledLockdownLastRun: Long = 0L,
 )
 
 /**
@@ -203,10 +242,16 @@ class SettingsStore(private val context: Context) {
         val LOCKDOWN_SECONDS = intPreferencesKey("lockdown_seconds")
         val LOCKDOWN_UNTIL = longPreferencesKey("lockdown_until")
         val LOCKDOWN_END_ELAPSED = longPreferencesKey("lockdown_end_elapsed")
+        val LOCKDOWN_SPAN = intPreferencesKey("lockdown_span_seconds")
         val LOCKDOWN_LOCK_SCREEN = booleanPreferencesKey("lockdown_lock_screen")
         val LOCKDOWN_FILTER = booleanPreferencesKey("lockdown_filter")
         val LOCKDOWN_GRAYSCALE = booleanPreferencesKey("lockdown_grayscale")
         val LOCKDOWN_PARTNER = booleanPreferencesKey("lockdown_partner")
+        val SCHEDULED_LOCKDOWN = booleanPreferencesKey("scheduled_lockdown_enabled")
+        val SCHEDULED_LOCKDOWN_HOUR = intPreferencesKey("scheduled_lockdown_hour")
+        val SCHEDULED_LOCKDOWN_MINUTE = intPreferencesKey("scheduled_lockdown_minute")
+        val SCHEDULED_LOCKDOWN_SECONDS = intPreferencesKey("scheduled_lockdown_seconds")
+        val SCHEDULED_LOCKDOWN_LAST_RUN = longPreferencesKey("scheduled_lockdown_last_run")
     }
 
     val settings: Flow<Settings> = context.dataStore.data.map { p ->
@@ -253,10 +298,16 @@ class SettingsStore(private val context: Context) {
                 ?: (24 * 60 * 60),
             lockdownUntil = p[Keys.LOCKDOWN_UNTIL] ?: 0L,
             lockdownEndElapsed = p[Keys.LOCKDOWN_END_ELAPSED] ?: 0L,
+            lockdownSpanSeconds = p[Keys.LOCKDOWN_SPAN] ?: 0,
             lockdownLockScreen = p[Keys.LOCKDOWN_LOCK_SCREEN] ?: true,
             lockdownFilter = p[Keys.LOCKDOWN_FILTER] ?: true,
             lockdownGrayscale = p[Keys.LOCKDOWN_GRAYSCALE] ?: true,
             lockdownTellPartner = p[Keys.LOCKDOWN_PARTNER] ?: true,
+            scheduledLockdownEnabled = p[Keys.SCHEDULED_LOCKDOWN] ?: false,
+            scheduledLockdownHour = p[Keys.SCHEDULED_LOCKDOWN_HOUR] ?: 22,
+            scheduledLockdownMinute = p[Keys.SCHEDULED_LOCKDOWN_MINUTE] ?: 0,
+            scheduledLockdownSeconds = p[Keys.SCHEDULED_LOCKDOWN_SECONDS] ?: (60 * 60),
+            scheduledLockdownLastRun = p[Keys.SCHEDULED_LOCKDOWN_LAST_RUN] ?: 0L,
         )
     }
 
@@ -311,10 +362,24 @@ class SettingsStore(private val context: Context) {
     suspend fun setLockdownSeconds(value: Int) = edit { it[Keys.LOCKDOWN_SECONDS] = value }
     suspend fun setLockdownUntil(value: Long) = edit { it[Keys.LOCKDOWN_UNTIL] = value }
     suspend fun setLockdownEndElapsed(value: Long) = edit { it[Keys.LOCKDOWN_END_ELAPSED] = value }
+    suspend fun setLockdownSpanSeconds(value: Int) = edit { it[Keys.LOCKDOWN_SPAN] = value }
     suspend fun setLockdownLockScreen(value: Boolean) = edit { it[Keys.LOCKDOWN_LOCK_SCREEN] = value }
     suspend fun setLockdownFilter(value: Boolean) = edit { it[Keys.LOCKDOWN_FILTER] = value }
     suspend fun setLockdownGrayscale(value: Boolean) = edit { it[Keys.LOCKDOWN_GRAYSCALE] = value }
     suspend fun setLockdownTellPartner(value: Boolean) = edit { it[Keys.LOCKDOWN_PARTNER] = value }
+    suspend fun setScheduledLockdownEnabled(value: Boolean) = edit {
+        it[Keys.SCHEDULED_LOCKDOWN] = value
+    }
+    suspend fun setScheduledLockdownTime(hour: Int, minute: Int) = edit {
+        it[Keys.SCHEDULED_LOCKDOWN_HOUR] = hour
+        it[Keys.SCHEDULED_LOCKDOWN_MINUTE] = minute
+    }
+    suspend fun setScheduledLockdownSeconds(value: Int) = edit {
+        it[Keys.SCHEDULED_LOCKDOWN_SECONDS] = value
+    }
+    suspend fun setScheduledLockdownLastRun(value: Long) = edit {
+        it[Keys.SCHEDULED_LOCKDOWN_LAST_RUN] = value
+    }
 
     suspend fun recordPanic() = edit {
         it[Keys.LAST_PANIC] = System.currentTimeMillis()

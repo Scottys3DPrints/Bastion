@@ -31,12 +31,25 @@ class BastionApp : Application() {
             NotificationChannel(CHANNEL_PARTNER, getString(R.string.notif_channel_partner), NotificationManager.IMPORTANCE_HIGH)
                 .apply { description = getString(R.string.notif_channel_partner_desc) }
         )
+        // High, and its own channel rather than riding on Guard's.
+        //
+        // A full-screen intent is only honoured on a high-importance channel, and
+        // this is the one notification whose whole job is to put a screen in
+        // front of someone — the wall, when a scheduled lockdown starts on a
+        // phone nobody is holding. On Guard's low-importance channel it would
+        // arrive silently in the shade, which is indistinguishable from the
+        // feature not working.
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_LOCKDOWN, getString(R.string.notif_channel_lockdown), NotificationManager.IMPORTANCE_HIGH)
+                .apply { description = getString(R.string.notif_channel_lockdown_desc) }
+        )
     }
 
     companion object {
         const val CHANNEL_GUARD = "guard"
         const val CHANNEL_DAILY = "daily"
         const val CHANNEL_PARTNER = "partner"
+        const val CHANNEL_LOCKDOWN = "lockdown"
 
         lateinit var instance: BastionApp
             private set

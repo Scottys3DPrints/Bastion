@@ -50,6 +50,13 @@ class BastionBootReceiver : BroadcastReceiver() {
                 // clocks are on disk and already survive; without this, holding
                 // the power button was the whole bypass.
                 com.bastion.app.guard.lockdown.Lockdown.restoreAfterBoot(appContext, settings)
+
+                // Same reasoning one step earlier: the nightly alarm did not
+                // survive the reboot either, and a phone restarted at 10:01
+                // would otherwise skip the whole window and set the next one for
+                // tomorrow. sync re-arms it and serves whatever tonight is still
+                // owed.
+                ScheduledLockdownScheduler.sync(appContext, settings)
             } finally {
                 pending.finish()
             }

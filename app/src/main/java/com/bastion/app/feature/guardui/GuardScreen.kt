@@ -843,6 +843,12 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
 
             LockdownPlanCard(settings = settings, graph = graph)
 
+            // Directly beneath the plan it obeys. Putting the schedule on the
+            // Settings screen would have split one feature across two places and
+            // left the question "what will it actually do at ten o'clock?"
+            // answered a tab away from where it is asked.
+            ScheduledLockdownCard(settings = settings, graph = graph)
+
             PrivateDnsCard()
 
             GrayscaleCard(settings = settings, graph = graph)

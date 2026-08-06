@@ -76,7 +76,10 @@ object Lockdown {
 
     private fun remainingMillis(settings: Settings): Long {
         val byWallClock = settings.lockdownUntil - System.currentTimeMillis()
-        val total = settings.lockdownSeconds * 1000L
+        // The running lockdown's own length, which is not necessarily the
+        // button's: a scheduled lockout carries its own. Falls back to the
+        // button's for any lockdown started before that was recorded.
+        val total = (settings.lockdownSpanSeconds.takeIf { it > 0 } ?: settings.lockdownSeconds) * 1000L
         // runCatching because SystemClock is Android framework: on the JVM, where
         // the lockdown arithmetic is unit-tested, it throws. Falling back to 0
         // leaves the wall clock in charge, which is the pre-existing behaviour.
@@ -90,21 +93,50 @@ object Lockdown {
     /**
      * Starts a lockdown and carries out every step the user chose.
      *
+     * One path, whoever pulls the trigger. The nightly schedule does not get a
+     * lockdown of its own with its own subtly different rules — it calls this,
+     * with a different length and from a place where no one is looking at the
+     * screen. Everything downstream of here reads the clocks this writes, so
+     * "the same as the button" is a property of the code rather than a promise
+     * in a comment.
+     *
+     * @param durationSeconds how long to hold for. Null means the length the
+     * break-glass button is set to, which is what the button passes.
+     * @param fromBackground true when nobody is looking at Bastion — an alarm,
+     * a boot. Android will not let a background receiver take the screen, so the
+     * wall has to be raised the long way round; see [LockdownWallActivity.raise].
+     *
      * @return an SMS intent to hand to the user if they asked to tell their
-     * partner — composed, never sent, like everything else in Brotherhood.
+     * partner — composed, never sent, like everything else in Brotherhood. Null
+     * when nothing needs handing anywhere, including when [fromBackground] has
+     * already delivered it as a notification, because a background process
+     * cannot open a message composer and should not try.
      */
-    suspend fun trigger(context: Context): Intent? {
+    suspend fun trigger(
+        context: Context,
+        durationSeconds: Int? = null,
+        fromBackground: Boolean = false,
+    ): Intent? {
         val graph = BastionGraph.from(context)
         val settings = graph.settings.current()
 
         // Extends rather than replaces: pressing it twice must never shorten a
-        // lockdown already running.
-        val duration = settings.lockdownSeconds * 1000L
+        // lockdown already running, and neither must the schedule coming due in
+        // the middle of one.
+        val seconds = durationSeconds ?: settings.lockdownSeconds
+        val duration = seconds * 1000L
         val until = System.currentTimeMillis() + duration
         graph.settings.setLockdownUntil(maxOf(until, settings.lockdownUntil))
         graph.settings.setLockdownEndElapsed(
             maxOf(android.os.SystemClock.elapsedRealtime() + duration, settings.lockdownEndElapsed)
         )
+        // Never shortens either. The span is what the monotonic clock is sanity-
+        // checked against, so a span shorter than the lockdown it guards would
+        // quietly discard that clock and hand the wall clock back its bypass.
+        val runningSpan = if (isActive(settings)) {
+            settings.lockdownSpanSeconds.takeIf { it > 0 } ?: settings.lockdownSeconds
+        } else 0
+        graph.settings.setLockdownSpanSeconds(maxOf(seconds, runningSpan))
 
         if (settings.lockdownGrayscale) graph.settings.setGrayscale(true)
 
@@ -122,9 +154,19 @@ object Lockdown {
                 Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("smsto:${partner.contact}"))
                     .putExtra(
                         "sms_body",
-                        "I've just put my phone into lockdown for " +
-                            "${describe(settings.lockdownSeconds)}. " +
-                            "Telling you rather than white-knuckling it alone.",
+                        // A scheduled lockout is not something he just did, and
+                        // a message claiming otherwise is a small lie told to
+                        // the one person the whole feature exists to be honest
+                        // with.
+                        if (fromBackground) {
+                            "My phone has gone into its nightly lockdown for " +
+                                "${describe(seconds)}. Telling you rather than " +
+                                "white-knuckling it alone."
+                        } else {
+                            "I've just put my phone into lockdown for " +
+                                "${describe(seconds)}. Telling you rather than " +
+                                "white-knuckling it alone."
+                        },
                     )
             }
         } else null
@@ -133,8 +175,16 @@ object Lockdown {
         // away. Raising the wall is what makes this a lockout rather than a
         // gesture — see LockdownWallActivity for what that does and does not
         // mean without Device Owner.
-        if (settings.lockdownLockScreen) LockdownWallActivity.raise(context)
+        if (settings.lockdownLockScreen) LockdownWallActivity.raise(context, fromBackground)
 
+        // A composer nobody asked for cannot be opened over whatever is on
+        // screen at 10pm, and from a receiver Android would refuse anyway. It
+        // becomes a notification instead: still his message, still unsent, still
+        // his to send or not.
+        if (fromBackground) {
+            partnerIntent?.let { LockdownNotices.offerPartnerMessage(context, it) }
+            return null
+        }
         return partnerIntent
     }
 
@@ -148,7 +198,10 @@ object Lockdown {
      */
     fun restoreAfterBoot(context: Context, settings: Settings) {
         if (settings.lockdownLockScreen && isActive(settings)) {
-            LockdownWallActivity.raise(context)
+            // fromBackground: a boot receiver is the textbook case of a launch
+            // Android refuses. It went through the plain door and was quietly
+            // turned away, which meant the reboot bypass was only half closed.
+            LockdownWallActivity.raise(context, fromBackground = true)
         }
     }
 }

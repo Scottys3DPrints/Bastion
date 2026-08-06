@@ -202,6 +202,14 @@
             android:name=".core.alarm.LockInWatchReceiver"
             android:exported="false" />
 
+        <!--
+            The nightly lockout. Not exported: the only thing that may start a
+            lockdown from outside the app is the alarm Bastion itself set.
+        -->
+        <receiver
+            android:name=".core.alarm.ScheduledLockdownReceiver"
+            android:exported="false" />
+
         <!-- Outcome of a self-install session; see SelfInstaller. -->
         <receiver
             android:name=".core.update.SelfInstaller$ResultReceiver"

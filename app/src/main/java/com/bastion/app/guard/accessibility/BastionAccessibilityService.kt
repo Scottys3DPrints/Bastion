@@ -66,6 +66,14 @@ class BastionAccessibilityService : AccessibilityService() {
     private var lastScanAt = 0L
     private var lastInterruptAt = 0L
 
+    /** Throttles the lockdown wall's re-raise; see [holdWall]. */
+    private var lastWallRaiseAt = 0L
+
+    /** Asked before every re-raise, so the wall never races the lock screen. */
+    private val keyguard: android.app.KeyguardManager? by lazy {
+        getSystemService(android.app.KeyguardManager::class.java)
+    }
+
     /** Consecutive scans that have seen the player; see [checkFeed]. */
     private var feedHitStreak = 0
     private var foregroundPackage: String? = null
@@ -94,6 +102,19 @@ class BastionAccessibilityService : AccessibilityService() {
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         val pkg = event?.packageName?.toString() ?: return
+
+        // Ahead of the system-package filter, and on every event type rather
+        // than only on app switches. Both of those were costing real time.
+        //
+        // The unpin gesture travels through Recents, which is SystemUI, which
+        // the filter below drops — so the wall used to wait until the user had
+        // finished escaping and landed somewhere else entirely. Catching it here
+        // puts the wall back *during* the gesture. And a content change or a
+        // scroll means the user is already out and doing something, which is
+        // exactly the moment to interrupt; waiting for the next app switch to
+        // notice would be waiting for him to finish.
+        if (pkg != packageName) holdWall(pkg)
+
         if (pkg == packageName || pkg in SYSTEM_PACKAGES) return
 
         when (event.eventType) {
@@ -123,6 +144,61 @@ class BastionAccessibilityService : AccessibilityService() {
             feedHitStreak = 0
             if (shield.isShowing) shield.hide()
         }
+    }
+
+    /**
+     * Puts the lockdown wall back, every time something else takes the screen.
+     *
+     * Without Device Owner the wall is a screen like any other: the back and
+     * recents gesture drops out of pinning and the lockdown is simply over,
+     * because nothing was watching. The clocks survived — [Lockdown.isActive]
+     * reads them from disk — but the only thing enforcing them was a window the
+     * user had just closed. Leaving was one gesture.
+     *
+     * This is the answer that does not need Device Owner: not a wall that cannot
+     * be left, but one that comes straight back. Every accessibility event while
+     * the clock is running raises it again — an app switch, a scroll, a content
+     * change, the Recents shell mid-gesture — so there is no window in which the
+     * phone is usable. What that costs an escaper is the honest version:
+     * Settings, Accessibility, Guard, off, with the wall landing on top of him
+     * the whole way. Deliberate, not a reflex, which was the entire gap.
+     *
+     * The ceiling is unchanged and stated rather than hidden: switch Guard off
+     * and this stops. Device Owner is still the only thing that closes it, and
+     * the wall says so on its own face.
+     */
+    private fun holdWall(pkg: String) {
+        // The setting that decided whether there is a wall at all. A lockdown
+        // configured without the screen lock must not grow one here.
+        if (!settings.lockdownLockScreen) return
+        if (!com.bastion.app.guard.lockdown.Lockdown.isActive(settings)) return
+
+        // The exceptions, and they are not negotiable.
+        //
+        // Android's lock screen carries an Emergency button, and the wall
+        // deliberately leaves the keyguard reachable so it can be pressed. Two
+        // things follow. The dialer that button opens must never have a lockdown
+        // screen thrown over it, and the keyguard itself must not be raced —
+        // this now fires on SystemUI events, and the keyguard is SystemUI, so
+        // without the second check the wall would fight the lock screen for the
+        // display in the one moment a man might be trying to call for help.
+        //
+        // A re-raise loop without these would quietly weld that valve shut,
+        // which is the same mistake showWhenLocked made on the wall itself.
+        if (pkg in EMERGENCY_PACKAGES) return
+        if (keyguard?.isKeyguardLocked == true) return
+
+        // Rate-limited rather than debounced: the first event through raises the
+        // wall immediately, and this only stops the following few hundred
+        // milliseconds of events from stacking launches on top of a wall that is
+        // already on its way up. Nothing waits on this timer to be seen.
+        val now = System.currentTimeMillis()
+        if (now - lastWallRaiseAt < WALL_RAISE_COOLDOWN_MS) return
+        lastWallRaiseAt = now
+
+        // Self-healing by construction: if a launch is refused, the next window
+        // change tries again. There is no state to get wrong.
+        com.bastion.app.guard.lockdown.LockdownWallActivity.raise(this)
     }
 
     private fun recordUsage(pkg: String, elapsed: Long) {
@@ -283,6 +359,7 @@ class BastionAccessibilityService : AccessibilityService() {
      * every content-changed event is how a guard app becomes a battery complaint.
      */
     private fun findMatch(root: AccessibilityNodeInfo, rules: List<FeedRuleEntity>): FeedRuleEntity? {
+        val window = windowBoundsOf(root)
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
         // Every node fetched via getChild() is owned by us. This runs on the
@@ -308,7 +385,8 @@ class BastionAccessibilityService : AccessibilityService() {
                         // destination, and a destination is one id, not a
                         // family of ids that happen to share a prefix.
                         MatchType.VIEW_ID ->
-                            FeedSurface.idMatches(idSegment, rule.matchValue) && isPlayerSurface(node)
+                            FeedSurface.idMatches(idSegment, rule.matchValue) &&
+                                isPlayerSurface(node, window)
                         // No geometry gate on these: they describe a label
                         // rather than a container, so "how big is it" is not a
                         // meaningful question. Nothing built-in uses them, and
@@ -333,49 +411,107 @@ class BastionAccessibilityService : AccessibilityService() {
     }
 
     /**
+     * The window the tree belongs to, which is what every ratio is measured
+     * against.
+     *
+     * It used to be `resources.displayMetrics`, which is the *display*. The two
+     * are the same rectangle on a phone in normal use and nothing like each
+     * other in split screen, where a genuine full-bleed player occupies half the
+     * display and was therefore never recognised as one. Falls back to the
+     * display if the root reports nothing usable, which is the old behaviour and
+     * better than measuring against zero.
+     */
+    private fun windowBoundsOf(root: AccessibilityNodeInfo): android.graphics.Rect {
+        val bounds = android.graphics.Rect().also { root.getBoundsInScreen(it) }
+        if (bounds.width() > 0 && bounds.height() > 0) return bounds
+        val metrics = resources.displayMetrics
+        return android.graphics.Rect(0, 0, metrics.widthPixels, metrics.heightPixels)
+    }
+
+    /**
      * Whether this node is the short-form player *as the screen in front of you*,
      * rather than a tile of one embedded in something else.
      *
      * This is what separates Instagram's ordinary home feed from Reels. The home
-     * feed embeds inline reel units and a reel tray whose view-ids are the same
-     * ones the rules name, so id alone said "you are in Reels" the moment the
-     * user scrolled their normal feed. Two properties tell the two apart, and
-     * both have to hold:
+     * feed embeds inline reel units and a reel tray whose view-ids are close
+     * cousins of the ones the rules name, so id alone said "you are in Reels" the
+     * moment the user scrolled their normal feed. Two properties tell the two
+     * apart, and both have to hold:
      *
-     *  - **Near-fullscreen.** The real viewer fills the display; an inline tile
-     *    is a fraction of it. This single check does most of the work.
-     *  - **Vertically scrollable.** The player is a vertical pager. The home
-     *    feed's reel tray scrolls *horizontally*, so it fails here even on the
-     *    rare occasion it is wide enough to pass the first test.
+     *  - **It covers the window.** Not "is big" — *covers*: pinned to the top
+     *    edge and reaching the bottom one. Size alone let a full-width 9:16 reel
+     *    unit through in the middle of the home feed, because such a unit really
+     *    is taller than 60% of the screen. Where it sits is the difference
+     *    between the screen you are on and a post you are scrolling past.
+     *  - **It pages vertically**, by its own account rather than by its shape.
+     *    The home feed's reel tray scrolls horizontally, and so does the stories
+     *    viewer — which is full-screen, and which the old shape-based guess
+     *    therefore called a vertical pager and blocked as though it were Reels.
      */
-    private fun isPlayerSurface(node: AccessibilityNodeInfo): Boolean {
-        val metrics = resources.displayMetrics
+    private fun isPlayerSurface(
+        node: AccessibilityNodeInfo,
+        window: android.graphics.Rect,
+    ): Boolean {
         val bounds = android.graphics.Rect().also { node.getBoundsInScreen(it) }
 
-        if (!FeedSurface.isNearFullscreen(
-                width = bounds.width(),
-                height = bounds.height(),
-                screenWidth = metrics.widthPixels,
-                screenHeight = metrics.heightPixels,
-            )
-        ) return false
+        if (!covers(bounds, window)) return false
 
-        val selfScrolls = FeedSurface.isVerticalScroller(node.isScrollable, bounds.width(), bounds.height())
-        return selfScrolls || hasVerticallyScrollableAncestor(node)
+        return scrollsVertically(node, bounds) || hasVerticallyScrollableAncestor(node, window)
     }
+
+    /**
+     * Asks the node which way it scrolls, rather than inferring it from its shape.
+     *
+     * The directional scroll actions have existed since API 23 and are the honest
+     * answer. See [FeedSurface.scrollsVertically] for what the inference got
+     * wrong — briefly, every full-screen horizontal pager on a portrait phone,
+     * Instagram's stories viewer among them.
+     */
+    private fun scrollsVertically(
+        node: AccessibilityNodeInfo,
+        bounds: android.graphics.Rect,
+    ): Boolean {
+        val actions = node.actionList.orEmpty().map { it.id }
+        return FeedSurface.scrollsVertically(
+            canScrollUpDown = SCROLL_UP_DOWN.any { it in actions },
+            canScrollLeftRight = SCROLL_LEFT_RIGHT.any { it in actions },
+            scrollable = node.isScrollable,
+            width = bounds.width(),
+            height = bounds.height(),
+        )
+    }
+
+    private fun covers(bounds: android.graphics.Rect, window: android.graphics.Rect): Boolean =
+        FeedSurface.coversWindow(
+            top = bounds.top,
+            bottom = bounds.bottom,
+            width = bounds.width(),
+            windowTop = window.top,
+            windowBottom = window.bottom,
+            windowWidth = window.width(),
+        )
 
     /**
      * The matched id often sits on a page *inside* the pager rather than on the
      * pager itself, so the scrollability lives a level or two up.
+     *
+     * The ancestor has to cover the window too. Without that, *any* tall
+     * scrollable within four levels satisfied the vertical-pager test — and in
+     * the ordinary home feed there is always one, because the feed itself is a
+     * vertical scroller. The check was passing for the wrong reason on the exact
+     * screen it exists to allow.
      */
-    private fun hasVerticallyScrollableAncestor(node: AccessibilityNodeInfo): Boolean {
+    private fun hasVerticallyScrollableAncestor(
+        node: AccessibilityNodeInfo,
+        window: android.graphics.Rect,
+    ): Boolean {
         val borrowed = mutableListOf<AccessibilityNodeInfo>()
         try {
             var current: AccessibilityNodeInfo? = node.parent?.also { borrowed.add(it) }
             var depth = 0
             while (current != null && depth < MAX_ANCESTOR_DEPTH) {
                 val bounds = android.graphics.Rect().also { current!!.getBoundsInScreen(it) }
-                if (FeedSurface.isVerticalScroller(current.isScrollable, bounds.width(), bounds.height())) {
+                if (scrollsVertically(current, bounds) && covers(bounds, window)) {
                     return true
                 }
                 current = current.parent?.also { borrowed.add(it) }
@@ -402,6 +538,7 @@ class BastionAccessibilityService : AccessibilityService() {
      */
     private fun captureViewIds() {
         val root = rootInActiveWindow ?: return
+        val window = windowBoundsOf(root)
         // Keyed by id so the same identifier seen twice does not appear twice,
         // and so a node that qualifies wins over one that does not.
         val found = LinkedHashMap<String, Boolean>()
@@ -422,7 +559,7 @@ class BastionAccessibilityService : AccessibilityService() {
                     // tell which would work, so a rule could be saved, look
                     // right, and silently never match — the failure the user
                     // only discovers by not being stopped.
-                    val qualifies = isPlayerSurface(node)
+                    val qualifies = isPlayerSurface(node, window)
                     found[id] = (found[id] ?: false) || qualifies
                 }
             for (i in 0 until node.childCount) {
@@ -558,6 +695,19 @@ class BastionAccessibilityService : AccessibilityService() {
 
         /** How far up to look for the pager that owns the matched page. */
         private const val MAX_ANCESTOR_DEPTH = 4
+
+        /**
+         * The directional scroll actions, which are how a node says which way it
+         * pages. Available since API 23, well under Bastion's floor of 26.
+         */
+        private val SCROLL_UP_DOWN = setOf(
+            AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_UP.id,
+            AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_DOWN.id,
+        )
+        private val SCROLL_LEFT_RIGHT = setOf(
+            AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_LEFT.id,
+            AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_RIGHT.id,
+        )
         private const val NOTIFICATION_GUARD_DOWN = 4401
         private const val HALF_HOUR = 30 * 60 * 1000L
 
@@ -565,6 +715,42 @@ class BastionAccessibilityService : AccessibilityService() {
             "com.android.systemui",
             "android",
             "com.android.settings.intelligence",
+        )
+
+        /**
+         * Deliberately short. This is not a delay before the wall appears — the
+         * first event raises it at once — it is only how long a launch already
+         * in flight is left alone before another is fired on top of it.
+         *
+         * It was 700ms, which was too generous by half: leave the wall twice
+         * inside that window and the second escape got the rest of the budget
+         * for free. At 150ms an activity launch has barely started, so nothing
+         * is wasted, and there is no gap wide enough to do anything in.
+         */
+        private const val WALL_RAISE_COOLDOWN_MS = 150L
+
+        /**
+         * Never covered by the lockdown wall, at any point, for any reason.
+         *
+         * The emergency dialer and the in-call screen. Whether the call was
+         * placed from the keyguard's Emergency button or dialled outright, the
+         * screen that results is one of these, and [holdWall] leaves it alone.
+         *
+         * Deliberately wider than strictly necessary — every OEM ships a
+         * different dialer id, and the failure mode of listing one too many is
+         * that a lockdown does not re-raise over a phone call. The failure mode
+         * of listing one too few is a man unable to see the call he is making
+         * for help.
+         */
+        private val EMERGENCY_PACKAGES = setOf(
+            "com.android.emergency",
+            "com.android.dialer",
+            "com.google.android.dialer",
+            "com.android.phone",
+            "com.android.server.telecom",
+            "com.android.incallui",
+            "com.samsung.android.dialer",
+            "com.samsung.android.incallui",
         )
 
         /**
