@@ -88,6 +88,38 @@ enum class TimeOfDay(val label: String) {
     EVENING("Evening"),
 }
 
+/**
+ * How often a habit is actually due.
+ *
+ * Everything was daily before, which quietly made the app lie twice: a habit
+ * meant for three times a week showed up every morning as an outstanding
+ * failure, and its streak broke four times a week for days it was never
+ * supposed to be done on. A schedule is not a preference — it is what makes
+ * "did I keep this" a question with a true answer.
+ */
+enum class ScheduleType(val label: String) {
+    DAILY("Every day"),
+    WEEKDAYS("Certain days"),
+    EVERY_N_DAYS("Every few days"),
+    TIMES_PER_WEEK("Times per week"),
+}
+
+/**
+ * What a day says, which is more than done or not.
+ *
+ * NONE is the absence of a row rather than a stored value. The other three are
+ * different claims and deserve different marks:
+ *
+ *  - **DONE** — kept, and the only one that extends a streak.
+ *  - **SKIPPED** — deliberately not today, and said so. It does not extend a
+ *    streak and it is not pretending to. The distinction that matters is
+ *    against a silent gap, which could mean anything.
+ *  - **FAILED** — meant to, did not. Recording it is worth more than leaving
+ *    the day blank: a man who marks his own misses is keeping an honest book,
+ *    and the calendar he looks at in a month is only useful if he did.
+ */
+enum class LogStatus { DONE, SKIPPED, FAILED }
+
 @Entity(tableName = "habit")
 @Serializable
 data class HabitEntity(
@@ -115,10 +147,39 @@ data class HabitEntity(
     val targetCount: Int = 1,
     /** "glasses", "pages", "minutes". Blank for a plain tick. */
     val unit: String = "",
+
+    val scheduleType: ScheduleType = ScheduleType.DAILY,
+    /**
+     * Which days, as ISO weekday numbers — 1 is Monday, 7 is Sunday.
+     *
+     * A CSV rather than a table. Room would want a second entity and a join for
+     * what is at most seven small integers that are always read together and
+     * never queried across, and the Becoming profile already scans this table.
+     */
+    val weekdaysCsv: String = "",
+    /** For [ScheduleType.EVERY_N_DAYS], counted from [startEpochDay]. */
+    val everyNDays: Int = 2,
+    /** For [ScheduleType.TIMES_PER_WEEK]: every day is eligible, the week has a quota. */
+    val timesPerWeek: Int = 3,
+    /**
+     * The day the habit was taken on. Nothing before it is scheduled, ever.
+     *
+     * This is what stops a habit adopted today from showing a year of failures
+     * behind it, and it anchors EVERY_N_DAYS so "every third day" means every
+     * third day *from when you started*, not from an arbitrary epoch.
+     */
+    val startEpochDay: Long = 0L,
+    /** Optional end. Null means it runs until dropped. */
+    val endEpochDay: Long? = null,
+
     val updatedAt: Long = System.currentTimeMillis(),
 ) {
     /** Whether this is a counter rather than a tick. */
     val counts: Boolean get() = targetCount > 1
+
+    /** The weekday numbers, parsed. Bad data is dropped rather than thrown. */
+    val weekdays: List<Int>
+        get() = weekdaysCsv.split(',').mapNotNull { it.trim().toIntOrNull() }.filter { it in 1..7 }
 }
 
 // The composite primary key leads with habitId, so a range scan over epochDay
@@ -143,6 +204,13 @@ data class HabitCompletionEntity(
      * they already meant.
      */
     val count: Int = 1,
+    /**
+     * Done, skipped or failed. There is no NONE — that is the missing row.
+     *
+     * Existing rows migrate to DONE, which is the only thing a row has ever
+     * meant, so nothing already recorded changes its mind on upgrade.
+     */
+    val status: LogStatus = LogStatus.DONE,
     val updatedAt: Long = System.currentTimeMillis(),
 )
 

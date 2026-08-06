@@ -41,7 +41,39 @@ object Migrations {
         MIGRATION_3_4,
         MIGRATION_4_5,
         MIGRATION_5_6,
+        MIGRATION_6_7,
     )
+}
+
+/**
+ * v6 → v7. A schedule, and a day that can say more than "done".
+ *
+ * Everything was daily before, which made the app lie twice about a habit meant
+ * for three times a week: it showed up every morning as an outstanding failure,
+ * and its streak broke four times a week on days it was never due.
+ *
+ * Defaults are chosen so no existing habit changes behaviour:
+ *
+ *  - `scheduleType` DAILY is what every habit already was.
+ *  - `weekdaysCsv` blank, `everyNDays` 2, `timesPerWeek` 3 are inert while the
+ *    type is DAILY; they are the sensible starting points if he changes it.
+ *  - `startEpochDay` 0 means "scheduled since the epoch", so no habit suddenly
+ *    has days that do not count. New habits stamp the real day at adoption —
+ *    backfilling one here would be a guess, and guessing it late would move
+ *    existing streaks.
+ *  - `status` DONE is the only thing a completion row has ever meant.
+ *
+ * So every streak, every domain score and the whole Becoming profile read
+ * identically across the upgrade.
+ */
+private val MIGRATION_6_7 = Migration(6, 7) { db ->
+    db.execSQL("ALTER TABLE habit ADD COLUMN scheduleType TEXT NOT NULL DEFAULT 'DAILY'")
+    db.execSQL("ALTER TABLE habit ADD COLUMN weekdaysCsv TEXT NOT NULL DEFAULT ''")
+    db.execSQL("ALTER TABLE habit ADD COLUMN everyNDays INTEGER NOT NULL DEFAULT 2")
+    db.execSQL("ALTER TABLE habit ADD COLUMN timesPerWeek INTEGER NOT NULL DEFAULT 3")
+    db.execSQL("ALTER TABLE habit ADD COLUMN startEpochDay INTEGER NOT NULL DEFAULT 0")
+    db.execSQL("ALTER TABLE habit ADD COLUMN endEpochDay INTEGER")
+    db.execSQL("ALTER TABLE habit_completion ADD COLUMN status TEXT NOT NULL DEFAULT 'DONE'")
 }
 
 /**

@@ -35,6 +35,79 @@ object HabitMath {
     }
 
     /**
+     * The same run, but counting only the days the habit was actually due.
+     *
+     * This is the version that matters once a habit is not daily. A habit set
+     * to Mon/Wed/Fri must not have its chain broken by a Tuesday it was never
+     * supposed to be done on — which is exactly what the plain [currentStreak]
+     * above would do, and why "three times a week" was unusable before.
+     *
+     * Walks back from [today] to [startDay]:
+     *  - a day the habit was not due is passed over entirely, neither extending
+     *    nor breaking;
+     *  - today with nothing logged is passed over too, for the reason given on
+     *    [currentStreak] — a man has all day;
+     *  - DONE extends;
+     *  - anything else, including SKIPPED, ends it. A skip is an honest "not
+     *    today", not a day kept, and a streak that counts it is measuring
+     *    something other than what the number claims.
+     */
+    fun scheduledStreak(
+        status: Map<Long, Boolean>,
+        today: Long,
+        startDay: Long,
+        isScheduled: (Long) -> Boolean,
+    ): Int {
+        var streak = 0
+        var day = today
+        while (day >= startDay) {
+            if (!isScheduled(day)) {
+                day--
+                continue
+            }
+            val logged = status[day]
+            if (day == today && logged == null) {
+                day--
+                continue
+            }
+            if (logged == true) streak++ else break
+            day--
+        }
+        return streak
+    }
+
+    /**
+     * The longest scheduled run ever put together.
+     *
+     * Forwards from [startDay], because "best" is a property of the whole
+     * record rather than of its end, and the same skip rule applies.
+     */
+    fun scheduledBestStreak(
+        status: Map<Long, Boolean>,
+        today: Long,
+        startDay: Long,
+        isScheduled: (Long) -> Boolean,
+    ): Int {
+        var best = 0
+        var running = 0
+        var day = startDay
+        while (day <= today) {
+            if (!isScheduled(day)) {
+                day++
+                continue
+            }
+            if (status[day] == true) {
+                running++
+                if (running > best) best = running
+            } else {
+                running = 0
+            }
+            day++
+        }
+        return best
+    }
+
+    /**
      * The longest run ever put together, for the detail screen.
      *
      * Walks the sorted days once rather than probing a range, so a habit kept for
@@ -102,4 +175,65 @@ object HabitMath {
      */
     fun completeDays(counts: Map<Long, Int>, targetCount: Int): Set<Long> =
         counts.filterValues { isComplete(it, targetCount) }.keys
+
+    /**
+     * Whether a habit is due on a given day.
+     *
+     * Nothing before the day it was adopted is ever scheduled, which is what
+     * stops a habit taken on this morning from showing a year of misses behind
+     * it — and it anchors [ScheduleType.EVERY_N_DAYS] so "every third day"
+     * counts from when he started rather than from an arbitrary epoch.
+     *
+     * TIMES_PER_WEEK treats every day as eligible on purpose. A quota is not a
+     * calendar: three times a week means any three, and marking four specific
+     * days as "due" would invent a schedule he did not set. The week's progress
+     * is counted separately, by [weekKept].
+     */
+    fun isScheduledOn(
+        day: Long,
+        startDay: Long,
+        endDay: Long?,
+        type: com.bastion.app.data.db.ScheduleType,
+        weekdays: List<Int>,
+        everyNDays: Int,
+    ): Boolean {
+        if (day < startDay) return false
+        if (endDay != null && day > endDay) return false
+        return when (type) {
+            com.bastion.app.data.db.ScheduleType.DAILY -> true
+            com.bastion.app.data.db.ScheduleType.TIMES_PER_WEEK -> true
+            // An empty day list would otherwise mean "never", which reads on
+            // screen as a habit that has silently stopped existing.
+            com.bastion.app.data.db.ScheduleType.WEEKDAYS ->
+                weekdays.isEmpty() || isoWeekday(day) in weekdays
+            com.bastion.app.data.db.ScheduleType.EVERY_N_DAYS -> {
+                val n = maxOf(1, everyNDays)
+                (day - startDay) % n == 0L
+            }
+        }
+    }
+
+    /**
+     * ISO weekday for an epoch day: 1 Monday .. 7 Sunday.
+     *
+     * Epoch day 0 was a Thursday, which is where the 3 comes from. Done as
+     * arithmetic rather than via LocalDate so this stays testable on the JVM
+     * and immune to the device's timezone.
+     */
+    fun isoWeekday(day: Long): Int = ((day + 3).mod(7L) + 1).toInt()
+
+    /** The Monday of the week containing [day], as an epoch day. */
+    fun weekStart(day: Long): Long = day - (isoWeekday(day) - 1)
+
+    /**
+     * How many of a "times per week" quota have been kept in [day]'s week.
+     *
+     * The quota's own progress, which is what the row shows instead of a
+     * streak: "2 of 3 this week" is the true statement, and a day-streak on a
+     * habit with no fixed days would be a number about nothing.
+     */
+    fun weekKept(done: Set<Long>, day: Long): Int {
+        val start = weekStart(day)
+        return (start until start + 7).count { it in done }
+    }
 }

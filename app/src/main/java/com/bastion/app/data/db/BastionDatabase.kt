@@ -35,6 +35,16 @@ class BastionConverters {
         // the whole habit list down rather than one habit — this is the journal's
         // spine, so it fails soft to the default that means "no particular hour".
         runCatching { TimeOfDay.valueOf(value) }.getOrDefault(TimeOfDay.ANYTIME)
+
+    // Same tolerance, same reason: one unreadable row must not take the journal
+    // down with it. The defaults are each the pre-schedule behaviour.
+    @TypeConverter fun scheduleTypeTo(value: ScheduleType): String = value.name
+    @TypeConverter fun scheduleTypeFrom(value: String): ScheduleType =
+        runCatching { ScheduleType.valueOf(value) }.getOrDefault(ScheduleType.DAILY)
+
+    @TypeConverter fun logStatusTo(value: LogStatus): String = value.name
+    @TypeConverter fun logStatusFrom(value: String): LogStatus =
+        runCatching { LogStatus.valueOf(value) }.getOrDefault(LogStatus.DONE)
 }
 
 @Database(
@@ -59,7 +69,7 @@ class BastionConverters {
         AppUsageEntity::class,
         FeedSeenEntity::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = true,
 )
 @TypeConverters(BastionConverters::class)

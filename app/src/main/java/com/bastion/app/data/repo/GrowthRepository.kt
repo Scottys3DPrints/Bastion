@@ -57,6 +57,38 @@ class GrowthRepository(
                 target = def.defaultTarget,
                 why = def.why,
                 sortOrder = sortOrder,
+                // Stamped at adoption, never backfilled. Nothing before today
+                // is scheduled, so a habit taken on this morning does not open
+                // with a year of misses behind it.
+                startEpochDay = LocalDate.now().toEpochDay(),
+            )
+        )
+    }
+
+    /**
+     * Marks a day skipped or failed — the two things a blank day cannot say.
+     *
+     * A skip is an honest "not today"; a failure is "meant to, did not". Both
+     * are worth more than a gap, which could mean either of them or that the
+     * phone was in a drawer.
+     */
+    suspend fun setHabitStatus(
+        habit: HabitEntity,
+        status: com.bastion.app.data.db.LogStatus,
+        epochDay: Long = LocalDate.now().toEpochDay(),
+    ) {
+        habitDao.setCompletion(
+            HabitCompletionEntity(
+                habitId = habit.id,
+                epochDay = epochDay,
+                // A skipped or failed day holds no progress; only DONE carries
+                // a count, so a partially-filled counter that is then failed
+                // cannot leave a number behind claiming otherwise.
+                count = if (status == com.bastion.app.data.db.LogStatus.DONE) {
+                    maxOf(1, habit.targetCount)
+                } else 0,
+                status = status,
+                updatedAt = System.currentTimeMillis(),
             )
         )
     }
@@ -86,23 +118,54 @@ class GrowthRepository(
         epochDay: Long = LocalDate.now().toEpochDay(),
     ) {
         val target = maxOf(1, habit.targetCount)
-        val current = habitDao.completionOnce(habit.id, epochDay)?.count ?: 0
+        val existing = habitDao.completionOnce(habit.id, epochDay)
+        // A skipped or failed day restarts at one rather than continuing from
+        // the zero it stored. Tapping the circle on a day marked failed means
+        // "actually, I did it", and resuming the count from nothing is the only
+        // reading of that which is not surprising.
+        val current = if (existing?.status == com.bastion.app.data.db.LogStatus.DONE) {
+            existing.count
+        } else 0
         val next = current + 1
         if (next > target) habitDao.uncomplete(habit.id, epochDay)
         else habitDao.setCompletion(
-            HabitCompletionEntity(habit.id, epochDay, next, System.currentTimeMillis())
+            HabitCompletionEntity(
+                habitId = habit.id,
+                epochDay = epochDay,
+                count = next,
+                status = com.bastion.app.data.db.LogStatus.DONE,
+                updatedAt = System.currentTimeMillis(),
+            )
         )
     }
+
+    /**
+     * Whether a habit is due on a day, from its own schedule.
+     *
+     * On the repository rather than the entity because [HabitMath] is where
+     * every other habit number lives, and two places deciding "is this due"
+     * would eventually disagree — the journal would show a habit the streak
+     * had already written off.
+     */
+    fun isDue(habit: HabitEntity, epochDay: Long): Boolean = HabitMath.isScheduledOn(
+        day = epochDay,
+        startDay = habit.startEpochDay,
+        endDay = habit.endEpochDay,
+        type = habit.scheduleType,
+        weekdays = habit.weekdays,
+        everyNDays = habit.everyNDays,
+    )
 
     /** Sets a day outright, for the detail screen's calendar. */
     suspend fun setHabitDay(habit: HabitEntity, epochDay: Long, done: Boolean) {
         if (!done) habitDao.uncomplete(habit.id, epochDay)
         else habitDao.setCompletion(
             HabitCompletionEntity(
-                habit.id,
-                epochDay,
-                maxOf(1, habit.targetCount),
-                System.currentTimeMillis(),
+                habitId = habit.id,
+                epochDay = epochDay,
+                count = maxOf(1, habit.targetCount),
+                status = com.bastion.app.data.db.LogStatus.DONE,
+                updatedAt = System.currentTimeMillis(),
             )
         )
     }

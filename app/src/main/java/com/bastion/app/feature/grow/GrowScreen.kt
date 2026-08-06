@@ -204,6 +204,9 @@ private fun RegimenTab(graph: BastionGraph, onAdd: () -> Unit) {
             onSelectDay = { selectedDay = it },
             onOpenHabit = { openHabitId = it.id },
             onBump = { scope.launch2 { graph.growth.bumpHabit(it, selectedDay) } },
+            onSetStatus = { habit, status ->
+                scope.launch2 { graph.growth.setHabitStatus(habit, status, selectedDay) }
+            },
         )
         QuietButton("Add a habit", onAdd, Modifier.fillMaxWidth())
     }
@@ -216,6 +219,9 @@ private fun RegimenTab(graph: BastionGraph, onAdd: () -> Unit) {
                 onEdit = { scope.launch2 { graph.growth.updateHabit(it) } },
                 onToggleDay = { day, done ->
                     scope.launch2 { graph.growth.setHabitDay(habit, day, done) }
+                },
+                onSetStatus = { status ->
+                    scope.launch2 { graph.growth.setHabitStatus(habit, status, selectedDay) }
                 },
                 onDrop = {
                     openHabitId = null

@@ -1,5 +1,6 @@
 package com.bastion.app
 
+import com.bastion.app.data.db.ScheduleType
 import com.bastion.app.data.repo.HabitMath
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -168,5 +169,167 @@ class HabitMathTest {
     fun `the same counts against a tick habit are all complete`() {
         val counts = mapOf(998L to 8, 999L to 3, 1000L to 8)
         assertEquals(3, HabitMath.currentStreak(HabitMath.completeDays(counts, 1), today))
+    }
+
+    // --- which days a habit is even due on ---------------------------------
+
+    /**
+     * Epoch day 0 was a Thursday. Everything else follows from that, and getting
+     * it wrong would put every "certain days" habit on the wrong days of the
+     * week — visibly wrong on a phone and invisible in a code review.
+     */
+    @Test
+    fun `epoch day zero was a thursday`() {
+        assertEquals(4, HabitMath.isoWeekday(0L))
+        assertEquals(5, HabitMath.isoWeekday(1L))
+        assertEquals(7, HabitMath.isoWeekday(3L))
+        assertEquals(1, HabitMath.isoWeekday(4L))
+        // And it holds going backwards, where a naive modulo returns negatives.
+        assertEquals(3, HabitMath.isoWeekday(-1L))
+        assertEquals(1, HabitMath.isoWeekday(-3L))
+    }
+
+    @Test
+    fun `a week starts on its monday`() {
+        val monday = HabitMath.weekStart(today)
+        assertEquals(1, HabitMath.isoWeekday(monday))
+        assertTrue(monday <= today && today - monday < 7)
+    }
+
+    private fun due(
+        day: Long,
+        type: ScheduleType,
+        start: Long = 0L,
+        end: Long? = null,
+        weekdays: List<Int> = emptyList(),
+        everyN: Int = 2,
+    ) = HabitMath.isScheduledOn(day, start, end, type, weekdays, everyN)
+
+    @Test
+    fun `a daily habit is due every day, but never before it was adopted`() {
+        assertTrue(due(today, ScheduleType.DAILY, start = 900L))
+        assertTrue(due(900L, ScheduleType.DAILY, start = 900L))
+        // The day before adoption. This is what stops a habit taken on this
+        // morning from showing a year of failures behind it.
+        assertFalse(due(899L, ScheduleType.DAILY, start = 900L))
+    }
+
+    @Test
+    fun `an ended habit stops being due`() {
+        assertTrue(due(995L, ScheduleType.DAILY, start = 900L, end = 995L))
+        assertFalse(due(996L, ScheduleType.DAILY, start = 900L, end = 995L))
+    }
+
+    @Test
+    fun `a certain-days habit is due only on those weekdays`() {
+        // Mon, Wed, Fri.
+        val mwf = listOf(1, 3, 5)
+        val monday = HabitMath.weekStart(today)
+        assertTrue(due(monday, ScheduleType.WEEKDAYS, weekdays = mwf))
+        assertFalse(due(monday + 1, ScheduleType.WEEKDAYS, weekdays = mwf))
+        assertTrue(due(monday + 2, ScheduleType.WEEKDAYS, weekdays = mwf))
+        assertFalse(due(monday + 6, ScheduleType.WEEKDAYS, weekdays = mwf))
+    }
+
+    /** No days chosen must not mean "never" — that reads as a vanished habit. */
+    @Test
+    fun `a certain-days habit with no days chosen is due every day`() {
+        assertTrue(due(today, ScheduleType.WEEKDAYS, weekdays = emptyList()))
+        assertTrue(due(today + 1, ScheduleType.WEEKDAYS, weekdays = emptyList()))
+    }
+
+    @Test
+    fun `an every-n-days habit counts from the day it started`() {
+        assertTrue(due(900L, ScheduleType.EVERY_N_DAYS, start = 900L, everyN = 3))
+        assertFalse(due(901L, ScheduleType.EVERY_N_DAYS, start = 900L, everyN = 3))
+        assertFalse(due(902L, ScheduleType.EVERY_N_DAYS, start = 900L, everyN = 3))
+        assertTrue(due(903L, ScheduleType.EVERY_N_DAYS, start = 900L, everyN = 3))
+    }
+
+    /** A quota is not a calendar: any day is a legitimate day to do it. */
+    @Test
+    fun `a times-per-week habit is eligible every day`() {
+        assertTrue(due(today, ScheduleType.TIMES_PER_WEEK, start = 900L))
+        assertTrue(due(today - 1, ScheduleType.TIMES_PER_WEEK, start = 900L))
+    }
+
+    @Test
+    fun `the week's quota counts only that week`() {
+        val monday = HabitMath.weekStart(today)
+        val done = setOf(monday, monday + 2, monday - 1, monday + 7)
+        // The Sunday before and the Monday after are other weeks.
+        assertEquals(2, HabitMath.weekKept(done, today))
+    }
+
+    // --- streaks that respect the schedule ---------------------------------
+
+    /**
+     * The regression this whole schedule exists for.
+     *
+     * A Mon/Wed/Fri habit kept on Monday and Wednesday must read as a streak of
+     * two. Counted as a daily habit it reads zero, because Tuesday looks like a
+     * miss — so before schedules existed, a three-times-a-week habit broke its
+     * own chain four times a week and the number was worthless.
+     */
+    @Test
+    fun `unscheduled days do not break a run`() {
+        val mwf = listOf(1, 3, 5)
+        val monday = HabitMath.weekStart(today)
+        val wednesday = monday + 2
+        val isDue = { d: Long -> due(d, ScheduleType.WEEKDAYS, start = monday, weekdays = mwf) }
+
+        val kept = mapOf(monday to true, wednesday to true)
+        assertEquals(
+            2,
+            HabitMath.scheduledStreak(kept, today = wednesday, startDay = monday, isScheduled = isDue),
+        )
+    }
+
+    @Test
+    fun `a missed scheduled day does break it`() {
+        val mwf = listOf(1, 3, 5)
+        val monday = HabitMath.weekStart(today)
+        val friday = monday + 4
+        val isDue = { d: Long -> due(d, ScheduleType.WEEKDAYS, start = monday, weekdays = mwf) }
+
+        // Monday kept, Wednesday missed, Friday kept. Only Friday survives.
+        val kept = mapOf(monday to true, friday to true)
+        assertEquals(
+            1,
+            HabitMath.scheduledStreak(kept, today = friday, startDay = monday, isScheduled = isDue),
+        )
+    }
+
+    @Test
+    fun `today still does not have to be done yet`() {
+        val isDue = { _: Long -> true }
+        val kept = mapOf(998L to true, 999L to true)
+        assertEquals(
+            2,
+            HabitMath.scheduledStreak(kept, today = today, startDay = 990L, isScheduled = isDue),
+        )
+    }
+
+    @Test
+    fun `the best scheduled run is found anywhere in the record`() {
+        val isDue = { _: Long -> true }
+        val kept = mapOf(990L to true, 991L to true, 992L to true, 999L to true, 1000L to true)
+        assertEquals(
+            3,
+            HabitMath.scheduledBestStreak(kept, today = today, startDay = 990L, isScheduled = isDue),
+        )
+    }
+
+    @Test
+    fun `nothing scheduled at all is a streak of nothing rather than a hang`() {
+        val isDue = { _: Long -> false }
+        assertEquals(
+            0,
+            HabitMath.scheduledStreak(emptyMap(), today, startDay = 900L, isScheduled = isDue),
+        )
+        assertEquals(
+            0,
+            HabitMath.scheduledBestStreak(emptyMap(), today, startDay = 900L, isScheduled = isDue),
+        )
     }
 }

@@ -3,6 +3,7 @@ package com.bastion.app.feature.grow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,6 +36,8 @@ import com.bastion.app.core.design.Space
 import com.bastion.app.data.BastionGraph
 import com.bastion.app.data.db.HabitCompletionEntity
 import com.bastion.app.data.db.HabitEntity
+import com.bastion.app.data.db.LogStatus
+import com.bastion.app.data.db.ScheduleType
 import com.bastion.app.data.db.TimeOfDay
 import com.bastion.app.data.repo.HabitMath
 import java.time.LocalDate
@@ -85,6 +89,7 @@ fun HabitJournal(
     onSelectDay: (Long) -> Unit,
     onOpenHabit: (HabitEntity) -> Unit,
     onBump: (HabitEntity) -> Unit,
+    onSetStatus: (HabitEntity, LogStatus) -> Unit,
     habits: List<HabitEntity>,
 ) {
     val completionsFlow = remember(graph, selectedDay) { graph.growth.completionsOn(selectedDay) }
@@ -93,15 +98,41 @@ fun HabitJournal(
 
     val today = remember { LocalDate.now().toEpochDay() }
 
+    // Only what is actually due on the day being looked at. A habit set to
+    // Mon/Wed/Fri is not an outstanding failure on a Tuesday, and showing it as
+    // one was the whole reason a weekly habit was unusable.
+    val due = remember(habits, selectedDay) {
+        habits.filter { graph.growth.isDue(it, selectedDay) }
+    }
+    val doneToday = due.count {
+        val c = byId[it.id]
+        c?.status == LogStatus.DONE && HabitMath.isComplete(c.count, it.targetCount)
+    }
+
     DateStrip(today = today, selected = selectedDay, onSelect = onSelectDay)
+    Spacer(Modifier.height(Space.lg))
+    SummaryRing(done = doneToday, total = due.size)
+
+    if (due.isEmpty()) {
+        Spacer(Modifier.height(Space.lg))
+        Text(
+            "Nothing due today. That is the schedule working, not a day off.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = BastionColors.TextMuted,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        return
+    }
 
     Column(Modifier.fillMaxWidth()) {
         SECTION_ORDER.forEach { slot ->
-            val inSlot = habits.filter { it.timeOfDay == slot }
+            val inSlot = due.filter { it.timeOfDay == slot }
             if (inSlot.isEmpty()) return@forEach
 
             val doneInSlot = inSlot.count {
-                HabitMath.isComplete(byId[it.id]?.count ?: 0, it.targetCount)
+                val c = byId[it.id]
+                c?.status == LogStatus.DONE && HabitMath.isComplete(c.count, it.targetCount)
             }
 
             Spacer(Modifier.height(Space.lg))
@@ -132,8 +163,61 @@ fun HabitJournal(
                     habit = habit,
                     completion = byId[habit.id],
                     graph = graph,
+                    selectedDay = selectedDay,
                     onOpen = { onOpenHabit(habit) },
                     onBump = { onBump(habit) },
+                    onSetStatus = { onSetStatus(habit, it) },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The day at a glance, as a proportion rather than a ring.
+ *
+ * A drawn arc was the first version and it was worse: at the size that fits
+ * above a list it is a smudge, and the number underneath was doing all the work
+ * anyway. A bar reads at arm's length, matches the proportion bars used
+ * elsewhere in the app, and says the same thing.
+ */
+@Composable
+private fun SummaryRing(done: Int, total: Int) {
+    val fraction = if (total <= 0) 0f else done.toFloat() / total
+    val allDone = total > 0 && done == total
+
+    Column(Modifier.fillMaxWidth()) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Text(
+                if (allDone) "All of it, kept." else "$done of $total kept",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (allDone) BastionColors.SageBright else BastionColors.TextSecondary,
+            )
+            Text(
+                "${(fraction * 100).toInt()}%",
+                style = MaterialTheme.typography.labelMedium,
+                color = if (allDone) BastionColors.SageBright else BastionColors.TextMuted,
+            )
+        }
+        Spacer(Modifier.height(Space.sm))
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(BastionColors.SurfaceRaised),
+        ) {
+            if (fraction > 0f) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(fraction)
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(if (allDone) BastionColors.Sage else BastionColors.SageDeep),
                 )
             }
         }
@@ -203,18 +287,39 @@ private fun HabitJournalRow(
     habit: HabitEntity,
     completion: HabitCompletionEntity?,
     graph: BastionGraph,
+    selectedDay: Long,
     onOpen: () -> Unit,
     onBump: () -> Unit,
+    onSetStatus: (LogStatus) -> Unit,
 ) {
-    val count = completion?.count ?: 0
-    val done = HabitMath.isComplete(count, habit.targetCount)
+    val status = completion?.status
+    val count = if (status == LogStatus.DONE) completion.count else 0
+    val done = status == LogStatus.DONE && HabitMath.isComplete(count, habit.targetCount)
 
     val history by remember(graph, habit.id) { graph.growth.historyOf(habit.id) }
         .collectAsStateWithLifecycle(initialValue = emptyList())
-    val streak = remember(history, habit.targetCount) {
-        HabitMath.currentStreak(
-            HabitMath.completeDays(history.associate { it.epochDay to it.count }, habit.targetCount),
-            LocalDate.now().toEpochDay(),
+
+    // Scheduled days only, so a Mon/Wed/Fri habit is not broken by a Tuesday.
+    val streak = remember(history, habit) {
+        val kept = history
+            .filter { it.status == LogStatus.DONE && HabitMath.isComplete(it.count, habit.targetCount) }
+            .associate { it.epochDay to true }
+        HabitMath.scheduledStreak(
+            status = kept,
+            today = LocalDate.now().toEpochDay(),
+            startDay = habit.startEpochDay,
+        ) { graph.growth.isDue(habit, it) }
+    }
+
+    // A quota has no chain, so it shows the week instead. A day-streak on a
+    // habit with no fixed days would be a number about nothing.
+    val weekKept = remember(history, habit, selectedDay) {
+        if (habit.scheduleType != ScheduleType.TIMES_PER_WEEK) 0
+        else HabitMath.weekKept(
+            history.filter {
+                it.status == LogStatus.DONE && HabitMath.isComplete(it.count, habit.targetCount)
+            }.map { it.epochDay }.toSet(),
+            selectedDay,
         )
     }
 
@@ -223,6 +328,14 @@ private fun HabitJournalRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(Space.md))
             .clickable { onOpen() }
+            // Swipe right keeps it, swipe left marks it missed — the same
+            // gestures the row already invites, without a menu in the way.
+            .pointerInput(habit.id, selectedDay) {
+                detectHorizontalDragGestures { _, drag ->
+                    if (drag > SWIPE_TRIGGER_PX) onSetStatus(LogStatus.DONE)
+                    else if (drag < -SWIPE_TRIGGER_PX) onSetStatus(LogStatus.FAILED)
+                }
+            }
             .padding(vertical = Space.md, horizontal = Space.xs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -233,27 +346,58 @@ private fun HabitJournalRow(
             Text(
                 habit.name,
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (done) BastionColors.TextMuted else BastionColors.TextPrimary,
+                color = if (status != null) BastionColors.TextMuted else BastionColors.TextPrimary,
             )
             val sub = buildString {
-                if (streak > 0) append("🔥 $streak day${if (streak == 1) "" else "s"}")
-                if (habit.counts) {
+                when {
+                    habit.scheduleType == ScheduleType.TIMES_PER_WEEK ->
+                        append("$weekKept of ${habit.timesPerWeek} this week")
+                    streak > 0 -> append("🔥 $streak day${if (streak == 1) "" else "s"}")
+                }
+                if (habit.counts && status != LogStatus.SKIPPED && status != LogStatus.FAILED) {
                     if (isNotEmpty()) append(" · ")
                     append("$count of ${habit.targetCount}")
                     if (habit.unit.isNotBlank()) append(" ${habit.unit}")
                 }
-                if (isEmpty()) append(habit.why.ifBlank { habit.domain })
+                if (status == LogStatus.SKIPPED) { clear(); append("Skipped") }
+                if (status == LogStatus.FAILED) { clear(); append("Missed") }
+                if (isEmpty()) append(habit.scheduleLabel())
             }
             Text(
                 sub,
                 style = MaterialTheme.typography.bodySmall,
-                color = if (streak > 0) BastionColors.SageBright else BastionColors.TextMuted,
+                color = when {
+                    status == LogStatus.FAILED -> BastionColors.Amber
+                    status == LogStatus.SKIPPED -> BastionColors.TextMuted
+                    streak > 0 || weekKept > 0 -> BastionColors.SageBright
+                    else -> BastionColors.TextMuted
+                },
                 maxLines = 1,
             )
         }
 
         Spacer(Modifier.width(Space.sm))
-        LogControl(count = count, target = habit.targetCount, done = done, onBump = onBump)
+        LogControl(
+            count = count,
+            target = habit.targetCount,
+            done = done,
+            status = status,
+            onBump = onBump,
+        )
+    }
+}
+
+/** How far a drag has to travel before it counts as a swipe. */
+private const val SWIPE_TRIGGER_PX = 18f
+
+/** "Every day", "Mon, Wed, Fri", "3× per week" — the schedule in words. */
+private fun HabitEntity.scheduleLabel(): String = when (scheduleType) {
+    ScheduleType.DAILY -> "Every day"
+    ScheduleType.TIMES_PER_WEEK -> "$timesPerWeek× per week"
+    ScheduleType.EVERY_N_DAYS -> "Every $everyNDays days"
+    ScheduleType.WEEKDAYS -> {
+        val names = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        if (weekdays.isEmpty()) "Every day" else weekdays.sorted().joinToString(", ") { names[it - 1] }
     }
 }
 
@@ -266,19 +410,32 @@ private fun HabitJournalRow(
  * discoverable in a design review and less discoverable with one thumb at 6am.
  */
 @Composable
-private fun LogControl(count: Int, target: Int, done: Boolean, onBump: () -> Unit) {
+private fun LogControl(
+    count: Int,
+    target: Int,
+    done: Boolean,
+    status: LogStatus?,
+    onBump: () -> Unit,
+) {
+    val fill = when {
+        done -> BastionColors.Sage
+        status == LogStatus.FAILED -> BastionColors.Amber
+        else -> BastionColors.SurfaceRaised
+    }
+    val edge = when {
+        done -> BastionColors.Sage
+        status == LogStatus.FAILED -> BastionColors.Amber
+        status == LogStatus.SKIPPED -> BastionColors.Steel
+        count > 0 -> BastionColors.SageDeep
+        else -> BastionColors.Outline
+    }
+
     Box(
         Modifier
             .size(34.dp)
             .clip(CircleShape)
-            .background(if (done) BastionColors.Sage else BastionColors.SurfaceRaised)
-            .border(
-                width = 2.dp,
-                color = if (done) BastionColors.Sage
-                else if (count > 0) BastionColors.SageDeep
-                else BastionColors.Outline,
-                shape = CircleShape,
-            )
+            .background(fill)
+            .border(width = 2.dp, color = edge, shape = CircleShape)
             .clickable { onBump() },
         contentAlignment = Alignment.Center,
     ) {
@@ -286,6 +443,17 @@ private fun LogControl(count: Int, target: Int, done: Boolean, onBump: () -> Uni
             done -> Text(
                 "✓",
                 color = BastionColors.MidnightDeep,
+                style = MaterialTheme.typography.labelMedium,
+            )
+            status == LogStatus.FAILED -> Text(
+                "✕",
+                color = BastionColors.MidnightDeep,
+                style = MaterialTheme.typography.labelMedium,
+            )
+            // A skip is a deliberate pass, and it should not look like a miss.
+            status == LogStatus.SKIPPED -> Text(
+                "»",
+                color = BastionColors.SteelBright,
                 style = MaterialTheme.typography.labelMedium,
             )
             // Partial progress shows the number rather than a fraction of a ring.
