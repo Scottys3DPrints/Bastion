@@ -15,3 +15,6 @@ captures/
 keystore.properties
 *.jks
 *.keystore
+
+# Locally built release artifacts (see the release runbook)
+dist/
