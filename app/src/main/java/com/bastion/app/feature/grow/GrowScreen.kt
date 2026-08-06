@@ -104,7 +104,12 @@ private enum class GrowTab(val label: String) {
  */
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-fun GrowScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
+fun GrowScreen(
+    faithMode: Boolean,
+    onOpenProfile: () -> Unit,
+    onOpenHabit: (String) -> Unit,
+    onOpenHabitProgress: () -> Unit,
+) {
     val context = LocalContext.current
     val graph = remember { BastionGraph.from(context) }
     val scope = rememberCoroutineScope()
@@ -135,7 +140,12 @@ fun GrowScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
         )
 
         when (tab) {
-            GrowTab.HABITS -> RegimenTab(graph, onAdd = { showHabitPicker = true })
+            GrowTab.HABITS -> RegimenTab(
+                graph = graph,
+                onAdd = { showHabitPicker = true },
+                onOpenHabit = onOpenHabit,
+                onOpenProgress = onOpenHabitProgress,
+            )
             GrowTab.CHALLENGES -> ChallengesTab(graph, faithMode)
             GrowTab.LIBRARY -> LibraryTab(graph, faithMode) { openLesson = it }
         }
@@ -165,24 +175,21 @@ fun GrowScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
  *
  * What used to be here was a flat list with a tick per row. It said what a man
  * signed up for and never said what was due, which is the question he opens the
- * tab to ask. The journal lives in [HabitJournal]; this holds the state that
- * spans it and its detail sheet — which day is being looked at, and which habit
- * is open.
+ * tab to ask. The journal lives in [HabitJournal], one habit's own record lives
+ * on [HabitDetailScreen], and the regimen as a whole on [HabitsProgressScreen];
+ * this holds the only state that spans them — which day is being looked at.
  */
 @Composable
-private fun RegimenTab(graph: BastionGraph, onAdd: () -> Unit) {
+private fun RegimenTab(
+    graph: BastionGraph,
+    onAdd: () -> Unit,
+    onOpenHabit: (String) -> Unit,
+    onOpenProgress: () -> Unit,
+) {
     val scope = rememberCoroutineScope()
     val habits by graph.growth.activeHabits.collectAsStateWithLifecycle(initialValue = emptyList())
     var confirmDrop by remember { mutableStateOf<HabitEntity?>(null) }
-    var openHabitId by remember { mutableStateOf<String?>(null) }
     var selectedDay by remember { mutableLongStateOf(LocalDate.now().toEpochDay()) }
-
-    // Held by id, not by value. A HabitEntity captured in state goes stale the
-    // moment the sheet edits it — the chips would set the new time of day, the
-    // database would take it, and the sheet would carry on rendering the old
-    // object with the old chip lit. Resolving from the live list every
-    // recomposition means the sheet always shows what was actually saved.
-    val openHabit = habits.firstOrNull { it.id == openHabitId }
 
     Text(
         "Three kept beats ten intended.",
@@ -202,33 +209,14 @@ private fun RegimenTab(graph: BastionGraph, onAdd: () -> Unit) {
             habits = habits,
             selectedDay = selectedDay,
             onSelectDay = { selectedDay = it },
-            onOpenHabit = { openHabitId = it.id },
+            onOpenHabit = { onOpenHabit(it.id) },
             onBump = { scope.launch2 { graph.growth.bumpHabit(it, selectedDay) } },
             onSetStatus = { habit, status ->
                 scope.launch2 { graph.growth.setHabitStatus(habit, status, selectedDay) }
             },
         )
+        QuietButton("See your progress", onOpenProgress, Modifier.fillMaxWidth())
         QuietButton("Add a habit", onAdd, Modifier.fillMaxWidth())
-    }
-
-    openHabit?.let { habit ->
-        BastionBottomSheet(onDismiss = { openHabitId = null }) {
-            HabitDetailSheet(
-                graph = graph,
-                habit = habit,
-                onEdit = { scope.launch2 { graph.growth.updateHabit(it) } },
-                onToggleDay = { day, done ->
-                    scope.launch2 { graph.growth.setHabitDay(habit, day, done) }
-                },
-                onSetStatus = { status ->
-                    scope.launch2 { graph.growth.setHabitStatus(habit, status, selectedDay) }
-                },
-                onDrop = {
-                    openHabitId = null
-                    confirmDrop = habit
-                },
-            )
-        }
     }
 
     // Deactivated rather than deleted, so the four weeks of record behind the

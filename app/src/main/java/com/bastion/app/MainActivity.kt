@@ -38,7 +38,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
+import androidx.navigation.navArgument
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -326,6 +328,8 @@ private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
                     GrowScreen(
                         faithMode = faithMode,
                         onOpenProfile = { navController.navigate(ROUTE_PROFILE) },
+                        onOpenHabit = { navController.navigate("$ROUTE_HABIT/$it") },
+                        onOpenHabitProgress = { navController.navigate(ROUTE_HABIT_PROGRESS) },
                     )
                 }
 
@@ -345,6 +349,28 @@ private fun MainScaffold(faithMode: Boolean, openTarget: String? = null) {
                         onOpenMentor = { navController.navigate(ROUTE_MENTOR) },
                     )
                 }
+                pushed(ROUTE_HABIT_PROGRESS) {
+                    com.bastion.app.feature.grow.HabitsProgressScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenHabit = { navController.navigate("$ROUTE_HABIT/$it") },
+                    )
+                }
+                // The habit id travels in the route rather than in a shared
+                // view model, so the screen survives process death and a back
+                // stack entry always knows which habit it is.
+                composable(
+                    route = "$ROUTE_HABIT/{habitId}",
+                    arguments = listOf(navArgument("habitId") { type = NavType.StringType }),
+                    enterTransition = { slideInHorizontally(tween(220)) { it / 4 } + fadeIn(tween(220)) },
+                    exitTransition = { ExitTransition.None },
+                    popEnterTransition = { EnterTransition.None },
+                    popExitTransition = { slideOutHorizontally(tween(200)) { it / 4 } + fadeOut(tween(200)) },
+                ) { entry ->
+                    com.bastion.app.feature.grow.HabitDetailScreen(
+                        habitId = entry.arguments?.getString("habitId").orEmpty(),
+                        onBack = { navController.popBackStack() },
+                    )
+                }
             }
         }
     }
@@ -356,6 +382,8 @@ private const val MAX_TAB_FONT_SCALE = 1.3f
 const val ROUTE_MENTOR = "mentor"
 const val ROUTE_PARTNER = "partner"
 const val ROUTE_PROFILE = "profile"
+const val ROUTE_HABIT = "habit"
+const val ROUTE_HABIT_PROGRESS = "habit_progress"
 
 /** A route that sits on top of a tab: slides in from the right, back out to it. */
 private fun androidx.navigation.NavGraphBuilder.pushed(

@@ -236,4 +236,75 @@ object HabitMath {
         val start = weekStart(day)
         return (start until start + 7).count { it in done }
     }
+
+    /**
+     * How much of the record a heatmap is showing.
+     *
+     * Four windows rather than one, because the same grid answers different
+     * questions at different scales: a week says what this week looks like, a
+     * year says whether the whole thing is holding. All but YEAR scroll a week
+     * at a time, so the columns always line up on the same weekday and the grid
+     * never reflows under a thumb.
+     */
+    enum class HeatPeriod(val label: String, val weeks: Int, val stepWeeks: Int) {
+        WEEK("Week", 1, 1),
+        MONTH("Month", 4, 4),
+        QUARTER("Quarter", 12, 1),
+        YEAR("Year", 53, 0),
+    }
+
+    /**
+     * The days a heatmap shows, oldest first, always whole weeks.
+     *
+     * [weekOffset] is in weeks back from the current one and is expected to
+     * have been through [clampWeekOffset] already. YEAR ignores it — a year is
+     * anchored to today and scrolls horizontally instead, because paging a year
+     * by weeks would take fifty taps to cross.
+     */
+    fun heatmapDays(
+        period: HeatPeriod,
+        weekOffset: Int,
+        today: Long,
+    ): List<Long> {
+        val thisWeek = weekStart(today)
+        if (period == HeatPeriod.YEAR) {
+            // Ends on the last day of this week so the final column is whole,
+            // which is what stops the grid ending in a ragged half column.
+            val end = thisWeek + 6
+            val start = end - (period.weeks * 7 - 1)
+            return (start..end).toList()
+        }
+        val displayWeekStart = thisWeek + weekOffset * 7L
+        val end = displayWeekStart + 6
+        val start = end - (period.weeks * 7 - 1)
+        return (start..end).toList()
+    }
+
+    /**
+     * Keeps paging inside the habit's own life.
+     *
+     * Forward stops at the current week — there is no history in the future.
+     * Back stops at the week the habit was adopted, so a man cannot page into
+     * years of blank cells from before it existed and read them as failure.
+     */
+    fun clampWeekOffset(desired: Int, today: Long, startDay: Long): Int {
+        val thisWeek = weekStart(today)
+        val firstWeek = weekStart(startDay)
+        val minOffset = ((firstWeek - thisWeek) / 7).toInt()
+        return desired.coerceIn(minOf(minOffset, 0), 0)
+    }
+
+    /**
+     * Which shade a day gets, as 0..1, for a counting habit.
+     *
+     * Full colour is reserved for a day that actually met its target; partial
+     * progress gets its own steps so seven glasses out of eight is visibly not
+     * the same as eight. A grid where "nearly" and "done" look identical is a
+     * grid that flatters.
+     */
+    fun heatLevel(count: Int, targetCount: Int): Float {
+        val target = maxOf(1, targetCount)
+        if (count <= 0) return 0f
+        return (count.toFloat() / target).coerceIn(0f, 1f)
+    }
 }

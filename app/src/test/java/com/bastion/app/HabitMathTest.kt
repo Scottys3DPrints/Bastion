@@ -320,6 +320,92 @@ class HabitMathTest {
         )
     }
 
+    // --- the heatmap's windows ---------------------------------------------
+
+    @Test
+    fun `every heatmap window is whole weeks and ends on a sunday`() {
+        HabitMath.HeatPeriod.entries.forEach { period ->
+            val days = HabitMath.heatmapDays(period, weekOffset = 0, today = today)
+            assertEquals("$period is not whole weeks", period.weeks * 7, days.size)
+            assertTrue("$period is not contiguous", days.zipWithNext().all { (a, b) -> b == a + 1 })
+            // Chunking into sevens has to give real Monday-to-Sunday weeks, or
+            // the weekday axis beside the grid is a lie.
+            assertEquals("$period does not start on a Monday", 1, HabitMath.isoWeekday(days.first()))
+            assertEquals("$period does not end on a Sunday", 7, HabitMath.isoWeekday(days.last()))
+        }
+    }
+
+    @Test
+    fun `every window includes today`() {
+        HabitMath.HeatPeriod.entries.forEach { period ->
+            assertTrue(
+                "$period does not contain today",
+                today in HabitMath.heatmapDays(period, weekOffset = 0, today = today),
+            )
+        }
+    }
+
+    @Test
+    fun `paging back moves the window back by whole weeks`() {
+        val now = HabitMath.heatmapDays(HabitMath.HeatPeriod.MONTH, 0, today)
+        val back = HabitMath.heatmapDays(HabitMath.HeatPeriod.MONTH, -4, today)
+        assertEquals(28, now.size)
+        assertEquals(28, back.size)
+        assertEquals(now.first() - 28, back.first())
+        // Four weeks back from a four-week window leaves no gap and no overlap.
+        assertEquals(now.first() - 1, back.last())
+    }
+
+    /** A year is anchored to today; paging it would take fifty taps to cross. */
+    @Test
+    fun `the year window ignores the offset`() {
+        assertEquals(
+            HabitMath.heatmapDays(HabitMath.HeatPeriod.YEAR, 0, today),
+            HabitMath.heatmapDays(HabitMath.HeatPeriod.YEAR, -12, today),
+        )
+    }
+
+    @Test
+    fun `paging cannot go past this week or before the habit existed`() {
+        // Forward is always clamped to the current week.
+        assertEquals(0, HabitMath.clampWeekOffset(3, today, startDay = today - 100))
+        // Back stops at the week the habit was adopted, so a man cannot page
+        // into years of blank cells from before it existed and read them as
+        // failure.
+        val startedTwoWeeksAgo = today - 14
+        assertEquals(-2, HabitMath.clampWeekOffset(-50, today, startedTwoWeeksAgo))
+        assertEquals(-1, HabitMath.clampWeekOffset(-1, today, startedTwoWeeksAgo))
+    }
+
+    @Test
+    fun `a habit adopted today cannot page back at all`() {
+        assertEquals(0, HabitMath.clampWeekOffset(-5, today, startDay = today))
+    }
+
+    // --- heat shading -------------------------------------------------------
+
+    @Test
+    fun `a tick habit is either fully lit or not at all`() {
+        assertEquals(1f, HabitMath.heatLevel(1, targetCount = 1), 0.001f)
+        assertEquals(0f, HabitMath.heatLevel(0, targetCount = 1), 0.001f)
+    }
+
+    /**
+     * Partial progress must not reach full colour.
+     *
+     * A grid where seven glasses out of eight looks identical to eight is a
+     * grid that flatters, and the whole point of looking at it is to see the
+     * truth about a month.
+     */
+    @Test
+    fun `partial progress shades below full`() {
+        assertTrue(HabitMath.heatLevel(7, targetCount = 8) < 1f)
+        assertTrue(HabitMath.heatLevel(7, targetCount = 8) > HabitMath.heatLevel(2, 8))
+        assertEquals(1f, HabitMath.heatLevel(8, targetCount = 8), 0.001f)
+        // Over the target is still just full, never more.
+        assertEquals(1f, HabitMath.heatLevel(99, targetCount = 8), 0.001f)
+    }
+
     @Test
     fun `nothing scheduled at all is a streak of nothing rather than a hang`() {
         val isDue = { _: Long -> false }
