@@ -99,6 +99,24 @@ interface HabitDao {
     @Query("SELECT * FROM habit_completion WHERE epochDay >= :from")
     fun completionsSince(from: Long): Flow<List<HabitCompletionEntity>>
 
+    /** Every day one habit was touched, for its streak and its calendar. */
+    @Query("SELECT * FROM habit_completion WHERE habitId = :habitId ORDER BY epochDay ASC")
+    fun historyOf(habitId: String): Flow<List<HabitCompletionEntity>>
+
+    @Query("SELECT * FROM habit_completion WHERE habitId = :habitId AND epochDay = :epochDay")
+    suspend fun completionOnce(habitId: String, epochDay: Long): HabitCompletionEntity?
+
+    /**
+     * Replaces rather than ignores.
+     *
+     * [complete] is INSERT OR IGNORE, which is right for a tick — the row exists
+     * or it does not. It is wrong for a counter: the second glass of water would
+     * be silently dropped because a row for today already existed, and the count
+     * would sit at 1 forever.
+     */
+    @Upsert
+    suspend fun setCompletion(completion: HabitCompletionEntity)
+
     @Query("SELECT COUNT(*) FROM habit_completion")
     fun totalCompletions(): Flow<Int>
 }

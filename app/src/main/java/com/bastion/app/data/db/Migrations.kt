@@ -40,7 +40,34 @@ object Migrations {
         MIGRATION_2_3,
         MIGRATION_3_4,
         MIGRATION_4_5,
+        MIGRATION_5_6,
     )
+}
+
+/**
+ * v5 → v6. The journal: an hour, a target, and a count.
+ *
+ * Every column carries a default that means exactly what the old schema already
+ * meant, so nothing is reinterpreted and no habit changes behaviour on upgrade.
+ *
+ *  - `timeOfDay` defaults to ANYTIME, which is what a habit with no hour has
+ *    always been. Nobody's regimen silently reshuffles into Morning.
+ *  - `targetCount` defaults to 1 and `unit` to blank: a tick, which is the only
+ *    thing a habit could be before this.
+ *  - `count` on a completion defaults to 1. A row already meant "done once".
+ *    This says the same thing out loud, so every streak, every domain score and
+ *    the whole four-week Becoming profile read identically across the upgrade.
+ *
+ * The one thing deliberately *not* done here is backfilling a sensible hour by
+ * guessing from the habit's name. It would be wrong often enough to matter, and
+ * a man opening the new journal to find his habits sorted into hours he never
+ * chose would trust the next thing the app did rather less.
+ */
+private val MIGRATION_5_6 = Migration(5, 6) { db ->
+    db.execSQL("ALTER TABLE habit ADD COLUMN timeOfDay TEXT NOT NULL DEFAULT 'ANYTIME'")
+    db.execSQL("ALTER TABLE habit ADD COLUMN targetCount INTEGER NOT NULL DEFAULT 1")
+    db.execSQL("ALTER TABLE habit ADD COLUMN unit TEXT NOT NULL DEFAULT ''")
+    db.execSQL("ALTER TABLE habit_completion ADD COLUMN count INTEGER NOT NULL DEFAULT 1")
 }
 
 /**

@@ -69,6 +69,25 @@ data class UrgeLogEntity(
     val updatedAt: Long = System.currentTimeMillis(),
 )
 
+/**
+ * When in the day a habit belongs, which is the spine of the journal.
+ *
+ * A flat list says what you signed up for. Sections say what is due *now* — and
+ * that is the difference between a list you read and a list you act on. The
+ * morning ones are still there at 9pm, but they have visibly gone by, which is
+ * information a flat list cannot give you.
+ *
+ * ANYTIME is the default and stays first-class rather than being a dumping
+ * ground: plenty of habits genuinely have no hour, and forcing a man to invent
+ * one is how a tracker starts feeling like paperwork.
+ */
+enum class TimeOfDay(val label: String) {
+    ANYTIME("Anytime"),
+    MORNING("Morning"),
+    AFTERNOON("Afternoon"),
+    EVENING("Evening"),
+}
+
 @Entity(tableName = "habit")
 @Serializable
 data class HabitEntity(
@@ -76,12 +95,31 @@ data class HabitEntity(
     val name: String,
     val domain: String,
     val emoji: String,
+    /**
+     * The human phrase from the catalogue — "3x per week", "10 minutes".
+     * Descriptive, never arithmetic. [targetCount] is the number that counts.
+     */
     val target: String,
     val why: String,
     val active: Boolean = true,
     val sortOrder: Int = 0,
+    val timeOfDay: TimeOfDay = TimeOfDay.ANYTIME,
+    /**
+     * How many times a day this is done. 1 is a tick; more is a counter.
+     *
+     * The two are the same mechanism with a different face, which is the point:
+     * "read scripture" is once, "drink water" is eight times, and a tracker that
+     * can only express the first turns the second into a lie you tell it once a
+     * day.
+     */
+    val targetCount: Int = 1,
+    /** "glasses", "pages", "minutes". Blank for a plain tick. */
+    val unit: String = "",
     val updatedAt: Long = System.currentTimeMillis(),
-)
+) {
+    /** Whether this is a counter rather than a tick. */
+    val counts: Boolean get() = targetCount > 1
+}
 
 // The composite primary key leads with habitId, so a range scan over epochDay
 // (which is what the Becoming profile does every time it opens) could not use it.
@@ -94,6 +132,17 @@ data class HabitEntity(
 data class HabitCompletionEntity(
     val habitId: String,
     val epochDay: Long,
+    /**
+     * How much of the day's target was done.
+     *
+     * A row used to mean "done", full stop, so a counting habit could only ever
+     * be all or nothing. The row still means "something happened today" —
+     * everything that counted rows before this still counts them — but it now
+     * also says how much, and the day is only *complete* when this reaches the
+     * habit's targetCount. Existing rows migrate to 1, which is exactly what
+     * they already meant.
+     */
+    val count: Int = 1,
     val updatedAt: Long = System.currentTimeMillis(),
 )
 

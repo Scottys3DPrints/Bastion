@@ -36,6 +36,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -159,13 +160,29 @@ fun GrowScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
     }
 }
 
+/**
+ * The habits tab: a journal, not a checklist.
+ *
+ * What used to be here was a flat list with a tick per row. It said what a man
+ * signed up for and never said what was due, which is the question he opens the
+ * tab to ask. The journal lives in [HabitJournal]; this holds the state that
+ * spans it and its detail sheet — which day is being looked at, and which habit
+ * is open.
+ */
 @Composable
 private fun RegimenTab(graph: BastionGraph, onAdd: () -> Unit) {
     val scope = rememberCoroutineScope()
     val habits by graph.growth.activeHabits.collectAsStateWithLifecycle(initialValue = emptyList())
-    val todayFlow = remember(graph) { graph.growth.completionsToday() }
-    val today by todayFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     var confirmDrop by remember { mutableStateOf<HabitEntity?>(null) }
+    var openHabitId by remember { mutableStateOf<String?>(null) }
+    var selectedDay by remember { mutableLongStateOf(LocalDate.now().toEpochDay()) }
+
+    // Held by id, not by value. A HabitEntity captured in state goes stale the
+    // moment the sheet edits it — the chips would set the new time of day, the
+    // database would take it, and the sheet would carry on rendering the old
+    // object with the old chip lit. Resolving from the live list every
+    // recomposition means the sheet always shows what was actually saved.
+    val openHabit = habits.firstOrNull { it.id == openHabitId }
 
     Text(
         "Three kept beats ten intended.",
@@ -179,60 +196,33 @@ private fun RegimenTab(graph: BastionGraph, onAdd: () -> Unit) {
             actionLabel = "Add your first habit",
             onAction = onAdd,
         )
-    }
-
-    // One child of the scaffold, not one per habit.
-    //
-    // The scaffold spaces its own children by Space.section, which is right
-    // between a chart and a calendar and absurd between two rows of a list —
-    // emitted loose, three habits sat 24dp apart and read as three unrelated
-    // things. A list is one block.
-    Column(Modifier.fillMaxWidth()) {
-    habits.forEach { habit ->
-        val done = today.any { it.habitId == habit.id }
-        // The shared row, not a bordered box each. Ten habits meant ten stacked
-        // surfaces, which is the wall of boxes the whole app was cut back from —
-        // and it made a habit list look heavier than the habits.
-        BastionRow(
-            title = habit.name,
-            subtitle = habit.why.ifBlank { habit.domain },
-            leading = { Text(habit.emoji, style = MaterialTheme.typography.titleLarge) },
-            onClick = { scope.launch2 { graph.growth.toggleHabit(habit.id, !done) } },
-            trailing = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier
-                            .size(26.dp)
-                            .clip(CircleShape)
-                            .background(if (done) BastionColors.Sage else BastionColors.SurfaceHigh),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (done) Text(
-                            "✓",
-                            color = BastionColors.MidnightDeep,
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                    }
-                    // Its own control with its own hit target, outside the row's
-                    // tap area. "Drop" used to sit inside the surface that
-                    // toggles the habit done, so the destructive action and the
-                    // daily one were a few millimetres apart on the same box.
-                    IconButton(onClick = { confirmDrop = habit }) {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = "Drop ${habit.name}",
-                            tint = BastionColors.TextMuted,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                }
-            },
+    } else {
+        HabitJournal(
+            graph = graph,
+            habits = habits,
+            selectedDay = selectedDay,
+            onSelectDay = { selectedDay = it },
+            onOpenHabit = { openHabitId = it.id },
+            onBump = { scope.launch2 { graph.growth.bumpHabit(it, selectedDay) } },
         )
-    }
+        QuietButton("Add a habit", onAdd, Modifier.fillMaxWidth())
     }
 
-    if (habits.isNotEmpty()) {
-        QuietButton("Add a habit", onAdd, Modifier.fillMaxWidth())
+    openHabit?.let { habit ->
+        BastionBottomSheet(onDismiss = { openHabitId = null }) {
+            HabitDetailSheet(
+                graph = graph,
+                habit = habit,
+                onEdit = { scope.launch2 { graph.growth.updateHabit(it) } },
+                onToggleDay = { day, done ->
+                    scope.launch2 { graph.growth.setHabitDay(habit, day, done) }
+                },
+                onDrop = {
+                    openHabitId = null
+                    confirmDrop = habit
+                },
+            )
+        }
     }
 
     // Deactivated rather than deleted, so the four weeks of record behind the

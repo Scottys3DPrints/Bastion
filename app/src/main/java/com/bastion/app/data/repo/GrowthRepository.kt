@@ -36,6 +36,10 @@ class GrowthRepository(
     fun completionsToday(): Flow<List<HabitCompletionEntity>> =
         habitDao.completionsOn(LocalDate.now().toEpochDay())
 
+    /** Any day, not just today — the journal can be scrolled backwards. */
+    fun completionsOn(epochDay: Long): Flow<List<HabitCompletionEntity>> =
+        habitDao.completionsOn(epochDay)
+
     fun completionsSince(epochDay: Long): Flow<List<HabitCompletionEntity>> =
         habitDao.completionsSince(epochDay)
 
@@ -64,6 +68,47 @@ class GrowthRepository(
     suspend fun toggleHabit(habitId: String, done: Boolean, epochDay: Long = LocalDate.now().toEpochDay()) {
         if (done) habitDao.complete(HabitCompletionEntity(habitId, epochDay))
         else habitDao.uncomplete(habitId, epochDay)
+    }
+
+    /** One habit's whole record, for its streak and its calendar. */
+    fun historyOf(habitId: String): Flow<List<HabitCompletionEntity>> = habitDao.historyOf(habitId)
+
+    /**
+     * Adds one to a counting habit's day, wrapping back to nothing at the top.
+     *
+     * The wrap is what makes a counter usable with one thumb: tapping past the
+     * target is the undo, so a mis-tap costs a few more taps rather than a long
+     * press on a menu nobody finds. A tick habit has a target of 1 and therefore
+     * wraps on the very next tap, which is exactly the toggle it always was.
+     */
+    suspend fun bumpHabit(
+        habit: HabitEntity,
+        epochDay: Long = LocalDate.now().toEpochDay(),
+    ) {
+        val target = maxOf(1, habit.targetCount)
+        val current = habitDao.completionOnce(habit.id, epochDay)?.count ?: 0
+        val next = current + 1
+        if (next > target) habitDao.uncomplete(habit.id, epochDay)
+        else habitDao.setCompletion(
+            HabitCompletionEntity(habit.id, epochDay, next, System.currentTimeMillis())
+        )
+    }
+
+    /** Sets a day outright, for the detail screen's calendar. */
+    suspend fun setHabitDay(habit: HabitEntity, epochDay: Long, done: Boolean) {
+        if (!done) habitDao.uncomplete(habit.id, epochDay)
+        else habitDao.setCompletion(
+            HabitCompletionEntity(
+                habit.id,
+                epochDay,
+                maxOf(1, habit.targetCount),
+                System.currentTimeMillis(),
+            )
+        )
+    }
+
+    suspend fun updateHabit(habit: HabitEntity) {
+        habitDao.upsert(habit.copy(updatedAt = System.currentTimeMillis()))
     }
 
     suspend fun startChallenge(challengeId: String) {

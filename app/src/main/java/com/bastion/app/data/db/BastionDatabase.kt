@@ -27,6 +27,14 @@ class BastionConverters {
 
     @TypeConverter fun changeStatusTo(value: ChangeStatus): String = value.name
     @TypeConverter fun changeStatusFrom(value: String): ChangeStatus = ChangeStatus.valueOf(value)
+
+    @TypeConverter fun timeOfDayTo(value: TimeOfDay): String = value.name
+    @TypeConverter fun timeOfDayFrom(value: String): TimeOfDay =
+        // Tolerant on the way in, strict on the way out. valueOf throws on
+        // anything it does not recognise, and a single unreadable row would take
+        // the whole habit list down rather than one habit — this is the journal's
+        // spine, so it fails soft to the default that means "no particular hour".
+        runCatching { TimeOfDay.valueOf(value) }.getOrDefault(TimeOfDay.ANYTIME)
 }
 
 @Database(
@@ -51,7 +59,7 @@ class BastionConverters {
         AppUsageEntity::class,
         FeedSeenEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(BastionConverters::class)
