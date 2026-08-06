@@ -85,6 +85,31 @@ class FeedSurfaceTest {
         assertFalse(covers(top = 150, height = 1920))
     }
 
+    /**
+     * The margin, stated so it is not discovered by being wrong.
+     *
+     * Two numbers sit close together and both are real. The threat is a
+     * full-width 9:16 inline reel unit, which measures 1920 of 2400 — 80%. The
+     * gate is 85%. So a genuine player has 360px of total inset to play with
+     * before it drops under the bar and stops being recognised, and a status bar
+     * plus a gesture bar plus Instagram's bottom navigation has to fit inside
+     * that budget.
+     *
+     * These are the shapes at the edges of it. If Reels ever stops being caught
+     * on a real handset, this is the first place to look — and the fix is not to
+     * lower HEIGHT_RATIO, which would re-open the inline unit at 80%, but to
+     * measure what the player actually reports and reconsider the pair together.
+     */
+    @Test
+    fun `a player inset by both system bars still covers`() {
+        // Status bar 96, gesture bar 130. Comfortable.
+        assertTrue(covers(top = 96, height = 2174))
+        // Status bar 96 and a tall bottom navigation, 264. At the limit.
+        assertTrue(covers(top = 96, height = 2040))
+        // One pixel more inset than the gate allows. Documented, not endorsed.
+        assertFalse(covers(top = 96, height = 2039))
+    }
+
     @Test
     fun `an ordinary feed post does not`() {
         // Full width, a third of the screen.

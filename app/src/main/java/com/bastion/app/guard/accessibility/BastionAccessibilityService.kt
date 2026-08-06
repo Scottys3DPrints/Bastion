@@ -387,12 +387,35 @@ class BastionAccessibilityService : AccessibilityService() {
                         MatchType.VIEW_ID ->
                             FeedSurface.idMatches(idSegment, rule.matchValue) &&
                                 isPlayerSurface(node, window)
-                        // No geometry gate on these: they describe a label
-                        // rather than a container, so "how big is it" is not a
-                        // meaningful question. Nothing built-in uses them, and
-                        // Learn Mode only ever produces VIEW_ID rules.
-                        MatchType.CONTENT_DESC -> node.contentDescription.equalsIgnoreCase(rule.matchValue)
-                        MatchType.TEXT -> node.text.equalsIgnoreCase(rule.matchValue)
+                        // A label is not a container, so "does it cover the
+                        // window" is the wrong question — it never will. The
+                        // right one is whether the label is *inside* the player:
+                        // a covering vertical pager a few levels above it.
+                        //
+                        // These carried no geometry gate at all, on the grounds
+                        // that nothing built-in uses them and Learn Mode only
+                        // makes VIEW_ID rules. Both are true and neither closes
+                        // the hole. A CONTENT_DESC rule reading "Reels" matches
+                        // the bottom navigation button, which is present on
+                        // every screen of Instagram, so feed-only silently
+                        // becomes a total block the moment the app opens — this
+                        // exact bug, from the built-in rules, is what
+                        // MIGRATION_2_3 exists to delete. That migration only
+                        // clears rows with builtIn = 1, and restoring a backup
+                        // taken before it puts a user-owned copy straight back.
+                        // A door that is currently hard to walk through is not
+                        // the same as a closed one.
+                        //
+                        // The nav button fails this: its ancestors are the
+                        // navigation bar and the screen root, neither of which
+                        // is a covering vertical pager. A label genuinely inside
+                        // the Reels viewer passes, because the pager above it is.
+                        MatchType.CONTENT_DESC ->
+                            node.contentDescription.equalsIgnoreCase(rule.matchValue) &&
+                                hasVerticallyScrollableAncestor(node, window)
+                        MatchType.TEXT ->
+                            node.text.equalsIgnoreCase(rule.matchValue) &&
+                                hasVerticallyScrollableAncestor(node, window)
                     }
                     if (hit) return rule
                 }
