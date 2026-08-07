@@ -70,6 +70,7 @@ import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.core.design.Space
 import com.bastion.app.core.design.StreakRing
 import com.bastion.app.data.BastionGraph
+import com.bastion.app.domain.splitValues
 import com.bastion.app.data.content.BenefitCard
 import com.bastion.app.data.db.DayStatus
 import com.bastion.app.data.db.UrgeLogEntity
@@ -259,7 +260,7 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
                     BarChart(bars = feelings, labelEvery = 1)
                 }
 
-                val places = if (enoughToSpeak) topCounts(urges.mapNotNull { it.place }) else emptyList()
+                val places = if (enoughToSpeak) topCounts(urges.flatMap { it.place.splitValues() }) else emptyList()
                 if (places.isNotEmpty()) {
                     Spacer(Modifier.height(Space.section))
                     SectionLabel("Where it finds you")
@@ -287,7 +288,7 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
                     )
                 }
 
-                val helped = if (enoughToSpeak) topCounts(urges.mapNotNull { it.whatHelped }) else emptyList()
+                val helped = if (enoughToSpeak) topCounts(urges.flatMap { it.whatHelped.splitValues() }) else emptyList()
                 if (helped.isNotEmpty()) {
                     Spacer(Modifier.height(Space.section))
                     SectionLabel("What has actually worked")
@@ -583,8 +584,7 @@ private fun buildMarks(
 }
 
 /** The stored CSV, back as a list. Empty when he skipped the question. */
-private fun UrgeLogEntity.feelingList(): List<String> =
-    feelings?.split(',')?.map(String::trim)?.filter(String::isNotBlank).orEmpty()
+private fun UrgeLogEntity.feelingList(): List<String> = feelings.splitValues()
 
 /**
  * The five commonest answers, biggest first.
@@ -805,7 +805,10 @@ private fun RecoveryFlow(
                 Text("Your lever", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
                 Spacer(Modifier.height(Space.md))
                 Text(
-                    tipFor(entry.trigger),
+                    // The first chosen trigger. There is one lever to offer and
+                    // several triggers now, and picking the first he tapped is
+                    // both stable and the one he reached for first.
+                    tipFor(entry.triggers.firstOrNull()),
                     style = MaterialTheme.typography.bodyLarge,
                     color = BastionColors.TextSecondary,
                 )

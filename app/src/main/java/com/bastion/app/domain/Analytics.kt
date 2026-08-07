@@ -107,7 +107,14 @@ object Analytics {
     }
 
     private fun leadingTrigger(urges: List<UrgeLogEntity>): Insight? {
-        val counts = urges.mapNotNull { it.trigger?.takeIf(String::isNotBlank) }.groupingBy { it }.eachCount()
+        // Split, not grouped whole. Triggers are stored comma-separated now
+        // because a slip usually has several, and grouping the raw column would
+        // count "Late night,Boredom" as its own trigger — a bucket of one that
+        // can never win, while the two real answers inside it go uncounted.
+        val counts = urges
+            .flatMap { it.trigger.splitValues() }
+            .groupingBy { it }
+            .eachCount()
         val (trigger, count) = counts.maxByOrNull { it.value } ?: return null
         if (count < 4) return null
         return Insight(
@@ -140,3 +147,13 @@ object Analytics {
         else -> "${h - 12}pm"
     }
 }
+
+/**
+ * One stored column into the answers it holds.
+ *
+ * Several of the log's columns carry more than one answer, comma-separated, and
+ * every count over them has to split first or the pattern it reports is a
+ * pattern in the punctuation.
+ */
+internal fun String?.splitValues(): List<String> =
+    this?.split(',')?.map(String::trim)?.filter(String::isNotBlank).orEmpty()

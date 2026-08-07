@@ -64,20 +64,29 @@ data class LogEntry(
     val date: LocalDate = LocalDate.now(),
     val time: LocalTime = LocalTime.now(),
     val intensity: Int = 3,
-    val trigger: String? = null,
+    /**
+     * All of them, not the closest one.
+     *
+     * These were single-select, which forced a man to rank things that arrived
+     * together. A late-night slip on the sofa after a drink is late night *and*
+     * boredom *and* alcohol, and making him pick the "main" one throws away two
+     * facts and records a guess as the third. Feelings were already a list for
+     * exactly this reason; the rest have been brought into line.
+     */
+    val triggers: List<String> = emptyList(),
     val feelings: List<String> = emptyList(),
-    val place: String? = null,
-    val device: String? = null,
+    val places: List<String> = emptyList(),
+    val devices: List<String> = emptyList(),
     val soughtOut: Boolean? = null,
     val durationMinutes: Int? = null,
     val note: String? = null,
-    val whatHelped: String? = null,
+    val helped: List<String> = emptyList(),
 ) {
     fun atMillis(): Long =
         LocalDateTime.of(date, time).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 }
 
-/** What set it off. One answer — the situation, not the feeling. */
+/** What set it off — the situation rather than the feeling. As many as apply. */
 val LOG_TRIGGERS = listOf(
     "Late night", "Boredom", "Stress", "Loneliness", "Tiredness",
     "Social media", "Anger", "Home alone", "Anxiety", "Alcohol",
@@ -343,12 +352,22 @@ private fun StrengthStep(entry: LogEntry, onChange: (LogEntry) -> Unit) {
     FlowRowChips(
         options = LOG_TRIGGERS,
         label = { it },
-        selected = { it == entry.trigger },
-        // Tapping the chosen one again clears it — there is no other way back to
-        // "I don't know", and a guessed trigger poisons the pattern it feeds.
-        onSelect = { onChange(entry.copy(trigger = if (entry.trigger == it) null else it)) },
+        selected = { it in entry.triggers },
+        // Tapping a chosen one again clears it. There has to be a way back to
+        // "I don't know", because a guessed trigger poisons the pattern it feeds.
+        onSelect = { onChange(entry.copy(triggers = entry.triggers.toggle(it))) },
     )
 }
+
+/**
+ * Add it or take it away, without the caller restating the condition.
+ *
+ * The single-select version read `if (x == it) null else it` at four call
+ * sites, and the multi-select equivalent written out longhand is where an
+ * off-by-one in a toggle hides.
+ */
+private fun List<String>.toggle(value: String): List<String> =
+    if (value in this) this - value else this + value
 
 private fun strengthWord(level: Int): String = when (level) {
     1 -> "A flicker"
@@ -389,12 +408,12 @@ private fun FeelingStep(entry: LogEntry, onChange: (LogEntry) -> Unit) {
  */
 @Composable
 private fun PlaceStep(entry: LogEntry, onChange: (LogEntry) -> Unit) {
-    StepTitle("Where were you?")
+    StepTitle("Where were you?", "More than one is fine if you moved.")
     FlowRowChips(
         options = LOG_PLACES,
         label = { it },
-        selected = { it == entry.place },
-        onSelect = { onChange(entry.copy(place = if (entry.place == it) null else it)) },
+        selected = { it in entry.places },
+        onSelect = { onChange(entry.copy(places = entry.places.toggle(it))) },
     )
 
     Spacer(Modifier.height(Space.section))
@@ -403,8 +422,8 @@ private fun PlaceStep(entry: LogEntry, onChange: (LogEntry) -> Unit) {
     FlowRowChips(
         options = LOG_DEVICES,
         label = { it },
-        selected = { it == entry.device },
-        onSelect = { onChange(entry.copy(device = if (entry.device == it) null else it)) },
+        selected = { it in entry.devices },
+        onSelect = { onChange(entry.copy(devices = entry.devices.toggle(it))) },
     )
 
     Spacer(Modifier.height(Space.section))
@@ -446,10 +465,8 @@ private fun LastStep(entry: LogEntry, onChange: (LogEntry) -> Unit) {
         FlowRowChips(
             options = LOG_HELPED,
             label = { it },
-            selected = { it == entry.whatHelped },
-            onSelect = {
-                onChange(entry.copy(whatHelped = if (entry.whatHelped == it) null else it))
-            },
+            selected = { it in entry.helped },
+            onSelect = { onChange(entry.copy(helped = entry.helped.toggle(it))) },
         )
         Spacer(Modifier.height(Space.section))
     }

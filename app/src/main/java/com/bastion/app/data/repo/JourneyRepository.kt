@@ -203,17 +203,17 @@ class JourneyRepository(
         logUrge(
             resisted = entry.resisted,
             intensity = entry.intensity,
-            trigger = entry.trigger,
+            trigger = entry.triggers.joinOrNull(),
             contextApp = if (heldContextApp && entry.date == now) {
                 com.bastion.app.guard.accessibility.BastionAccessibilityService.foregroundApp.value
             } else null,
-            place = entry.place,
+            place = entry.places.joinOrNull(),
             note = entry.note,
             feelings = entry.feelings,
-            device = entry.device,
+            device = entry.devices.joinOrNull(),
             soughtOut = entry.soughtOut,
             durationMinutes = entry.durationMinutes,
-            whatHelped = entry.whatHelped,
+            whatHelped = entry.helped.joinOrNull(),
             epochDay = entry.date.toEpochDay(),
             atMillis = entry.atMillis(),
         )
@@ -248,3 +248,14 @@ class JourneyRepository(
         return ((LocalDate.now().toEpochDay() - start).toInt() + 1).coerceAtLeast(1)
     }
 }
+
+/**
+ * Several answers in one column, the way feelings has always been stored.
+ *
+ * No schema change: these columns were already nullable text, and a log written
+ * before this arrives as a single value that splits into a list of one. Null
+ * rather than an empty string when nothing was chosen, because every reader
+ * already treats null as "not asked" and would count "" as an answer.
+ */
+private fun List<String>.joinOrNull(): String? =
+    filter { it.isNotBlank() }.takeIf { it.isNotEmpty() }?.joinToString(",")
