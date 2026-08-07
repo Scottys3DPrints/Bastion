@@ -69,6 +69,9 @@ class BastionAccessibilityService : AccessibilityService() {
     /** Throttles the lockdown wall's re-raise; see [holdWall]. */
     private var lastWallRaiseAt = 0L
 
+    /** Throttles the settings wall; see [guardSettingsScreen]. */
+    private var lastSettingsWallAt = 0L
+
     /** Asked before every re-raise, so the wall never races the lock screen. */
     private val keyguard: android.app.KeyguardManager? by lazy {
         getSystemService(android.app.KeyguardManager::class.java)
@@ -120,6 +123,7 @@ class BastionAccessibilityService : AccessibilityService() {
         when (event.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 onForegroundChanged(pkg)
+                guardSettingsScreen(pkg, event.className?.toString())
                 evaluate(pkg, force = true)
             }
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
@@ -199,6 +203,94 @@ class BastionAccessibilityService : AccessibilityService() {
         // Self-healing by construction: if a launch is refused, the next window
         // change tries again. There is no state to get wrong.
         com.bastion.app.guard.lockdown.LockdownWallActivity.raise(this)
+    }
+
+    /**
+     * Shuts the two settings screens a locked-in man should not be standing on.
+     *
+     * Interrupts on *arrival* rather than after the fact. Every other guard here
+     * notices a switch has been flipped and catches up; the accessibility screen
+     * is where Guard gets turned off and the Private DNS screen is where the
+     * resolver gets changed, so while the lock is on, being there at all is the
+     * thing to interrupt. The wall itself is a door, not a cage — see
+     * [SettingsWallActivity] for why leaving has to stay easy.
+     *
+     * Reads the tree only when the class name alone was not decisive, because
+     * this runs on every window change in Settings and a walk per screen is
+     * cheap while a walk per event would not be.
+     */
+    private fun guardSettingsScreen(pkg: String, className: String?) {
+        if (!settings.tamperLockEnabled) return
+        if (!GuardedScreens.isSettingsApp(pkg)) return
+
+        val now = System.currentTimeMillis()
+        if (now - lastSettingsWallAt < SETTINGS_WALL_COOLDOWN_MS) return
+
+        // Cheap pass first: the class name on its own settles the accessibility
+        // list on most builds, and nothing has to be read to know it.
+        var guarded = GuardedScreens.detect(
+            packageName = pkg,
+            className = className,
+            viewIds = emptySet(),
+            texts = emptySet(),
+            serviceLabel = "",
+            dnsHostname = "",
+        )
+
+        if (guarded == null) {
+            val root = rootInActiveWindow ?: return
+            val ids = mutableSetOf<String>()
+            val texts = mutableSetOf<String>()
+            collectIdentity(root, ids, texts)
+            guarded = GuardedScreens.detect(
+                packageName = pkg,
+                className = className,
+                viewIds = ids,
+                texts = texts,
+                serviceLabel = getString(com.bastion.app.R.string.accessibility_label),
+                dnsHostname = settings.dnsHostname,
+            )
+        }
+
+        if (guarded == null) return
+        lastSettingsWallAt = now
+        com.bastion.app.guard.lockdown.SettingsWallActivity.raise(this, guarded)
+    }
+
+    /**
+     * View ids and short text, for deciding *which* settings screen this is.
+     *
+     * Bounded like every other walk here, and short-text-only on purpose. The
+     * privacy contract at the top of this file is not suspended because the
+     * foreground app happens to be Settings: only strings Bastion already owns
+     * are ever compared against, nothing collected here outlives the match, and
+     * long strings — which is what a message or a note looks like — are never
+     * copied at all.
+     */
+    private fun collectIdentity(
+        root: AccessibilityNodeInfo,
+        ids: MutableSet<String>,
+        texts: MutableSet<String>,
+    ) {
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+        val borrowed = mutableListOf<AccessibilityNodeInfo>()
+        var visited = 0
+        try {
+            while (queue.isNotEmpty() && visited < MAX_NODES) {
+                val node = queue.removeFirst()
+                visited++
+                node.viewIdResourceName?.substringAfterLast('/')?.let { ids.add(it) }
+                node.text?.toString()?.takeIf { it.length <= MAX_IDENTITY_TEXT }?.let { texts.add(it) }
+                node.contentDescription?.toString()
+                    ?.takeIf { it.length <= MAX_IDENTITY_TEXT }?.let { texts.add(it) }
+                for (i in 0 until node.childCount) {
+                    node.getChild(i)?.let { queue.add(it); borrowed.add(it) }
+                }
+            }
+        } finally {
+            recycleAll(borrowed)
+        }
     }
 
     private fun recordUsage(pkg: String, elapsed: Long) {
@@ -751,6 +843,19 @@ class BastionAccessibilityService : AccessibilityService() {
          * is wasted, and there is no gap wide enough to do anything in.
          */
         private const val WALL_RAISE_COOLDOWN_MS = 150L
+
+        /**
+         * Longer than the lockdown wall's, and for the opposite reason.
+         *
+         * That one wants to be instant and relentless. This one has to leave
+         * room for the user to actually leave: raising it again while he is on
+         * his way out would make the exit unreachable, which is the cage this
+         * screen is written not to be.
+         */
+        private const val SETTINGS_WALL_COOLDOWN_MS = 2_000L
+
+        /** Long enough for a label, short enough never to be a message. */
+        private const val MAX_IDENTITY_TEXT = 60
 
         /**
          * Never covered by the lockdown wall, at any point, for any reason.

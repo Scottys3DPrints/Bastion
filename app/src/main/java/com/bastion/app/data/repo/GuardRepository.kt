@@ -117,6 +117,24 @@ class GuardRepository(
         return request
     }
 
+    /**
+     * How long the pending unlock has left, or null if none was ever asked for.
+     *
+     * The settings wall needs to tell those two apart, and they are different
+     * sentences: "your wait has forty minutes left" is encouragement, while
+     * "nothing is counting down yet" tells a man the wait has not started and
+     * standing here will not start it. Reporting zero for both would quietly
+     * promise that the lock is about to lift.
+     *
+     * Zero means matured but not yet applied — the watchdog applies it on the
+     * next reconcile, so it is honest to say the wait is over.
+     */
+    suspend fun pendingUnlockRemainingMillis(): Long {
+        val pending = guardDao.pendingChanges().first()
+            .firstOrNull { it.payload == "unlock" } ?: return -1L
+        return (pending.effectiveAt - System.currentTimeMillis()).coerceAtLeast(0L)
+    }
+
     suspend fun cancelChange(id: String) = guardDao.setChangeStatus(id, ChangeStatus.CANCELLED)
 
     suspend fun maturedChanges() = guardDao.maturedChanges(System.currentTimeMillis())

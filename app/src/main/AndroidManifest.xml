@@ -127,6 +127,22 @@
             android:taskAffinity=".guarddown"
             android:theme="@style/Theme.Bastion" />
 
+        <!--
+          The wall for opening a settings screen you locked yourself out of.
+
+          Its own taskAffinity, so it never lands inside Settings' back stack —
+          leaving it has to go home rather than back to the screen it exists to
+          refuse. Deliberately NOT showWhenLocked: this is an interruption, not
+          a lockdown, and there is nothing it needs to say over the keyguard.
+        -->
+        <activity
+            android:name=".guard.lockdown.SettingsWallActivity"
+            android:exported="false"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:taskAffinity=".settingswall"
+            android:theme="@style/Theme.Bastion" />
+
         <activity
             android:name=".guard.browser.FilteredBrowserActivity"
             android:exported="false"
