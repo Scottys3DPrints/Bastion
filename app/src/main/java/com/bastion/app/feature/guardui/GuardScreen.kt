@@ -175,8 +175,6 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
         }
     }
     var confirmStandDown by remember { mutableStateOf(false) }
-    var rulesExpanded by remember { mutableStateOf(false) }
-    var detailRuleId by remember { mutableStateOf<String?>(null) }
     androidx.lifecycle.compose.LifecycleResumeEffect(serviceRunning) {
         scope.launch {
             guardBreached = com.bastion.app.guard.GuardWatchdog.isBreached(context)
@@ -506,155 +504,81 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
             // like the same part. Naming what each group is for is most of the
             // fix; the shared surface behind each one does the rest.
             SectionLabel("What is guarded")
-            Column(Modifier.fillMaxWidth()) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SectionLabel("Guarded apps")
-                    LinkButton("Add →") { showAppPicker = true }
-                }
-                Spacer(Modifier.height(Space.lg))
-
-                if (guardedApps.isEmpty()) {
-                    Text(
-                        "Nothing guarded yet. Instagram and YouTube are the usual first two.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = BastionColors.TextMuted,
-                    )
-                }
-
-                guardedApps.forEach { app ->
-                    GuardedAppRow(
-                        app = app,
-                        onModeChange = { mode ->
-                            // Loosening waits and is confirmed; tightening is
-                            // instant and needs no ceremony. Relaxing a mode is
-                            // the same kind of decision as removing the guard
-                            // altogether, so it gets the same dialog.
-                            if (mode.isWeakerThan(app.mode)) {
-                                confirmRelax = app to mode
-                            } else {
-                                scope.launch {
-                                    graph.guard.upsertApp(
-                                        app.copy(mode = mode, updatedAt = System.currentTimeMillis())
-                                    )
-                                }
-                            }
-                        },
-                        onRemove = { confirmUnguard = app },
-                    )
-                    Spacer(Modifier.height(Space.md))
-                }
-            }
-
-
-            // --- Feed rules ---
-            Column(Modifier.fillMaxWidth()) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    SectionLabel("Feed rules · ${feedRules.count { it.enabled }} active")
-                    LinkButton("Learn →") { showLearnMode = true }
-                }
-                Spacer(Modifier.height(Space.sm))
-                // Collapsed by default. Two dozen rows of matcher internals is
-                // the single densest thing on this screen and almost never what
-                // someone came here to change — the summary answers "is it
-                // covered", and the list is one tap away when a rule breaks.
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clickable { rulesExpanded = !rulesExpanded }
-                        .padding(vertical = 4.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        feedRuleSummary(feedRules),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = BastionColors.TextMuted,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        if (rulesExpanded) "Hide" else "Show",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = BastionColors.BronzeBright,
-                    )
-                }
-                if (rulesExpanded) {
-                Spacer(Modifier.height(Space.lg))
-                Text(
-                    "A rule stopped firing? Learn it again in seconds.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
-                Spacer(Modifier.height(Space.lg))
-                feedRules.groupBy { it.packageName }.forEach { (pkg, rules) ->
-                    Text(
-                        feedGroupName(pkg, rules),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = BastionColors.TextPrimary,
-                    )
-                    rules.forEach { rule ->
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            // The label, not the matcher. "view_id ·
-                            // com.instagram.android:id/clips_viewer" is what
-                            // the rule is made of; "Instagram Reels" is what it
-                            // does, and a non-technical reader took the former
-                            // for breakage. The internals stay one tap away for
-                            // when a rule needs re-learning.
-                            Column(
-                                Modifier
-                                    .weight(1f)
-                                    .clickable { detailRuleId = if (detailRuleId == rule.id) null else rule.id }
-                            ) {
-                                Text(
-                                    rule.label,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = BastionColors.TextSecondary,
-                                    maxLines = 2,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                                )
-                                if (detailRuleId == rule.id) {
-                                    Text(
-                                        "${rule.matchType.name.lowercase()} · ${rule.matchValue}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = BastionColors.TextMuted,
-                                    )
-                                }
-                            }
-                            Switch(
-                                checked = rule.enabled,
-                                onCheckedChange = { enabled ->
-                                    scope.launch {
-                                        if (enabled) graph.guard.upsertRule(rule.copy(enabled = true))
-                                        else if (!settings.tamperLockEnabled) {
-                                            graph.guard.upsertRule(rule.copy(enabled = false))
-                                        } else graph.guard.requestWeakening(
-                                            "Disable rule ${rule.label}",
-                                            payload = "rule:${rule.id}:off",
-                                        )
-                                    }
-                                },
-                                colors = switchColors(),
+            GuardedAppsSection(
+                apps = guardedApps,
+                guardRunning = serviceRunning,
+                onAdd = { showAppPicker = true },
+                onModeChange = { app, mode ->
+                    // Loosening waits and is confirmed; tightening is instant and
+                    // needs no ceremony. Relaxing a mode is the same kind of
+                    // decision as removing the guard altogether, so it gets the
+                    // same dialog.
+                    if (mode.isWeakerThan(app.mode)) {
+                        confirmRelax = app to mode
+                    } else {
+                        scope.launch {
+                            graph.guard.upsertApp(
+                                app.copy(mode = mode, updatedAt = System.currentTimeMillis())
                             )
                         }
                     }
-                    Spacer(Modifier.height(Space.sm))
-                }
-                }
-            }
+                },
+                onRemove = { confirmUnguard = it },
+                onTurnGuardOn = { BastionAccessibilityService.openSettings(context) },
+            )
 
+            FeedRulesSection(
+                rules = feedRules,
+                guardedApps = guardedApps,
+                guardRunning = serviceRunning,
+                onSetGroup = { pkg, enabled ->
+                    scope.launch {
+                        val group = feedRules.filter { it.packageName == pkg }
+                        if (enabled) {
+                            group.filterNot { it.enabled }
+                                .forEach { graph.guard.upsertRule(it.copy(enabled = true)) }
+                        } else if (!settings.tamperLockEnabled) {
+                            group.filter { it.enabled }
+                                .forEach { graph.guard.upsertRule(it.copy(enabled = false)) }
+                        } else {
+                            // One request for the group rather than one per rule,
+                            // so the waiting list says "Instagram" instead of
+                            // listing four matchers a man never chose separately.
+                            graph.guard.requestWeakening(
+                                "Stop closing feeds in ${appLabel(context, pkg)}",
+                                payload = "rulegroup:$pkg",
+                            )
+                        }
+                    }
+                },
+                onSetRule = { rule, enabled ->
+                    scope.launch {
+                        if (enabled) graph.guard.upsertRule(rule.copy(enabled = true))
+                        else if (!settings.tamperLockEnabled) {
+                            graph.guard.upsertRule(rule.copy(enabled = false))
+                        } else graph.guard.requestWeakening(
+                            "Disable rule ${rule.label}",
+                            payload = "rule:${rule.id}:off",
+                        )
+                    }
+                },
+                onGuardApp = { pkg ->
+                    // Guarding straight from the broken link, in the mode that
+                    // makes these rules do something. Sending him to the other
+                    // section to work it out is most of the way to him not
+                    // bothering.
+                    scope.launch {
+                        graph.guard.upsertApp(
+                            com.bastion.app.data.db.GuardedAppEntity(
+                                packageName = pkg,
+                                label = appLabel(context, pkg),
+                                mode = BlockMode.FEED_ONLY,
+                            )
+                        )
+                    }
+                },
+                onLearn = { showLearnMode = true },
+            )
 
             SectionLabel("How hard it is to undo")
 
@@ -1375,76 +1299,6 @@ private fun StatusDot(active: Boolean) {
     )
 }
 
-/**
- * One guarded app: what it is and what is happening to it, on one line.
- *
- * Every app used to be a raised bordered box holding a title, a segmented
- * control and a sentence — so a man guarding six apps scrolled six identical
- * blocks of configuration to read six app names. The name and the mode are what
- * he came to check; changing the mode is the rarer thing, so it waits behind a
- * tap.
- */
-@Composable
-private fun GuardedAppRow(
-    app: GuardedAppEntity,
-    onModeChange: (BlockMode) -> Unit,
-    onRemove: () -> Unit,
-) {
-    var open by remember(app.packageName) { mutableStateOf(false) }
-
-    Column(Modifier.fillMaxWidth()) {
-        BastionRow(
-            title = app.label,
-            subtitle = app.mode.shortLabel(),
-            onClick = { open = !open },
-            trailing = {
-                Text(
-                    if (open) "▴" else "▾",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = BastionColors.TextMuted,
-                )
-            },
-        )
-        androidx.compose.animation.AnimatedVisibility(open) {
-            Column(Modifier.padding(bottom = Space.md)) {
-                // SCHEDULE and TIME_LIMIT are deliberately absent.
-                //
-                // Both need a parameter — a window, or a number of minutes — and
-                // there is nowhere to set either, so choosing them silently
-                // applied defaults of 00:00-00:00 and a fixed cap. The options
-                // looked like features and behaved like dead ends, which is
-                // worse than not offering them. They come back when their
-                // editors do. A mode an older build already set stays listed, so
-                // the row keeps telling the truth about what is running.
-                val modes = buildList {
-                    add(BlockMode.FEED_ONLY)
-                    add(BlockMode.FULL)
-                    if (app.mode !in this) add(app.mode)
-                }
-                ChoiceRow(
-                    options = modes,
-                    selected = app.mode,
-                    // The segmented control has room for two words, so it gets
-                    // the short form; the sentence explaining the choice sits
-                    // under it, where there is room to finish it.
-                    label = { it.shortLabel() },
-                    onSelect = onModeChange,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(Space.sm))
-                Text(
-                    app.mode.explain(),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = BastionColors.TextMuted,
-                )
-                Spacer(Modifier.height(Space.sm))
-                LinkButton("Stop guarding ${app.label}", BastionColors.TextMuted, onRemove)
-            }
-        }
-    }
-}
-
-
 @Composable
 private fun DelayChip(minutes: Int, selected: Boolean, onClick: () -> Unit) {
     Box(
@@ -1464,76 +1318,6 @@ private fun DelayChip(minutes: Int, selected: Boolean, onClick: () -> Unit) {
             style = MaterialTheme.typography.labelMedium,
             color = if (selected) BastionColors.BronzeBright else BastionColors.TextMuted,
         )
-    }
-}
-
-@Composable
-private fun AppPickerSheet(
-    alreadyGuarded: Set<String>,
-    onPick: (pkg: String, label: String, mode: BlockMode) -> Unit,
-) {
-    val context = LocalContext.current
-    var apps by remember { mutableStateOf<List<Pair<String, String>>>(emptyList()) }
-    var query by remember { mutableStateOf("") }
-
-    LaunchedEffect(Unit) {
-        val pm = context.packageManager
-        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        apps = pm.queryIntentActivities(intent, 0)
-            .mapNotNull { info ->
-                val pkg = info.activityInfo.packageName
-                if (pkg == context.packageName) null
-                else pkg to info.loadLabel(pm).toString()
-            }
-            .distinctBy { it.first }
-            .sortedBy { it.second.lowercase() }
-    }
-
-    Column(
-        Modifier
-            .padding(horizontal = 22.dp)
-            .padding(bottom = 34.dp)
-            .height(520.dp)
-    ) {
-        Text("Guard an app", style = MaterialTheme.typography.headlineSmall, color = BastionColors.TextPrimary)
-        Spacer(Modifier.height(Space.md))
-        OutlinedTextField(
-            value = query,
-            onValueChange = { query = it },
-            label = { Text("Search") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(Space.md),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = BastionColors.Bronze,
-                unfocusedBorderColor = BastionColors.Outline,
-                focusedTextColor = BastionColors.TextPrimary,
-                unfocusedTextColor = BastionColors.TextPrimary,
-            ),
-        )
-        Spacer(Modifier.height(Space.lg))
-        Column(Modifier.verticalScroll(rememberScrollState())) {
-            apps.filter { it.second.contains(query, ignoreCase = true) }
-                .filterNot { alreadyGuarded.contains(it.first) }
-                .forEach { (pkg, label) ->
-                    val suggested = com.bastion.app.data.repo.GuardRepository.SUGGESTED_PACKAGES
-                        .firstOrNull { it.first == pkg }?.second ?: BlockMode.FEED_ONLY
-                    Row(
-                        Modifier
-                            .fillMaxWidth()
-                            .clickable { onPick(pkg, label, suggested) }
-                            .padding(vertical = Space.md),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(label, style = MaterialTheme.typography.bodyLarge, color = BastionColors.TextPrimary)
-                        Text(
-                            suggested.label(),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = BastionColors.TextMuted,
-                        )
-                    }
-                }
-        }
     }
 }
 
@@ -1720,53 +1504,6 @@ private fun openNotificationSettings(context: Context) {
             )
         }
     }
-}
-
-/**
- * "Instagram, YouTube and 2 more · 14 rules" — coverage, not internals.
- *
- * Named apps rather than a bare count, because the question behind this line is
- * "is the app I'm worried about covered", and a number cannot answer it.
- */
-private fun feedRuleSummary(rules: List<com.bastion.app.data.db.FeedRuleEntity>): String {
-    val active = rules.filter { it.enabled }
-    if (active.isEmpty()) return "No rules active — feeds open everywhere."
-
-    val names = active.map { it.packageName }.distinct().map(::appNameForPackage)
-    val shown = names.take(2).joinToString(", ")
-    val rest = names.size - 2
-    val apps = if (rest > 0) "$shown and $rest more" else shown
-    return "$apps · ${active.size} ${if (active.size == 1) "rule" else "rules"}"
-}
-
-/** Best-effort friendly name; falls back to the package's last segment. */
-private fun appNameForPackage(pkg: String): String = when (pkg) {
-    "com.instagram.android" -> "Instagram"
-    "com.google.android.youtube" -> "YouTube"
-    "com.zhiliaoapp.musically", "com.ss.android.ugc.trill" -> "TikTok"
-    "com.facebook.katana" -> "Facebook"
-    "com.snapchat.android" -> "Snapchat"
-    "com.twitter.android" -> "X"
-    "com.reddit.frontpage" -> "Reddit"
-    else -> pkg.substringAfterLast('.').replaceFirstChar(Char::uppercase)
-}
-
-/**
- * Heading for a package's rules.
- *
- * Rule labels lead with the app ("Instagram Reels (viewer)"), so the first word
- * was standing in for the app name — which turns a learned rule's one-token
- * label into a heading reading "Learned". Take what the group's labels share,
- * and fall back to a whole label rather than a fragment.
- */
-private fun feedGroupName(packageName: String, rules: List<FeedRuleEntity>): String {
-    val labels = rules.map { it.label.substringBefore(" (").trim() }.filter { it.isNotBlank() }
-    val shared = labels.reduceOrNull { acc, label ->
-        acc.split(' ').zip(label.split(' ')).takeWhile { (a, b) -> a == b }.joinToString(" ") { it.first }
-    }
-    return shared?.takeIf { it.isNotBlank() }
-        ?: labels.firstOrNull()
-        ?: packageName.substringAfterLast('.')
 }
 
 /**

@@ -222,6 +222,26 @@ class GuardRepository(
                         }
                     }
                 }
+                // A whole app's feed rules at once.
+                //
+                // The screen switches them as a group, because two rules for the
+                // same destination are an implementation detail of how the screen
+                // is recognised rather than two separate decisions. Queuing one
+                // request per matcher would have filled the waiting list with
+                // items nobody chose individually and let half of them mature
+                // into a half-blocked feed that looks like a bug.
+                "rulegroup" -> {
+                    val pkg = parts.getOrNull(1)
+                    if (pkg != null) {
+                        guardDao.feedRules().first()
+                            .filter { it.packageName == pkg && it.enabled }
+                            .forEach {
+                                guardDao.upsertRule(
+                                    it.copy(enabled = false, updatedAt = System.currentTimeMillis())
+                                )
+                            }
+                    }
+                }
                 "domain" -> parts.getOrNull(1)?.let {
                     guardDao.removeDomain(it)
                     invalidateFilterCache()
