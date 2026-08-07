@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -105,17 +107,49 @@ fun HabitDetailScreen(habitId: String, onBack: () -> Unit) {
         val failed = history.count { it.status == LogStatus.FAILED }
         val rate = if (scheduled <= 0) 0 else (done * 100f / scheduled).roundToInt()
 
-        Text(
-            "${habit.emoji}  ${habit.scheduleLabelPublic()}",
-            style = MaterialTheme.typography.bodyMedium,
-            color = BastionColors.TextSecondary,
-        )
-        if (habit.why.isNotBlank()) {
-            Text(
-                habit.why,
-                style = MaterialTheme.typography.bodyMedium,
-                color = BastionColors.TextTertiary,
-            )
+        // The header on one card: what it is, how often, and why he took it on.
+        // Loose on the gradient these were three unrelated lines of text with no
+        // edge to line up against, and the emoji floated at whatever width its
+        // glyph happened to be.
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(Space.md))
+                .background(BastionColors.Surface)
+                .padding(Space.lg),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(Space.sm))
+                        .background(BastionColors.SurfaceHigh),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(habit.emoji, style = MaterialTheme.typography.headlineSmall)
+                }
+                Spacer(Modifier.width(Space.md))
+                Column {
+                    Text(
+                        habit.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = BastionColors.TextPrimary,
+                    )
+                    Text(
+                        habit.scheduleLabelPublic(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextTertiary,
+                    )
+                }
+            }
+            if (habit.why.isNotBlank()) {
+                Spacer(Modifier.height(Space.md))
+                Text(
+                    habit.why,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BastionColors.TextSecondary,
+                )
+            }
         }
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
@@ -123,9 +157,15 @@ fun HabitDetailScreen(habitId: String, onBack: () -> Unit) {
             StreakTile("🏆", best, "Best streak", BastionColors.SageBright, Modifier.weight(1f))
         }
 
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
-            StatBox("$rate%", "Kept", BastionColors.SteelBright, Modifier.weight(1.4f))
-            StatBox("$done", "Done", BastionColors.SageBright, Modifier.weight(1f))
+        // Two rows of two, not four across. At four to a row on a narrow phone
+        // each box was under eighty pixels wide, which wraps "Skipped" and puts
+        // a three-digit count on two lines — the numbers were there and unable
+        // to be read, which is the same as not being there.
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+            StatBox("$rate%", "Kept", BastionColors.SteelBright, Modifier.weight(1f))
+            StatBox("$done", "Days done", BastionColors.SageBright, Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
             StatBox("$skipped", "Skipped", BastionColors.SteelBright, Modifier.weight(1f))
             StatBox("$failed", "Missed", BastionColors.Amber, Modifier.weight(1f))
         }

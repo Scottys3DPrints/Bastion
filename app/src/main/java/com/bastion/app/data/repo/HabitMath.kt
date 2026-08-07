@@ -142,20 +142,6 @@ object HabitMath {
     }
 
     /**
-     * The heatmap's days, oldest first, aligned so each week starts on the same
-     * weekday as [today].
-     *
-     * Returns exactly `weeks * 7` days ending on [today], which is what lets the
-     * grid be drawn as fixed columns of seven with no ragged edge and no empty
-     * leading cells to reason about.
-     */
-    fun calendarDays(today: Long, weeks: Int): List<Long> {
-        val total = weeks * 7
-        val first = today - total + 1
-        return (0 until total).map { first + it }
-    }
-
-    /**
      * Whether a day counts as complete, given how much was done and the target.
      *
      * A tick habit has a target of 1 and is complete on any row at all, which is

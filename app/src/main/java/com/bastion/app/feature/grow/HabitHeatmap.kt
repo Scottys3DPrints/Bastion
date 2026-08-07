@@ -8,11 +8,16 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -31,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.Space
@@ -43,28 +49,38 @@ import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * The activity grid, at four scales.
+ * The activity grid, at four scales — laid out two different ways on purpose.
  *
- * A single fixed window answers one question. Four answer different ones: a
- * week says what this week looks like, a month says whether the habit survived
- * a bad patch, a quarter shows where the gaps cluster, and a year says whether
- * the whole thing is holding. The same cells throughout, so the eye learns one
- * language and reads all four.
+ * Every range used to be drawn the same way, as weeks-in-columns, and at short
+ * ranges that was simply wrong. A week became a single sixteen-pixel column of
+ * seven cells: a narrow strip up the left edge that looked like a rendering
+ * fault. A month was four such columns, about seventy pixels of grid on a
+ * three-hundred-and-sixty pixel screen, marooned beside an empty half. Nothing
+ * ever grew to fit the width, because the cells were a fixed size.
  *
- * Colour carries meaning rather than decoration, and the distinctions are the
- * ones the journal already makes:
+ * So the layout now follows the question being asked:
  *
- *  - **Sage, full** — kept, and for a counting habit that means the target was
- *    actually reached. Partial progress gets its own weaker shades, because a
- *    grid where "nearly" and "done" look identical is a grid that flatters.
- *  - **Amber** — missed, and said so.
- *  - **Steel** — skipped on purpose. Not a failure and not pretending to be.
- *  - **Faint outline** — a day the habit was never due. Present so the shape of
- *    a Mon/Wed/Fri habit is legible as a rhythm rather than as gaps.
- *  - **Empty** — due, and nothing recorded.
+ *  - **Week and month read as a calendar.** Seven columns, Monday to Sunday,
+ *    filling the width, with the date in each cell. At that size there is room
+ *    for the number, and a number is what turns "some day in the middle" into
+ *    "the 14th" — you can look at a gap and know which day you missed.
+ *  - **Quarter and year read as a contribution graph.** Weeks in columns, seven
+ *    rows. Twelve weeks as a calendar would be twelve rows deep and a scroll in
+ *    itself; as columns it is one compact block that fills the width and shows
+ *    the shape of a season at a glance.
  *
- * Tap a day to mark it kept, long-press to mark it missed, both bounded by the
- * days actually on screen.
+ * One mark language across both, so the eye only learns it once. Every state is
+ * a *shape* as well as a colour, because kept-against-missed measures 1.2:1 and
+ * hue alone leaves a colour-blind man unable to tell a perfect month from a
+ * wrecked one:
+ *
+ *  - **kept** — solid fill
+ *  - **part-done** — a bar along the bottom, as wide as the progress
+ *  - **missed** — hollow, with a heavy ring
+ *  - **skipped** — a dot
+ *  - **due, nothing logged** — flat dark fill
+ *  - **never due** — a thin outline, so the rhythm of a three-days-a-week habit
+ *    reads as a rhythm rather than as a fortnight of gaps
  */
 @Composable
 fun HabitHeatmap(
@@ -89,10 +105,28 @@ fun HabitHeatmap(
         HabitMath.heatmapDays(period, weekOffset, today)
     }
 
+    val cell: @Composable (Long, Boolean, Modifier) -> Unit = { day, showDate, modifier ->
+        HeatCell(
+            day = day,
+            habit = habit,
+            completion = byDay[day],
+            due = isDue(day),
+            future = day > today,
+            today = day == today,
+            showDate = showDate,
+            modifier = modifier,
+            onTap = {
+                if (byDay[day]?.status == LogStatus.DONE) onClearDay(day)
+                else onSetDay(day, LogStatus.DONE)
+            },
+            onLongPress = { onSetDay(day, LogStatus.FAILED) },
+        )
+    }
+
     PeriodPicker(selected = period) { period = it }
 
     if (period != HabitMath.HeatPeriod.YEAR) {
-        Spacer(Modifier.height(Space.sm))
+        Spacer(Modifier.height(Space.md))
         RangeNavigator(
             days = days,
             canGoBack = HabitMath.clampWeekOffset(
@@ -114,61 +148,131 @@ fun HabitHeatmap(
 
     Spacer(Modifier.height(Space.md))
 
-    val grid: @Composable () -> Unit = {
-        Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-            // A weekday axis so a column means something. Without it the grid is
-            // a texture; with it, "I always miss Sundays" is readable.
-            Column(
-                verticalArrangement = Arrangement.spacedBy(3.dp),
-                horizontalAlignment = Alignment.End,
-            ) {
-                listOf("M", "T", "W", "T", "F", "S", "S").forEach {
-                    Box(Modifier.height(CELL).width(14.dp), contentAlignment = Alignment.Center) {
-                        Text(
-                            it,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = BastionColors.TextTertiary,
-                        )
-                    }
-                }
-            }
-            Spacer(Modifier.width(Space.xs))
-            days.chunked(7).forEach { week ->
-                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                    week.forEach { day ->
-                        HeatCell(
-                            day = day,
-                            habit = habit,
-                            completion = byDay[day],
-                            due = isDue(day),
-                            future = day > today,
-                            onTap = {
-                                if (byDay[day]?.status == LogStatus.DONE) onClearDay(day)
-                                else onSetDay(day, LogStatus.DONE)
-                            },
-                            onLongPress = { onSetDay(day, LogStatus.FAILED) },
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    // A year is 53 columns and will not fit any phone, so it scrolls rather
-    // than shrinking cells to the point of being unreadable.
-    if (period == HabitMath.HeatPeriod.YEAR) {
-        val scroll = rememberScrollState()
-        LaunchedEffect(Unit) { scroll.scrollTo(scroll.maxValue) }
-        Row(Modifier.fillMaxWidth().horizontalScroll(scroll)) { grid() }
-    } else {
-        grid()
+    when (period) {
+        HabitMath.HeatPeriod.WEEK, HabitMath.HeatPeriod.MONTH -> CalendarGrid(days, cell)
+        HabitMath.HeatPeriod.QUARTER -> ContributionGrid(days, cell, scrolling = false)
+        HabitMath.HeatPeriod.YEAR -> ContributionGrid(days, cell, scrolling = true)
     }
 
     Spacer(Modifier.height(Space.md))
     Legend()
 }
 
-private val CELL = 16.dp
+private val DOW = listOf("M", "T", "W", "T", "F", "S", "S")
+
+/**
+ * Seven columns, Monday first, filling whatever width there is.
+ *
+ * `weight(1f)` rather than a fixed cell, which is the actual fix: the grid now
+ * grows to the screen instead of sitting at whatever size looked right on one
+ * device. `aspectRatio(1f)` keeps the cells square as they grow.
+ */
+@Composable
+private fun CalendarGrid(
+    days: List<Long>,
+    cell: @Composable (Long, Boolean, Modifier) -> Unit,
+) {
+    Column(Modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(CAL_GAP)) {
+            DOW.forEach {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = BastionColors.TextTertiary,
+                    modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                )
+            }
+        }
+        Spacer(Modifier.height(Space.xs))
+        days.chunked(7).forEach { week ->
+            Row(
+                Modifier.fillMaxWidth().padding(bottom = CAL_GAP),
+                horizontalArrangement = Arrangement.spacedBy(CAL_GAP),
+            ) {
+                week.forEach { day ->
+                    cell(day, true, Modifier.weight(1f).aspectRatio(1f))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Weeks in columns, seven rows — the shape of a season.
+ *
+ * A quarter fills the width by weight, so twelve weeks spread across the screen
+ * rather than clustering at one end. A year is fifty-three columns and fits no
+ * phone, so that one keeps a fixed cell and scrolls, with the weekday axis left
+ * outside the scrolling region so it stays put while the grid moves under it.
+ */
+@Composable
+private fun ContributionGrid(
+    days: List<Long>,
+    cell: @Composable (Long, Boolean, Modifier) -> Unit,
+    scrolling: Boolean,
+) {
+    val weeks = days.chunked(7)
+
+    Row(Modifier.fillMaxWidth()) {
+        Column(
+            Modifier.padding(end = Space.xs),
+            verticalArrangement = Arrangement.spacedBy(GRID_GAP),
+        ) {
+            DOW.forEach {
+                Box(
+                    Modifier.height(if (scrolling) YEAR_CELL else QUARTER_ROW).width(12.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        it,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BastionColors.TextTertiary,
+                    )
+                }
+            }
+        }
+
+        val grid: @Composable RowScope.() -> Unit = {
+            weeks.forEach { week ->
+                Column(
+                    if (scrolling) Modifier.width(YEAR_CELL) else Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(GRID_GAP),
+                ) {
+                    week.forEach { day ->
+                        cell(
+                            day,
+                            false,
+                            if (scrolling) Modifier.size(YEAR_CELL)
+                            else Modifier.fillMaxWidth().height(QUARTER_ROW),
+                        )
+                    }
+                }
+            }
+        }
+
+        if (scrolling) {
+            val scroll = rememberScrollState()
+            // Opens on the present. A year that opened on last August would show
+            // an empty corner of the record as though that were the news.
+            LaunchedEffect(Unit) { scroll.scrollTo(scroll.maxValue) }
+            Row(
+                Modifier.weight(1f).horizontalScroll(scroll),
+                horizontalArrangement = Arrangement.spacedBy(GRID_GAP),
+            ) { grid() }
+        } else {
+            Row(
+                Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(GRID_GAP),
+            ) { grid() }
+        }
+    }
+}
+
+private val CAL_GAP = 4.dp
+private val GRID_GAP = 3.dp
+private val QUARTER_ROW = 18.dp
+private val YEAR_CELL = 12.dp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -178,92 +282,95 @@ private fun HeatCell(
     completion: HabitCompletionEntity?,
     due: Boolean,
     future: Boolean,
+    today: Boolean,
+    showDate: Boolean,
+    modifier: Modifier,
     onTap: () -> Unit,
     onLongPress: () -> Unit,
 ) {
-    val level = if (completion?.status == LogStatus.DONE) {
+    val status = completion?.status
+    val level = if (status == LogStatus.DONE) {
         HabitMath.heatLevel(completion.count, habit.targetCount)
     } else 0f
+    val kept = status == LogStatus.DONE && level >= 1f
+    val partial = status == LogStatus.DONE && level < 1f
+    val shape = RoundedCornerShape(if (showDate) 6.dp else 3.dp)
 
-    val status = completion?.status
-    val shape = RoundedCornerShape(4.dp)
+    val fill = when {
+        future -> Color.Transparent
+        kept -> BastionColors.Sage
+        status == LogStatus.FAILED -> Color.Transparent
+        !due -> Color.Transparent
+        else -> BastionColors.TrackEmpty
+    }
 
-    // Every state gets a shape as well as a colour, and this is the part that
-    // matters most in the whole grid.
-    //
-    // Kept against missed measures 1.21:1 — they are told apart by hue and by
-    // nothing else, so to anyone with a red-green deficiency (about one man in
-    // twelve) a perfect month and a wrecked one look identical. Colour cannot be
-    // the only carrier. So: kept is a solid square, part-done is a smaller solid
-    // square inside the cell, missed is hollow with a heavy ring, skipped is a
-    // small dot, due-and-unrecorded is a flat dark fill, and a day that was
-    // never due is a thin outline. Those read at arm's length in greyscale.
     Box(
-        Modifier
-            .size(CELL)
+        modifier
+            .clip(shape)
+            .background(fill)
+            .then(
+                when {
+                    // Hollow. The one shape nothing else here uses, so a missed
+                    // day is legible with no colour at all.
+                    status == LogStatus.FAILED && !future ->
+                        Modifier.border(2.dp, BastionColors.Amber, shape)
+                    // Never due: drawn rather than left blank, so the rhythm of a
+                    // three-days-a-week habit reads as a rhythm.
+                    !due && !future ->
+                        Modifier.border(1.dp, BastionColors.OutlineStrong, shape)
+                    // Today gets a ring whatever its state, so the eye lands on
+                    // the present without having to count columns.
+                    today -> Modifier.border(2.dp, BastionColors.BronzeBright, shape)
+                    else -> Modifier
+                }
+            )
             .alpha(if (future) 0.3f else 1f)
-            // Tap keeps the day, long press marks it missed. One modifier for
-            // both, on the cell itself, so the target is exactly the day it
-            // marks rather than a region of the grid.
-            .combinedClickable(
-                enabled = !future,
-                onClick = onTap,
-                onLongClick = onLongPress,
-            ),
+            .combinedClickable(enabled = !future, onClick = onTap, onLongClick = onLongPress),
         contentAlignment = Alignment.Center,
     ) {
-        when {
-            future -> Unit
+        // Part-done as a bar along the bottom rather than a paler shade. Fading
+        // toward the background made a three-eighths day look like an empty one
+        // and gave the eye nothing to measure "how much" against; a bar has a
+        // length, which is the thing being reported.
+        if (partial) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth(level.coerceIn(0.15f, 1f))
+                    .height(if (showDate) 5.dp else 3.dp)
+                    .background(BastionColors.SagePartial)
+            )
+        }
+        if (status == LogStatus.SKIPPED && !future) SkipDot(showDate)
 
-            status == LogStatus.DONE && level >= 1f ->
-                Box(Modifier.size(CELL).clip(shape).background(BastionColors.Sage))
-
-            // Part-done shrinks rather than fading. Alpha toward the background
-            // is what made a three-eighths day look like an empty one, and it
-            // gave the eye nothing to measure "how much" against.
-            status == LogStatus.DONE ->
-                Box(
-                    Modifier
-                        .size(CELL * (0.45f + 0.4f * level))
-                        .clip(shape)
-                        .background(BastionColors.SagePartial)
-                )
-
-            // Hollow, not filled. A ring is the one shape nothing else here uses.
-            status == LogStatus.FAILED ->
-                Box(
-                    Modifier
-                        .size(CELL)
-                        .clip(shape)
-                        .border(3.dp, BastionColors.Amber, shape)
-                )
-
-            status == LogStatus.SKIPPED -> {
-                Box(Modifier.size(CELL).clip(shape).background(BastionColors.TrackEmpty))
-                Box(
-                    Modifier
-                        .size(CELL * 0.4f)
-                        .clip(RoundedCornerShape(50))
-                        .background(BastionColors.SteelBright)
-                )
-            }
-
-            // Due, nothing recorded.
-            due -> Box(Modifier.size(CELL).clip(shape).background(BastionColors.TrackEmpty))
-
-            // Never due. Drawn rather than left blank so the rhythm of a
-            // three-days-a-week habit reads as a rhythm instead of a fortnight
-            // of misses — which only works if the outline can be seen, and
-            // OutlineSoft at 1.3:1 could not.
-            else ->
-                Box(
-                    Modifier
-                        .size(CELL)
-                        .clip(shape)
-                        .border(1.dp, BastionColors.OutlineStrong, shape)
-                )
+        if (showDate) {
+            Text(
+                LocalDate.ofEpochDay(day).dayOfMonth.toString(),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (today) FontWeight.Bold else FontWeight.Normal,
+                // Dark on sage is 6.7:1; the light text that looks right in a
+                // mock is 2.5:1 and unreadable in daylight.
+                color = when {
+                    kept -> BastionColors.MidnightDeep
+                    status == LogStatus.FAILED -> BastionColors.Amber
+                    future || !due -> BastionColors.TextMuted
+                    else -> BastionColors.TextSecondary
+                },
+            )
         }
     }
+}
+
+@Composable
+private fun BoxScope.SkipDot(large: Boolean) {
+    Box(
+        Modifier
+            .align(if (large) Alignment.BottomCenter else Alignment.Center)
+            .padding(bottom = if (large) 3.dp else 0.dp)
+            .size(if (large) 5.dp else 4.dp)
+            .clip(RoundedCornerShape(50))
+            .background(BastionColors.SteelBright)
+    )
 }
 
 @Composable
@@ -272,24 +379,29 @@ private fun PeriodPicker(
     onSelect: (HabitMath.HeatPeriod) -> Unit,
 ) {
     Row(
-        Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Space.xs),
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Space.sm))
+            .background(BastionColors.Surface)
+            .padding(3.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
         HabitMath.HeatPeriod.entries.forEach { p ->
             val on = p == selected
             Box(
                 Modifier
                     .weight(1f)
-                    .height(32.dp)
-                    .clip(RoundedCornerShape(Space.sm))
-                    .background(if (on) BastionColors.SurfaceHigh else Color.Transparent)
+                    .height(34.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(if (on) BastionColors.Sage else Color.Transparent)
                     .clickable { onSelect(p) },
                 contentAlignment = Alignment.Center,
             ) {
                 Text(
                     p.label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (on) BastionColors.TextPrimary else BastionColors.TextTertiary,
+                    fontWeight = if (on) FontWeight.Bold else FontWeight.Normal,
+                    color = if (on) BastionColors.MidnightDeep else BastionColors.TextSecondary,
                 )
             }
         }
@@ -312,13 +424,11 @@ private fun RangeNavigator(
 ) {
     val first = LocalDate.ofEpochDay(days.first())
     val last = LocalDate.ofEpochDay(days.last())
+    fun month(d: LocalDate) = d.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
     val label = buildString {
-        append(first.month.getDisplayName(TextStyle.SHORT, Locale.getDefault()))
-        append(' ').append(first.dayOfMonth)
+        append(month(first)).append(' ').append(first.dayOfMonth)
         append(" – ")
-        if (first.month != last.month) {
-            append(last.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())).append(' ')
-        }
+        if (first.month != last.month) append(month(last)).append(' ')
         append(last.dayOfMonth)
         if (first.year != last.year) append(", ").append(last.year)
     }
@@ -329,7 +439,11 @@ private fun RangeNavigator(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         NavArrow("‹", canGoBack, onBack)
-        Text(label, style = MaterialTheme.typography.bodySmall, color = BastionColors.TextSecondary)
+        Text(
+            label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = BastionColors.TextPrimary,
+        )
         NavArrow("›", canGoForward, onForward)
     }
 }
@@ -338,8 +452,9 @@ private fun RangeNavigator(
 private fun NavArrow(glyph: String, enabled: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
-            .size(32.dp)
+            .size(40.dp)
             .clip(RoundedCornerShape(Space.sm))
+            .background(if (enabled) BastionColors.Surface else Color.Transparent)
             .clickable(enabled = enabled) { onClick() },
         contentAlignment = Alignment.Center,
     ) {
@@ -354,18 +469,31 @@ private fun NavArrow(glyph: String, enabled: Boolean, onClick: () -> Unit) {
 /**
  * Says what the marks mean, drawn exactly as the grid draws them.
  *
- * The swatches were flat colour squares while the cells had become solid,
- * hollow and dotted — so the key taught the wrong language and a hollow amber
- * ring had nothing in the legend that looked like it.
+ * Flat colour swatches would teach the wrong language now that the cells are
+ * solid, barred, hollow and dotted — a hollow amber ring needs something in the
+ * key that looks like a hollow amber ring.
  */
 @Composable
 private fun Legend() {
     Row(
         Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(Space.md),
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         LegendItem("Kept") {
             Box(Modifier.size(LEGEND).clip(LEGEND_SHAPE).background(BastionColors.Sage))
+        }
+        LegendItem("Part") {
+            Box(
+                Modifier.size(LEGEND).clip(LEGEND_SHAPE).background(BastionColors.TrackEmpty),
+                contentAlignment = Alignment.BottomStart,
+            ) {
+                Box(
+                    Modifier
+                        .fillMaxWidth(0.6f)
+                        .height(3.dp)
+                        .background(BastionColors.SagePartial)
+                )
+            }
         }
         LegendItem("Missed") {
             Box(Modifier.size(LEGEND).clip(LEGEND_SHAPE).border(2.dp, BastionColors.Amber, LEGEND_SHAPE))
@@ -377,7 +505,7 @@ private fun Legend() {
             ) {
                 Box(
                     Modifier
-                        .size(LEGEND * 0.4f)
+                        .size(4.dp)
                         .clip(RoundedCornerShape(50))
                         .background(BastionColors.SteelBright)
                 )

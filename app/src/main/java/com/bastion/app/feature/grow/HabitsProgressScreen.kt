@@ -103,9 +103,58 @@ fun HabitsProgressScreen(onBack: () -> Unit, onOpenHabit: (String) -> Unit) {
 
         TimeframePicker(timeframe) { timeframe = it }
 
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
-            SummaryCard("$rate%", "Kept", BastionColors.SageBright, Modifier.weight(1.3f))
-            SummaryCard("$totalDone", "Done", BastionColors.TextPrimary, Modifier.weight(1f))
+        // The headline on its own card with the number at display size, then the
+        // three counts beneath it. Four equal boxes across a narrow phone gave
+        // each one under eighty pixels, which wrapped "Skipped" onto two lines
+        // and buried the one figure the screen exists to deliver.
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(Space.md))
+                .background(BastionColors.Surface)
+                .padding(Space.lg),
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Bottom,
+            ) {
+                Text(
+                    "$rate%",
+                    style = MaterialTheme.typography.displaySmall,
+                    color = if (rate >= 80) BastionColors.SageBright else BastionColors.TextPrimary,
+                )
+                Text(
+                    "$totalDone of $totalScheduled kept",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = BastionColors.TextSecondary,
+                    modifier = Modifier.padding(bottom = Space.xs),
+                )
+            }
+            Spacer(Modifier.height(Space.md))
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(BastionColors.TrackEmpty),
+            ) {
+                if (rate > 0) {
+                    Box(
+                        Modifier
+                            .fillMaxWidth(rate / 100f)
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(
+                                if (rate >= 80) BastionColors.Sage else BastionColors.SagePartial
+                            )
+                    )
+                }
+            }
+        }
+
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
+            SummaryCard("$totalDone", "Done", BastionColors.SageBright, Modifier.weight(1f))
             SummaryCard(
                 stats.sumOf { it.skipped }.toString(),
                 "Skipped",

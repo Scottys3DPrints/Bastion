@@ -115,18 +115,6 @@ class HabitMathTest {
         assertEquals(0f, HabitMath.completionRate(setOf(1000L), from = 1000L, to = 999L), 0.001f)
     }
 
-    // --- the calendar -------------------------------------------------------
-
-    @Test
-    fun `the calendar is whole weeks ending today`() {
-        val days = HabitMath.calendarDays(today, weeks = 12)
-        assertEquals(84, days.size)
-        assertEquals(today, days.last())
-        assertEquals(today - 83, days.first())
-        // Contiguous, so chunking into sevens gives real weeks.
-        assertTrue(days.zipWithNext().all { (a, b) -> b == a + 1 })
-    }
-
     // --- what counts as done ------------------------------------------------
 
     @Test
