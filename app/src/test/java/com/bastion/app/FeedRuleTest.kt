@@ -33,8 +33,13 @@ class FeedRuleTest {
      * cannot debug it.
      */
     @Test
-    fun `every built-in rule matches on a view id`() {
-        val offenders = rules.filter { it.matchType != MatchType.VIEW_ID }
+    fun `every built-in rule matches on a container or an address`() {
+        // URL is legitimate and is how the browser rules work; a label is not.
+        // The distinction this protects is signpost versus destination, and an
+        // address is a destination.
+        val offenders = rules.filter {
+            it.matchType != MatchType.VIEW_ID && it.matchType != MatchType.URL
+        }
         assertTrue(
             "These built-in rules match on a label rather than a container, which " +
                 "is how feed-only became a total block: " +
@@ -54,7 +59,10 @@ class FeedRuleTest {
      */
     @Test
     fun `no rule is a prefix of another rule for the same app`() {
-        rules.groupBy { it.packageName }.forEach { (pkg, forApp) ->
+        // Within a match type. A view id and an address are compared against
+        // different things entirely, so one cannot shadow the other.
+        rules.groupBy { it.packageName to it.matchType }.forEach { (key, forApp) ->
+            val pkg = key.first
             forApp.forEach { rule ->
                 val shadowed = forApp.filter {
                     it !== rule && it.matchValue.startsWith(rule.matchValue)
@@ -71,12 +79,15 @@ class FeedRuleTest {
     /** Ids are compared after the last slash, so a rule carrying one never matches. */
     @Test
     fun `no rule carries a package prefix or a slash`() {
-        rules.forEach { rule ->
+        rules.filter { it.matchType == MatchType.VIEW_ID }.forEach { rule ->
+            // View ids only. A URL rule is a path and slashes are the point.
             assertTrue(
                 "'${rule.matchValue}' has a slash in it; ids are compared as the " +
                     "segment after the last one, so this can never match",
                 !rule.matchValue.contains('/'),
             )
+        }
+        rules.forEach { rule ->
             assertTrue("A rule with a blank match value can never mean anything", rule.matchValue.isNotBlank())
             assertTrue("A rule needs an app to belong to", rule.packageName.isNotBlank())
             assertTrue("A rule the user cannot read is a rule they cannot fix", rule.label.isNotBlank())

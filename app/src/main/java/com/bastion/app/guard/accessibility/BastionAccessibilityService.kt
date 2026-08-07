@@ -516,6 +516,17 @@ class BastionAccessibilityService : AccessibilityService() {
                         MatchType.TEXT ->
                             node.text.equalsIgnoreCase(rule.matchValue) &&
                                 hasVerticallyScrollableAncestor(node, window)
+                        // The address, not the page.
+                        //
+                        // No geometry gate on the *player* here, because in a
+                        // browser there is no player to measure — the reel is a
+                        // video element inside a web view with none of the
+                        // identifiers an app exposes. The gate is on the address
+                        // bar instead: see isAddressBarNode.
+                        MatchType.URL ->
+                            isAddressBarNode(node, idSegment, window) &&
+                                node.text?.toString()
+                                    ?.let { FeedSurface.urlMatches(it, rule.matchValue) } == true
                     }
                     if (hit) return rule
                 }
@@ -601,6 +612,38 @@ class BastionAccessibilityService : AccessibilityService() {
             scrollable = node.isScrollable,
             width = bounds.width(),
             height = bounds.height(),
+        )
+    }
+
+    /**
+     * Whether this node is a browser's address bar.
+     *
+     * Two ways, and the order matters. Every real browser names its address bar,
+     * so the identifier settles it outright and costs nothing. The geometry
+     * fallback is for the in-app browsers — the one Messenger opens, the one
+     * Instagram opens — which are web views wrapped in a toolbar the host app
+     * built itself and named however it liked.
+     *
+     * The text must also *be* an address rather than merely contain one, which
+     * is what keeps a friend's link inside a conversation from walling the
+     * conversation: a message has whitespace and fails immediately.
+     */
+    private fun isAddressBarNode(
+        node: AccessibilityNodeInfo,
+        idSegment: String?,
+        window: android.graphics.Rect,
+    ): Boolean {
+        val text = node.text?.toString() ?: return false
+        if (!FeedSurface.looksLikeUrl(text)) return false
+        if (idSegment != null && idSegment in ADDRESS_BAR_IDS) return true
+
+        val bounds = android.graphics.Rect().also { node.getBoundsInScreen(it) }
+        return FeedSurface.isAddressBar(
+            top = bounds.top,
+            width = bounds.width(),
+            windowTop = window.top,
+            windowHeight = window.height(),
+            windowWidth = window.width(),
         )
     }
 
@@ -848,6 +891,24 @@ class BastionAccessibilityService : AccessibilityService() {
             AccessibilityNodeInfo.AccessibilityAction.ACTION_PAGE_LEFT.id,
             AccessibilityNodeInfo.AccessibilityAction.ACTION_PAGE_RIGHT.id,
         )
+        /**
+         * What browsers call their address bar.
+         *
+         * Chromium-derived browsers overwhelmingly keep `url_bar`, which covers
+         * Chrome, Edge, Brave, Opera, Vivaldi and Kiwi at once. Firefox and
+         * Samsung Internet each go their own way, and DuckDuckGo names it for
+         * the omnibar it is.
+         */
+        private val ADDRESS_BAR_IDS = setOf(
+            "url_bar",
+            "location_bar_edit_text",
+            "mozac_browser_toolbar_url_view",
+            "mozac_browser_toolbar_origin_view",
+            "omnibarTextInput",
+            "search_bar",
+            "sanitized_url_text",
+        )
+
         private const val NOTIFICATION_GUARD_DOWN = 4401
         private const val HALF_HOUR = 30 * 60 * 1000L
 

@@ -269,7 +269,19 @@ data class GuardedAppEntity(
     val updatedAt: Long = System.currentTimeMillis(),
 )
 
-enum class MatchType { VIEW_ID, TEXT, CONTENT_DESC }
+/**
+ * URL is for feeds reached through a browser rather than through an app.
+ *
+ * The same reel is one tap away in Chrome, and inside the little browser
+ * Messenger opens when a friend sends a link — neither of which has the view
+ * identifiers the app rules match on. A URL rule matches the address instead,
+ * and only ever looks at strings that *are* an address; see
+ * FeedSurface.looksLikeUrl for why that boundary is drawn where it is.
+ *
+ * Stored by name, so adding this value needs no migration: existing rows keep
+ * the values they were written with.
+ */
+enum class MatchType { VIEW_ID, TEXT, CONTENT_DESC, URL }
 
 /**
  * A rule that identifies one specific screen inside another app — the Reels

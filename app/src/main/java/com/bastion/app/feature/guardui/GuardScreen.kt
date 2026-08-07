@@ -157,7 +157,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
         }
     }
 
-    LaunchedEffect(Unit) { graph.guard.seedIfEmpty() }
+    LaunchedEffect(Unit) { graph.guard.seedIfEmpty(); graph.guard.syncBuiltInRules() }
 
     // Reads the breach; recording the intent happens app-wide in MainActivity,
     // because it must not depend on this screen being the one in front.
@@ -360,25 +360,31 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
             )
 
 
-            // --- Bastion Guard service ---
-            BastionCard(accent = if (serviceRunning) BastionColors.Sage else BastionColors.Amber) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    StatusDot(serviceRunning)
-                    Spacer(Modifier.size(10.dp))
+            // --- Turning Guard on, shown only while it is off ---
+            //
+            // The card used to sit here whatever the state, restating what the
+            // strength card above had just said and in a different visual
+            // language: a compact checklist row, then a full card, for the same
+            // two facts. That is most of what made this screen read as bolted
+            // together. The strength card owns status now; this is setup help,
+            // and setup help has no business on a screen where setup is done.
+            if (!serviceRunning) {
+                BastionCard(accent = BastionColors.Amber) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        StatusDot(false)
+                        Spacer(Modifier.size(10.dp))
+                        Text(
+                            "Bastion Guard is off",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = BastionColors.TextPrimary,
+                        )
+                    }
+                    Spacer(Modifier.height(Space.sm))
                     Text(
-                        if (serviceRunning) "Bastion Guard is on" else "Bastion Guard is off",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = BastionColors.TextPrimary,
+                        "Reels, Shorts and For You are not being blocked.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextTertiary,
                     )
-                }
-                Spacer(Modifier.height(Space.sm))
-                Text(
-                    if (serviceRunning) "On — apps open normally, their feeds don't."
-                    else "Off — Reels, Shorts and For You are not being blocked.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
-                if (!serviceRunning) {
                     Spacer(Modifier.height(Space.md))
                     Text(
                         // Android's own wording for this permission sounds far
@@ -430,16 +436,16 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(
-                    "Block adult websites",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = BastionColors.TextPrimary,
-                )
+                            "Block adult websites",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = BastionColors.TextPrimary,
+                        )
                         Spacer(Modifier.height(Space.xs))
                         Text(
                             if (filterRunning) "On · $blockedCount lookups blocked"
                             else "Blocks adult domains across every app and browser",
                             style = MaterialTheme.typography.bodySmall,
-                            color = BastionColors.TextMuted,
+                            color = BastionColors.TextTertiary,
                         )
                     }
                     Switch(
@@ -459,16 +465,23 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         colors = switchColors(),
                     )
                 }
-                Spacer(Modifier.height(Space.md))
-                Text(
-                    "Android will ask for \"VPN\" permission. Bastion isn't sending " +
-                        "your traffic anywhere — it uses that only to check website " +
-                        "addresses against its blocklist, on this phone. A few apps " +
-                        "use their own private connection and slip past; the setting " +
-                        "below closes that gap.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = BastionColors.TextMuted,
-                )
+                // The VPN reassurance is pre-grant guidance, so it goes when the
+                // grant is done. Left permanently visible it was a paragraph of
+                // explanation attached to a switch that was already on — which
+                // is what made the top of this screen feel like a manual rather
+                // than a status.
+                if (!filterRunning) {
+                    Spacer(Modifier.height(Space.md))
+                    Text(
+                        "Android will ask for \"VPN\" permission. Bastion isn't sending " +
+                            "your traffic anywhere — it uses that only to check website " +
+                            "addresses against its blocklist, on this phone. A few apps " +
+                            "use their own private connection and slip past; the setting " +
+                            "below closes that gap.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.TextTertiary,
+                    )
+                }
                 Spacer(Modifier.height(Space.md))
                 QuietButton(
                     "Open Bastion browser",

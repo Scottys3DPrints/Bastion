@@ -95,6 +95,36 @@ class GuardRepository(
             guardDao.upsertRules(builtInFeedRules())
         }
         settings.setGuardSeeded(true)
+        settings.setBuiltInRulesVersion(BUILT_IN_RULES_VERSION)
+    }
+
+    /**
+     * Delivers built-in rules added since this install was first seeded.
+     *
+     * Without this, a new rule reaches new installs only. Everyone already
+     * running Bastion has `guardSeeded` set, [seedIfEmpty] returns on its first
+     * line, and the browser rules would have shipped to nobody who needed them —
+     * a feature that reads as delivered in the release notes and is not on the
+     * phone.
+     *
+     * Additive and one-way. Only ids absent from the table are inserted, so a
+     * rule switched off stays off and one the user deleted from an earlier
+     * generation is never resurrected: that was a decision he made, and undoing
+     * it silently is precisely what the seeding flag exists to prevent. The
+     * version is what draws that line — anything in a generation already offered
+     * is his to have removed.
+     */
+    suspend fun syncBuiltInRules() {
+        val current = settings.current()
+        // Never on a fresh install: seedIfEmpty owns that, and running both
+        // would insert the same rows twice on first launch.
+        if (!current.guardSeeded) return
+        if (current.builtInRulesVersion >= BUILT_IN_RULES_VERSION) return
+
+        val existing = guardDao.feedRules().first().map { it.id }.toSet()
+        val added = builtInFeedRules().filterNot { it.id in existing }
+        if (added.isNotEmpty()) guardDao.upsertRules(added)
+        settings.setBuiltInRulesVersion(BUILT_IN_RULES_VERSION)
     }
 
     // --- Cooling-off lock -------------------------------------------------
@@ -328,6 +358,76 @@ class GuardRepository(
 
             // Reddit video feed
             rule("com.reddit.frontpage", "Reddit video feed", MatchType.VIEW_ID, "video_container_view_pager"),
+        ) + browserFeedRules()
+
+        /**
+         * The same feeds, reached through a browser instead of an app.
+         *
+         * Blocking Instagram's app and leaving instagram.com one tap away in
+         * Chrome is a door with no wall behind it, and the in-app browser
+         * Messenger opens when a friend sends a link is the same door again —
+         * arguably the likelier one, since it arrives unasked in the middle of a
+         * conversation.
+         *
+         * Generated rather than written out, because it is one destination list
+         * against one browser list and hand-writing the cross product is how one
+         * of them silently ends up missing a row. The feed-rules screen hides
+         * apps that are not installed, so a man sees only the browsers he has.
+         */
+        /**
+         * Bumped whenever a rule is added to the built-in set.
+         *
+         * 1 was the original app rules. 2 added the browser and in-app-browser
+         * URL rules, which existing installs would otherwise never have seen.
+         */
+        const val BUILT_IN_RULES_VERSION = 2
+
+        private fun browserFeedRules(): List<FeedRuleEntity> =
+            BROWSER_PACKAGES.flatMap { (pkg, name) ->
+                BLOCKED_URLS.map { (label, url) ->
+                    rule(pkg, "$name · $label", MatchType.URL, url)
+                }
+            }
+
+        /**
+         * Where the short-form feeds live on the web.
+         *
+         * Paths rather than whole hosts, deliberately. Blocking instagram.com
+         * outright would close messages and search along with the reels, which
+         * is the whole distinction feed-only guarding exists to draw.
+         */
+        private val BLOCKED_URLS = listOf(
+            // One entry, not two. Matching is a prefix on the normalised
+            // address, so instagram.com/reel already covers /reels and /reel/
+            // — shipping both would be a rule that can never be the reason for
+            // a block, which reads as coverage and is not.
+            "Instagram reels" to "instagram.com/reel",
+            "Facebook reels" to "facebook.com/reel",
+            "Facebook watch" to "facebook.com/watch",
+            "YouTube Shorts" to "youtube.com/shorts",
+            "TikTok" to "tiktok.com",
+        )
+
+        /**
+         * Browsers, and the apps that carry one inside them.
+         *
+         * Messenger, Facebook and Instagram all open links in a web view of
+         * their own rather than handing off to a browser, so they need the URL
+         * rules as much as Chrome does — and for Facebook and Instagram those
+         * sit alongside the view-id rules already covering their native feeds.
+         */
+        private val BROWSER_PACKAGES = listOf(
+            "com.android.chrome" to "Chrome",
+            "com.chrome.beta" to "Chrome",
+            "org.mozilla.firefox" to "Firefox",
+            "com.sec.android.app.sbrowser" to "Samsung Internet",
+            "com.brave.browser" to "Brave",
+            "com.microsoft.emmx" to "Edge",
+            "com.opera.browser" to "Opera",
+            "com.duckduckgo.mobile.android" to "DuckDuckGo",
+            "com.facebook.orca" to "Messenger",
+            "com.facebook.katana" to "Facebook",
+            "com.instagram.android" to "Instagram",
         )
 
         private fun rule(pkg: String, label: String, type: MatchType, value: String) = FeedRuleEntity(

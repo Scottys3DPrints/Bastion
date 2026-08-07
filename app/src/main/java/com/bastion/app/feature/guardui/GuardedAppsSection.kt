@@ -415,8 +415,30 @@ fun FeedRulesSection(
     )
     Spacer(Modifier.height(Space.md))
 
-    val groups = remember(rules) {
-        rules.groupBy { it.packageName }.toList().sortedBy { appLabelKey(it.first) }
+    // Only apps that are actually on the phone.
+    //
+    // The built-in set covers every app these rules might ever be needed for,
+    // which on any given phone is mostly apps a man does not have. Listing
+    // Snapchat and Opera to someone who has neither buries the two rows that
+    // matter under a catalogue of things he cannot act on, and each one invited
+    // the question of whether it was supposed to be doing something.
+    //
+    // The rules themselves stay in the database untouched, so installing one of
+    // them later brings its row back already configured.
+    val groups = remember(rules, context) {
+        rules.groupBy { it.packageName }
+            .filterKeys { isInstalled(context, it) }
+            .toList()
+            .sortedBy { appLabelKey(it.first) }
+    }
+
+    if (groups.isEmpty()) {
+        Text(
+            "None of the apps these cover are installed.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = BastionColors.TextTertiary,
+        )
+        return
     }
 
     Column(
@@ -431,7 +453,6 @@ fun FeedRulesSection(
                 pkg = pkg,
                 rules = groupRules,
                 label = appLabel(context, pkg),
-                installed = isInstalled(context, pkg),
                 state = ruleState(
                     guardRunning = guardRunning,
                     guardedMode = byMode[pkg],
@@ -453,7 +474,6 @@ private fun FeedRuleGroup(
     pkg: String,
     rules: List<FeedRuleEntity>,
     label: String,
-    installed: Boolean,
     state: RuleState,
     onSetGroup: (Boolean) -> Unit,
     onSetRule: (FeedRuleEntity, Boolean) -> Unit,
@@ -470,16 +490,14 @@ private fun FeedRuleGroup(
                 Text(
                     label,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = if (installed) BastionColors.TextPrimary else BastionColors.TextTertiary,
+                    color = BastionColors.TextPrimary,
                 )
                 Text(
-                    if (!installed) "Not installed on this phone." else state.line,
+                    state.line,
                     style = MaterialTheme.typography.bodySmall,
-                    color = when {
-                        !installed -> BastionColors.TextMuted
-                        state is RuleState.Working -> BastionColors.SageBright
-                        state is RuleState.NotGuarded || state is RuleState.GuardOff ->
-                            BastionColors.Amber
+                    color = when (state) {
+                        is RuleState.Working -> BastionColors.SageBright
+                        is RuleState.NotGuarded, is RuleState.GuardOff -> BastionColors.Amber
                         else -> BastionColors.TextTertiary
                     },
                 )
@@ -499,7 +517,7 @@ private fun FeedRuleGroup(
         // The broken link, with the repair next to it. Telling a man the app is
         // not guarded and making him find the other section is most of the way
         // to him not bothering.
-        if (installed && state is RuleState.NotGuarded) {
+        if (state is RuleState.NotGuarded) {
             Spacer(Modifier.height(Space.sm))
             LinkButton("Guard $label so these work", BastionColors.BronzeBright, onGuardApp)
         }

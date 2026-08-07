@@ -83,6 +83,15 @@ data class Settings(
     /** Guards seed data from returning after a deliberate clear-out. */
     val guardSeeded: Boolean = false,
     /**
+     * Which generation of built-in feed rules this install has been offered.
+     *
+     * Not a re-seed flag. Rules added in a later version are inserted once, by
+     * id, and rules the user has since deleted are never resurrected — they
+     * belong to a generation already offered, and undoing a decision a man made
+     * is exactly what the seeding flag above exists to prevent.
+     */
+    val builtInRulesVersion: Int = 0,
+    /**
      * Highest rank the user has actually been shown.
      *
      * Defaults to 1 so that simply being a Recruit — the starting state, not an
@@ -242,6 +251,7 @@ class SettingsStore(private val context: Context) {
         val LAST_UPDATE_CHECK = longPreferencesKey("last_update_check")
         val MENTOR_OPENER_SENT = booleanPreferencesKey("mentor_opener_sent")
         val GUARD_SEEDED = booleanPreferencesKey("guard_seeded")
+        val BUILTIN_RULES_VERSION = intPreferencesKey("builtin_rules_version")
         val LAST_URGE_ITEM = stringPreferencesKey("last_urge_item")
         val SAVED_MOTIVATION = stringPreferencesKey("saved_motivation")
         val LAST_SEEN_RANK = intPreferencesKey("last_seen_rank_tier")
@@ -301,6 +311,7 @@ class SettingsStore(private val context: Context) {
             lastUpdateCheck = p[Keys.LAST_UPDATE_CHECK] ?: 0L,
             mentorOpenerSent = p[Keys.MENTOR_OPENER_SENT] ?: false,
             guardSeeded = p[Keys.GUARD_SEEDED] ?: false,
+            builtInRulesVersion = p[Keys.BUILTIN_RULES_VERSION] ?: 0,
             lastUrgeItemId = p[Keys.LAST_URGE_ITEM] ?: "",
             savedMotivation = p[Keys.SAVED_MOTIVATION].decodeTriggers(),
             lastSeenRankTier = p[Keys.LAST_SEEN_RANK] ?: 1,
@@ -375,6 +386,7 @@ class SettingsStore(private val context: Context) {
     suspend fun markUpdateChecked() = edit { it[Keys.LAST_UPDATE_CHECK] = System.currentTimeMillis() }
     suspend fun setMentorOpenerSent(value: Boolean) = edit { it[Keys.MENTOR_OPENER_SENT] = value }
     suspend fun setGuardSeeded(value: Boolean) = edit { it[Keys.GUARD_SEEDED] = value }
+    suspend fun setBuiltInRulesVersion(value: Int) = edit { it[Keys.BUILTIN_RULES_VERSION] = value }
     suspend fun setLastUrgeItem(value: String) = edit { it[Keys.LAST_URGE_ITEM] = value }
 
     /** Keeps or un-keeps one line. Reuses the trigger list encoding. */

@@ -65,6 +65,7 @@ class BastionVpnService : VpnService() {
         scope.launch {
             val graph = BastionGraph.from(this@BastionVpnService)
             graph.guard.seedIfEmpty()
+            graph.guard.syncBuiltInRules()
             val data = graph.guard.filterData()
             filter = DomainFilter(data.blocked, data.allowed, data.keywords)
             upstream = runCatching {

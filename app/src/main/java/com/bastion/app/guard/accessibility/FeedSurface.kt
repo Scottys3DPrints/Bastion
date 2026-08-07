@@ -161,6 +161,83 @@ internal object FeedSurface {
      * shape it is. A node that says nothing falls back to the old guess, which is
      * still right for the trays it was written for.
      */
+    /**
+     * Whether an address matches a blocked destination.
+     *
+     * Compared on host and path only, after normalising away the scheme, a
+     * leading `www.` or `m.`, and any query string. Instagram's reels live at
+     * `instagram.com/reels`, and the same page arrives as `www.instagram.com/
+     * reels/`, `m.instagram.com/reels?next=...` and `https://instagram.com/
+     * reels/` depending on how it was reached — all four are one destination and
+     * a rule should not have to name them separately.
+     */
+    fun urlMatches(text: String, fragment: String): Boolean {
+        if (fragment.isBlank()) return false
+        val url = normaliseUrl(text)
+        return url.isNotEmpty() && url.startsWith(normaliseUrl(fragment))
+    }
+
+    private fun normaliseUrl(raw: String): String {
+        var s = raw.trim().lowercase()
+        s = s.removePrefix("https://").removePrefix("http://")
+        s = s.substringBefore('?').substringBefore('#')
+        s = s.removePrefix("www.").removePrefix("m.")
+        return s.trimEnd('/')
+    }
+
+    /**
+     * Whether a string is an address rather than something a man wrote.
+     *
+     * This is the privacy boundary for browser rules and it is deliberately
+     * strict. Bastion's contract is that message bodies, posts and field
+     * contents are never read, and a rule that scanned page text for "reel"
+     * would break it on the first conversation. So only strings that *are* an
+     * address are ever considered: no whitespace, short, containing a dot, and
+     * either carrying a scheme or looking like host/path.
+     *
+     * Text that merely contains a link — a message with a URL in a sentence —
+     * fails on the whitespace test, which is the case that matters most.
+     */
+    fun looksLikeUrl(text: String): Boolean {
+        val s = text.trim()
+        if (s.isEmpty() || s.length > MAX_URL_LENGTH) return false
+        if (s.any { it.isWhitespace() }) return false
+        val bare = s.removePrefix("https://").removePrefix("http://")
+        val host = bare.substringBefore('/')
+        return host.contains('.') && host.length >= 4 && !host.endsWith('.')
+    }
+
+    private const val MAX_URL_LENGTH = 200
+
+    /**
+     * Whether a node is plausibly the address bar rather than a link on a page.
+     *
+     * A browser's URL bar sits at the top of the window and spans most of its
+     * width. A link inside a conversation or an article does neither, and this
+     * is what stops a friend sending a reel from walling the chat he sent it in.
+     *
+     * Used only as the fallback. Every real browser exposes a known identifier
+     * for its address bar, and that is checked first; this catches the in-app
+     * browsers — Messenger's, Instagram's — which do not.
+     */
+    fun isAddressBar(
+        top: Int,
+        width: Int,
+        windowTop: Int,
+        windowHeight: Int,
+        windowWidth: Int,
+    ): Boolean {
+        if (windowHeight <= 0 || windowWidth <= 0) return false
+        return top <= windowTop + windowHeight * ADDRESS_BAR_BAND &&
+            width >= windowWidth * ADDRESS_BAR_WIDTH
+    }
+
+    /** The top fifth of the window. Enough for a toolbar under a status bar. */
+    const val ADDRESS_BAR_BAND = 0.20
+
+    /** Half the width. A link in a paragraph is rarely this wide, a bar always is. */
+    const val ADDRESS_BAR_WIDTH = 0.5
+
     fun scrollsVertically(
         canScrollUpDown: Boolean,
         canScrollLeftRight: Boolean,
