@@ -72,8 +72,34 @@ internal object FeedSurface {
      * ordinary home feed. A rule names one destination, not every id that
      * happens to share its prefix.
      */
-    fun idMatches(idSegment: String?, matchValue: String): Boolean =
-        idSegment != null && idSegment.equals(matchValue, ignoreCase = true)
+    fun idMatches(idSegment: String?, matchValue: String): Boolean {
+        if (idSegment == null || matchValue.isBlank()) return false
+        if (idSegment.equals(matchValue, ignoreCase = true)) return true
+        // A rule also matches an id that *extends* it at a name boundary:
+        // clips_viewer catches clips_viewer_view_pager.
+        //
+        // This used to be forbidden, and the reason it was forbidden has since
+        // been fixed somewhere better. The original bug was `contains`, which
+        // matched clips_viewer_preview — an inline tile in the ordinary home
+        // feed — and threw a man out of a feed he was allowed to be in. Exact
+        // equality fixed that at a time when nothing else could.
+        //
+        // Since then the geometry gate arrived: a match must also cover the
+        // window and page vertically, which excludes every thumbnail, tray and
+        // preview on its own, and is checked by the home-feed tests below.
+        // Exact equality is now doing no work that geometry does not already do
+        // — and it has a cost geometry does not have. These ids belong to other
+        // companies' apps and get renamed without notice, usually by gaining a
+        // suffix, and when that happens the rule stops firing with no symptom
+        // beyond the block quietly not happening.
+        //
+        // The boundary matters. Requiring the next character to be '_' keeps
+        // `reel_recycler` from catching `reel_recycler2` style neighbours while
+        // still following an id that grew a descriptive tail.
+        return idSegment.length > matchValue.length &&
+            idSegment.startsWith(matchValue, ignoreCase = true) &&
+            idSegment[matchValue.length] == '_'
+    }
 
     /**
      * Whether this node *covers* the window rather than merely being large

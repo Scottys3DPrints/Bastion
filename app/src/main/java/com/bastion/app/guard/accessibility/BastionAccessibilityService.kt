@@ -815,13 +815,30 @@ class BastionAccessibilityService : AccessibilityService() {
          * The directional scroll actions, which are how a node says which way it
          * pages. Available since API 23, well under Bastion's floor of 26.
          */
+        /**
+         * The page actions belong here, and leaving them out was a real hole.
+         *
+         * Reels and Shorts are vertical ViewPager2s, and that is precisely the
+         * widget which reports ACTION_PAGE_UP and ACTION_PAGE_DOWN rather than
+         * the scroll pair — a pager moves in whole pages, so those are the
+         * actions it advertises. A player exposing only the page actions
+         * answered "no" to every question this asks, failed the vertical test,
+         * and was never blocked, with no symptom other than the block silently
+         * not happening.
+         */
         private val SCROLL_UP_DOWN = setOf(
             AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_UP.id,
             AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_DOWN.id,
+            AccessibilityNodeInfo.AccessibilityAction.ACTION_PAGE_UP.id,
+            AccessibilityNodeInfo.AccessibilityAction.ACTION_PAGE_DOWN.id,
         )
+
+        /** The same, for the horizontal pagers this has to keep letting through. */
         private val SCROLL_LEFT_RIGHT = setOf(
             AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_LEFT.id,
             AccessibilityNodeInfo.AccessibilityAction.ACTION_SCROLL_RIGHT.id,
+            AccessibilityNodeInfo.AccessibilityAction.ACTION_PAGE_LEFT.id,
+            AccessibilityNodeInfo.AccessibilityAction.ACTION_PAGE_RIGHT.id,
         )
         private const val NOTIFICATION_GUARD_DOWN = 4401
         private const val HALF_HOUR = 30 * 60 * 1000L

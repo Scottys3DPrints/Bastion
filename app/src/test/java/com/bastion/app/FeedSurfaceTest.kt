@@ -43,15 +43,48 @@ class FeedSurfaceTest {
         assertTrue(FeedSurface.idMatches("CLIPS_VIEWER", "clips_viewer"))
     }
 
-    /** The substring bug: these are the inline previews on the home feed. */
+    /**
+     * A rule follows an id that grew a suffix.
+     *
+     * These ids belong to other companies' apps and get renamed without notice,
+     * usually by gaining a descriptive tail — clips_viewer becomes
+     * clips_viewer_view_pager — and when that happens exact equality stops the
+     * rule firing with no symptom beyond the block quietly not happening.
+     *
+     * This was deliberately forbidden once, and the reason has since moved
+     * somewhere better: see the test below, which is the one that actually
+     * protects the home feed.
+     */
     @Test
-    fun `a rule does not match ids that merely start with it`() {
-        assertFalse(FeedSurface.idMatches("reel_viewer_thumbnail", "reel_viewer"))
-        assertFalse(FeedSurface.idMatches("clips_viewer_preview", "clips_viewer"))
-        assertFalse(FeedSurface.idMatches("clips_viewer_container_small", "clips_viewer"))
-        // YouTube's home feed carries a Shorts shelf whose recycler is a near
-        // neighbour of the Shorts player's own.
+    fun `a rule follows an id that gained a suffix`() {
+        assertTrue(FeedSurface.idMatches("clips_viewer_view_pager", "clips_viewer"))
+        assertTrue(FeedSurface.idMatches("reel_recycler_view", "reel_recycler"))
+    }
+
+    /** But only at a name boundary, never mid-word. */
+    @Test
+    fun `a rule does not match a different id that merely shares a prefix`() {
+        assertFalse(FeedSurface.idMatches("reel_recycler2", "reel_recycler"))
+        assertFalse(FeedSurface.idMatches("clips_viewerx", "clips_viewer"))
         assertFalse(FeedSurface.idMatches("reel_shelf_recycler", "reel_recycler"))
+        assertFalse(FeedSurface.idMatches(null, "clips_viewer"))
+        assertFalse(FeedSurface.idMatches("clips_viewer", ""))
+    }
+
+    /**
+     * The inline previews still match by id — and are still not blocked.
+     *
+     * This is the trade being made explicit. `clips_viewer_preview` now passes
+     * the id test, exactly as it did under the original `contains` bug. What
+     * stops it is geometry: a preview is a tile in a scrolling feed and does not
+     * cover the window, which the home-feed tests further down check directly.
+     * Geometry is a better place for this to be decided, because it describes
+     * what the surface *is* rather than what somebody happened to name it.
+     */
+    @Test
+    fun `an inline preview matches by id and is rejected by geometry`() {
+        assertTrue(FeedSurface.idMatches("clips_viewer_preview", "clips_viewer"))
+        assertFalse(covers(top = 420, height = 1920))
     }
 
     @Test
