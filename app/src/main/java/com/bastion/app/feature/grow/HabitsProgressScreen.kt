@@ -109,7 +109,7 @@ fun HabitsProgressScreen(onBack: () -> Unit, onOpenHabit: (String) -> Unit) {
             SummaryCard(
                 stats.sumOf { it.skipped }.toString(),
                 "Skipped",
-                BastionColors.Steel,
+                BastionColors.SteelBright,
                 Modifier.weight(1f),
             )
             SummaryCard(
@@ -168,7 +168,7 @@ private fun SummaryCard(value: String, label: String, accent: Color, modifier: M
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = BastionColors.TextMuted,
+            color = BastionColors.TextTertiary,
             textAlign = TextAlign.Center,
         )
     }
@@ -224,8 +224,8 @@ private fun DailyBars(
                         when {
                             due == 0 -> BastionColors.OutlineSoft
                             fraction >= 1f -> BastionColors.Sage
-                            fraction > 0f -> BastionColors.SageDeep
-                            else -> BastionColors.SurfaceRaised
+                            fraction > 0f -> BastionColors.SagePartial
+                            else -> BastionColors.TrackEmpty
                         }
                     )
             )
@@ -236,12 +236,12 @@ private fun DailyBars(
         Text(
             LocalDate.ofEpochDay(since).toString(),
             style = MaterialTheme.typography.labelSmall,
-            color = BastionColors.TextMuted,
+            color = BastionColors.TextTertiary,
         )
         Text(
             "Today",
             style = MaterialTheme.typography.labelSmall,
-            color = BastionColors.TextMuted,
+            color = BastionColors.TextTertiary,
         )
     }
 }
@@ -271,7 +271,7 @@ private fun HabitStatCard(stats: HabitStats, onOpen: () -> Unit) {
                     .fillMaxWidth()
                     .height(4.dp)
                     .clip(RoundedCornerShape(2.dp))
-                    .background(BastionColors.SurfaceRaised),
+                    .background(BastionColors.TrackEmpty),
             ) {
                 if (stats.rate > 0f) {
                     Box(
@@ -281,7 +281,7 @@ private fun HabitStatCard(stats: HabitStats, onOpen: () -> Unit) {
                             .clip(RoundedCornerShape(2.dp))
                             .background(
                                 if (stats.rate >= 0.8f) BastionColors.Sage
-                                else BastionColors.SageDeep
+                                else BastionColors.SagePartial
                             )
                     )
                 }

@@ -127,7 +127,7 @@ fun HabitHeatmap(
                         Text(
                             it,
                             style = MaterialTheme.typography.labelSmall,
-                            color = BastionColors.TextMuted,
+                            color = BastionColors.TextTertiary,
                         )
                     }
                 }
@@ -168,7 +168,7 @@ fun HabitHeatmap(
     Legend()
 }
 
-private val CELL = 14.dp
+private val CELL = 16.dp
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -185,30 +185,23 @@ private fun HeatCell(
         HabitMath.heatLevel(completion.count, habit.targetCount)
     } else 0f
 
-    val fill = when {
-        future -> Color.Transparent
-        completion?.status == LogStatus.DONE ->
-            if (level >= 1f) BastionColors.Sage else BastionColors.Sage.copy(alpha = shadeFor(level))
-        completion?.status == LogStatus.FAILED -> BastionColors.Amber.copy(alpha = 0.55f)
-        completion?.status == LogStatus.SKIPPED -> BastionColors.Steel.copy(alpha = 0.45f)
-        !due -> Color.Transparent
-        else -> BastionColors.SurfaceRaised
-    }
+    val status = completion?.status
+    val shape = RoundedCornerShape(4.dp)
 
+    // Every state gets a shape as well as a colour, and this is the part that
+    // matters most in the whole grid.
+    //
+    // Kept against missed measures 1.21:1 — they are told apart by hue and by
+    // nothing else, so to anyone with a red-green deficiency (about one man in
+    // twelve) a perfect month and a wrecked one look identical. Colour cannot be
+    // the only carrier. So: kept is a solid square, part-done is a smaller solid
+    // square inside the cell, missed is hollow with a heavy ring, skipped is a
+    // small dot, due-and-unrecorded is a flat dark fill, and a day that was
+    // never due is a thin outline. Those read at arm's length in greyscale.
     Box(
         Modifier
             .size(CELL)
-            .clip(RoundedCornerShape(3.dp))
-            .background(fill)
-            .then(
-                // An unscheduled day is drawn as an outline rather than left
-                // blank, so the rhythm of a three-days-a-week habit is visible
-                // instead of looking like a fortnight of misses.
-                if (!due && !future) {
-                    Modifier.border(1.dp, BastionColors.OutlineSoft, RoundedCornerShape(3.dp))
-                } else Modifier
-            )
-            .alpha(if (future) 0.25f else 1f)
+            .alpha(if (future) 0.3f else 1f)
             // Tap keeps the day, long press marks it missed. One modifier for
             // both, on the cell itself, so the target is exactly the day it
             // marks rather than a region of the grid.
@@ -217,14 +210,60 @@ private fun HeatCell(
                 onClick = onTap,
                 onLongClick = onLongPress,
             ),
-    )
-}
+        contentAlignment = Alignment.Center,
+    ) {
+        when {
+            future -> Unit
 
-/** Three steps below full, so partial progress is visible without pretending. */
-private fun shadeFor(level: Float): Float = when {
-    level >= 0.7f -> 0.70f
-    level >= 0.4f -> 0.45f
-    else -> 0.25f
+            status == LogStatus.DONE && level >= 1f ->
+                Box(Modifier.size(CELL).clip(shape).background(BastionColors.Sage))
+
+            // Part-done shrinks rather than fading. Alpha toward the background
+            // is what made a three-eighths day look like an empty one, and it
+            // gave the eye nothing to measure "how much" against.
+            status == LogStatus.DONE ->
+                Box(
+                    Modifier
+                        .size(CELL * (0.45f + 0.4f * level))
+                        .clip(shape)
+                        .background(BastionColors.SagePartial)
+                )
+
+            // Hollow, not filled. A ring is the one shape nothing else here uses.
+            status == LogStatus.FAILED ->
+                Box(
+                    Modifier
+                        .size(CELL)
+                        .clip(shape)
+                        .border(3.dp, BastionColors.Amber, shape)
+                )
+
+            status == LogStatus.SKIPPED -> {
+                Box(Modifier.size(CELL).clip(shape).background(BastionColors.TrackEmpty))
+                Box(
+                    Modifier
+                        .size(CELL * 0.4f)
+                        .clip(RoundedCornerShape(50))
+                        .background(BastionColors.SteelBright)
+                )
+            }
+
+            // Due, nothing recorded.
+            due -> Box(Modifier.size(CELL).clip(shape).background(BastionColors.TrackEmpty))
+
+            // Never due. Drawn rather than left blank so the rhythm of a
+            // three-days-a-week habit reads as a rhythm instead of a fortnight
+            // of misses — which only works if the outline can be seen, and
+            // OutlineSoft at 1.3:1 could not.
+            else ->
+                Box(
+                    Modifier
+                        .size(CELL)
+                        .clip(shape)
+                        .border(1.dp, BastionColors.OutlineStrong, shape)
+                )
+        }
+    }
 }
 
 @Composable
@@ -250,7 +289,7 @@ private fun PeriodPicker(
                 Text(
                     p.label,
                     style = MaterialTheme.typography.labelMedium,
-                    color = if (on) BastionColors.TextPrimary else BastionColors.TextMuted,
+                    color = if (on) BastionColors.TextPrimary else BastionColors.TextTertiary,
                 )
             }
         }
@@ -307,35 +346,57 @@ private fun NavArrow(glyph: String, enabled: Boolean, onClick: () -> Unit) {
         Text(
             glyph,
             style = MaterialTheme.typography.titleMedium,
-            color = if (enabled) BastionColors.TextSecondary else BastionColors.OutlineSoft,
+            color = if (enabled) BastionColors.TextPrimary else BastionColors.TextMuted,
         )
     }
 }
 
-/** Says what the colours mean, because a grid nobody can read is wallpaper. */
+/**
+ * Says what the marks mean, drawn exactly as the grid draws them.
+ *
+ * The swatches were flat colour squares while the cells had become solid,
+ * hollow and dotted — so the key taught the wrong language and a hollow amber
+ * ring had nothing in the legend that looked like it.
+ */
 @Composable
 private fun Legend() {
     Row(
         Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(Space.md),
     ) {
-        LegendSwatch(BastionColors.Sage, "Kept")
-        LegendSwatch(BastionColors.Amber.copy(alpha = 0.55f), "Missed")
-        LegendSwatch(BastionColors.Steel.copy(alpha = 0.45f), "Skipped")
-        LegendSwatch(BastionColors.SurfaceRaised, "Due")
+        LegendItem("Kept") {
+            Box(Modifier.size(LEGEND).clip(LEGEND_SHAPE).background(BastionColors.Sage))
+        }
+        LegendItem("Missed") {
+            Box(Modifier.size(LEGEND).clip(LEGEND_SHAPE).border(2.dp, BastionColors.Amber, LEGEND_SHAPE))
+        }
+        LegendItem("Skipped") {
+            Box(
+                Modifier.size(LEGEND).clip(LEGEND_SHAPE).background(BastionColors.TrackEmpty),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .size(LEGEND * 0.4f)
+                        .clip(RoundedCornerShape(50))
+                        .background(BastionColors.SteelBright)
+                )
+            }
+        }
+        LegendItem("Due") {
+            Box(Modifier.size(LEGEND).clip(LEGEND_SHAPE).background(BastionColors.TrackEmpty))
+        }
     }
 }
 
+private val LEGEND = 12.dp
+private val LEGEND_SHAPE = RoundedCornerShape(3.dp)
+
 @Composable
-private fun LegendSwatch(color: Color, label: String) {
+private fun LegendItem(label: String, mark: @Composable () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            Modifier
-                .size(10.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(color)
-        )
+        mark()
         Spacer(Modifier.width(Space.xs))
-        Text(label, style = MaterialTheme.typography.labelSmall, color = BastionColors.TextMuted)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = BastionColors.TextTertiary)
     }
 }

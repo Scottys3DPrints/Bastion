@@ -17,6 +17,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.Space
@@ -154,7 +156,7 @@ private fun Label(text: String) {
 
 @Composable
 private fun Note(text: String) {
-    Text(text, style = MaterialTheme.typography.bodySmall, color = BastionColors.TextMuted)
+    Text(text, style = MaterialTheme.typography.bodySmall, color = BastionColors.TextTertiary)
 }
 
 /**
@@ -174,12 +176,18 @@ internal fun Chip(
     val shape = RoundedCornerShape(Space.sm)
     Box(
         modifier
-            .height(36.dp)
+            // 40dp, up from 36. These sit four and seven to a row, so each one
+            // is already narrow; short as well made them fiddly to hit.
+            .height(40.dp)
             .clip(shape)
-            .background(if (selected) BastionColors.SurfaceHigh else BastionColors.Surface)
+            // Selected is a filled sage chip, not a slightly lighter grey one.
+            // The old pair — SurfaceHigh against Surface — differ by 1.15:1,
+            // which is to say they do not differ. On a row of seven weekday
+            // chips there was no way to see which days were actually chosen.
+            .background(if (selected) BastionColors.Sage else BastionColors.Surface)
             .border(
-                width = 1.dp,
-                color = if (selected) BastionColors.Sage else BastionColors.OutlineSoft,
+                width = if (selected) 0.dp else 1.dp,
+                color = if (selected) Color.Transparent else BastionColors.OutlineStrong,
                 shape = shape,
             )
             .clickable { onClick() },
@@ -187,8 +195,11 @@ internal fun Chip(
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.labelSmall,
-            color = if (selected) BastionColors.TextPrimary else BastionColors.TextMuted,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            // Dark on sage is 6.7:1; the light text that looks right in a mock
+            // is 2.5:1 and unreadable in daylight.
+            color = if (selected) BastionColors.MidnightDeep else BastionColors.TextSecondary,
         )
     }
 }

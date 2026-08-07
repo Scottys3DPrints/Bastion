@@ -77,7 +77,7 @@ fun HabitDetailScreen(habitId: String, onBack: () -> Unit) {
             Text(
                 "This habit is no longer in your regimen.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = BastionColors.TextMuted,
+                color = BastionColors.TextTertiary,
             )
             return@BastionScaffold
         }
@@ -114,7 +114,7 @@ fun HabitDetailScreen(habitId: String, onBack: () -> Unit) {
             Text(
                 habit.why,
                 style = MaterialTheme.typography.bodyMedium,
-                color = BastionColors.TextMuted,
+                color = BastionColors.TextTertiary,
             )
         }
 
@@ -126,7 +126,7 @@ fun HabitDetailScreen(habitId: String, onBack: () -> Unit) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
             StatBox("$rate%", "Kept", BastionColors.SteelBright, Modifier.weight(1.4f))
             StatBox("$done", "Done", BastionColors.SageBright, Modifier.weight(1f))
-            StatBox("$skipped", "Skipped", BastionColors.Steel, Modifier.weight(1f))
+            StatBox("$skipped", "Skipped", BastionColors.SteelBright, Modifier.weight(1f))
             StatBox("$failed", "Missed", BastionColors.Amber, Modifier.weight(1f))
         }
 
@@ -145,7 +145,7 @@ fun HabitDetailScreen(habitId: String, onBack: () -> Unit) {
         Text(
             "Tap a day to keep it, hold to mark it missed.",
             style = MaterialTheme.typography.bodySmall,
-            color = BastionColors.TextMuted,
+            color = BastionColors.TextTertiary,
         )
 
         SectionLabel("History")
@@ -180,9 +180,9 @@ private fun StreakTile(
         Text(
             value.toString(),
             style = MaterialTheme.typography.headlineMedium,
-            color = if (value > 0) accent else BastionColors.TextMuted,
+            color = if (value > 0) accent else BastionColors.TextTertiary,
         )
-        Text(label, style = MaterialTheme.typography.labelSmall, color = BastionColors.TextMuted)
+        Text(label, style = MaterialTheme.typography.labelSmall, color = BastionColors.TextTertiary)
     }
 }
 
@@ -204,7 +204,7 @@ private fun StatBox(
         Text(
             label,
             style = MaterialTheme.typography.labelSmall,
-            color = BastionColors.TextMuted,
+            color = BastionColors.TextTertiary,
             textAlign = TextAlign.Center,
         )
     }
@@ -234,7 +234,7 @@ private fun HistoryList(
         Text(
             "Nothing scheduled yet.",
             style = MaterialTheme.typography.bodySmall,
-            color = BastionColors.TextMuted,
+            color = BastionColors.TextTertiary,
         )
         return
     }
@@ -261,10 +261,10 @@ private fun HistoryList(
                 val (mark, tint) = when {
                     kept -> "Kept" to BastionColors.SageBright
                     log?.status == LogStatus.DONE ->
-                        "${log.count} of ${habit.targetCount}" to BastionColors.SageDeep
-                    log?.status == LogStatus.SKIPPED -> "Skipped" to BastionColors.Steel
+                        "${log.count} of ${habit.targetCount}" to BastionColors.SagePartial
+                    log?.status == LogStatus.SKIPPED -> "Skipped" to BastionColors.SteelBright
                     log?.status == LogStatus.FAILED -> "Missed" to BastionColors.Amber
-                    day == today -> "Due today" to BastionColors.TextMuted
+                    day == today -> "Due today" to BastionColors.TextTertiary
                     else -> "—" to BastionColors.TextMuted
                 }
                 Text(mark, style = MaterialTheme.typography.bodySmall, color = tint)

@@ -118,7 +118,7 @@ fun HabitJournal(
         Text(
             "Nothing due today. That is the schedule working, not a day off.",
             style = MaterialTheme.typography.bodyMedium,
-            color = BastionColors.TextMuted,
+            color = BastionColors.TextTertiary,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -134,90 +134,135 @@ fun HabitJournal(
                 val c = byId[it.id]
                 c?.status == LogStatus.DONE && HabitMath.isComplete(c.count, it.targetCount)
             }
+            val slotComplete = doneInSlot == inSlot.size
 
             Spacer(Modifier.height(Space.lg))
             Row(
-                Modifier.fillMaxWidth(),
+                Modifier.fillMaxWidth().padding(horizontal = Space.xs),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SectionLabel(
                     slot.label,
-                    color = if (doneInSlot == inSlot.size) BastionColors.SageBright
-                    else BastionColors.TextMuted,
+                    color = if (slotComplete) BastionColors.SageBright
+                    else BastionColors.TextSecondary,
                 )
-                // The count, not a progress bar. A bar for three items is
-                // decoration; "2/3" is the same information in less space and
-                // reads at a glance from across a room.
-                Text(
-                    "$doneInSlot/${inSlot.size}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (doneInSlot == inSlot.size) BastionColors.SageBright
-                    else BastionColors.TextMuted,
-                )
+                // A pill rather than loose text. "2/3" floating beside a heading
+                // read as part of the heading; enclosed, it reads as a count,
+                // and it gets a background that carries the done/not-done state
+                // without relying on colour alone.
+                Box(
+                    Modifier
+                        .clip(RoundedCornerShape(Space.sm))
+                        .background(
+                            if (slotComplete) BastionColors.SageDeep
+                            else BastionColors.SurfaceHigh
+                        )
+                        .padding(horizontal = Space.sm, vertical = 2.dp),
+                ) {
+                    Text(
+                        "$doneInSlot/${inSlot.size}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (slotComplete) BastionColors.TextPrimary
+                        else BastionColors.TextTertiary,
+                    )
+                }
             }
             Spacer(Modifier.height(Space.sm))
 
-            inSlot.forEach { habit ->
-                HabitJournalRow(
-                    habit = habit,
-                    completion = byId[habit.id],
-                    graph = graph,
-                    selectedDay = selectedDay,
-                    onOpen = { onOpenHabit(habit) },
-                    onBump = { onBump(habit) },
-                    onSetStatus = { onSetStatus(habit, it) },
-                )
+            // The section's habits on one surface, divided rather than stacked
+            // as separate cards. Loose on the gradient they had no left edge to
+            // line up against and the list read as floating text; one card per
+            // habit was the wall of boxes the whole app was cut back from.
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(Space.md))
+                    .background(BastionColors.Surface),
+            ) {
+                inSlot.forEachIndexed { index, habit ->
+                    if (index > 0) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(start = 56.dp)
+                                .height(1.dp)
+                                .background(BastionColors.OutlineSoft)
+                        )
+                    }
+                    HabitJournalRow(
+                        habit = habit,
+                        completion = byId[habit.id],
+                        graph = graph,
+                        selectedDay = selectedDay,
+                        onOpen = { onOpenHabit(habit) },
+                        onBump = { onBump(habit) },
+                        onSetStatus = { onSetStatus(habit, it) },
+                    )
+                }
             }
         }
     }
 }
 
 /**
- * The day at a glance, as a proportion rather than a ring.
+ * The day at a glance, on its own card, with the number given real size.
  *
- * A drawn arc was the first version and it was worse: at the size that fits
- * above a list it is a smudge, and the number underneath was doing all the work
- * anyway. A bar reads at arm's length, matches the proportion bars used
- * elsewhere in the app, and says the same thing.
+ * A drawn ring was the first version and it was worse: at the size that fits
+ * above a list it is a smudge, and the number was doing all the work anyway. So
+ * the number gets the room instead — display-sized, because this is the one
+ * figure the screen exists to deliver and it should be readable from a metre
+ * away with the phone on a table.
+ *
+ * The track underneath uses [BastionColors.TrackEmpty] rather than a raised
+ * surface. At 1.2:1 the old track was invisible, so a bar at 20% looked like a
+ * bar at 0% — the empty part has to be visible for the filled part to mean
+ * anything.
  */
 @Composable
 private fun SummaryRing(done: Int, total: Int) {
     val fraction = if (total <= 0) 0f else done.toFloat() / total
     val allDone = total > 0 && done == total
 
-    Column(Modifier.fillMaxWidth()) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(Space.md))
+            .background(BastionColors.Surface)
+            .padding(Space.lg),
+    ) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.Bottom,
         ) {
             Text(
+                "${(fraction * 100).toInt()}%",
+                style = MaterialTheme.typography.displaySmall,
+                color = if (allDone) BastionColors.SageBright else BastionColors.TextPrimary,
+            )
+            Text(
                 if (allDone) "All of it, kept." else "$done of $total kept",
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (allDone) BastionColors.SageBright else BastionColors.TextSecondary,
-            )
-            Text(
-                "${(fraction * 100).toInt()}%",
-                style = MaterialTheme.typography.labelMedium,
-                color = if (allDone) BastionColors.SageBright else BastionColors.TextMuted,
+                modifier = Modifier.padding(bottom = Space.xs),
             )
         }
-        Spacer(Modifier.height(Space.sm))
+        Spacer(Modifier.height(Space.md))
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(3.dp))
-                .background(BastionColors.SurfaceRaised),
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .background(BastionColors.TrackEmpty),
         ) {
             if (fraction > 0f) {
                 Box(
                     Modifier
                         .fillMaxWidth(fraction)
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp))
-                        .background(if (allDone) BastionColors.Sage else BastionColors.SageDeep),
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(if (allDone) BastionColors.Sage else BastionColors.SagePartial),
                 )
             }
         }
@@ -244,30 +289,44 @@ private fun DateStrip(today: Long, selected: Long, onSelect: (Long) -> Unit) {
             val isSelected = day == selected
             val isToday = day == today
 
-            Column(
-                Modifier
-                    .clip(RoundedCornerShape(Space.md))
-                    .clickable { onSelect(day) }
-                    .background(if (isSelected) BastionColors.SurfaceHigh else Color.Transparent)
-                    .padding(horizontal = Space.sm, vertical = Space.sm),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
                     style = MaterialTheme.typography.labelSmall,
-                    color = BastionColors.TextMuted,
+                    color = BastionColors.TextTertiary,
                 )
                 Spacer(Modifier.height(Space.xs))
-                Text(
-                    date.dayOfMonth.toString(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = when {
-                        isSelected -> BastionColors.TextPrimary
-                        isToday -> BastionColors.BronzeBright
-                        else -> BastionColors.TextSecondary
-                    },
-                )
+                // A filled circle for the selected day, a bronze ring for today
+                // when it is not the one selected. Selection used to be a faint
+                // rounded box at 1.3:1 against the background, which on a phone
+                // in daylight was no mark at all — you could not tell which day
+                // you were looking at, on a strip whose only job is to say so.
+                Box(
+                    Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(if (isSelected) BastionColors.Sage else Color.Transparent)
+                        .then(
+                            if (isToday && !isSelected) {
+                                Modifier.border(1.5.dp, BastionColors.Bronze, CircleShape)
+                            } else Modifier
+                        )
+                        .clickable { onSelect(day) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        date.dayOfMonth.toString(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal,
+                        color = when {
+                            // Dark on sage: 6.7:1. White on sage is only 2.5:1,
+                            // so the obvious choice would have been the worse one.
+                            isSelected -> BastionColors.MidnightDeep
+                            isToday -> BastionColors.BronzeBright
+                            else -> BastionColors.TextSecondary
+                        },
+                    )
+                }
             }
         }
     }
@@ -336,17 +395,34 @@ private fun HabitJournalRow(
                     else if (drag < -SWIPE_TRIGGER_PX) onSetStatus(LogStatus.FAILED)
                 }
             }
-            .padding(vertical = Space.md, horizontal = Space.xs),
+            .padding(vertical = Space.md, horizontal = Space.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(habit.emoji, style = MaterialTheme.typography.titleLarge)
+        // The emoji in a tinted well, so every row starts at the same left edge
+        // whatever glyph it carries. Bare emoji vary enough in width that the
+        // names beside them did not line up, which reads as sloppiness before
+        // anyone works out why.
+        Box(
+            Modifier
+                .size(36.dp)
+                .clip(RoundedCornerShape(Space.sm))
+                .background(if (done) BastionColors.SageDeep else BastionColors.SurfaceHigh),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(habit.emoji, style = MaterialTheme.typography.titleMedium)
+        }
         Spacer(Modifier.width(Space.md))
 
         Column(Modifier.weight(1f)) {
             Text(
                 habit.name,
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (status != null) BastionColors.TextMuted else BastionColors.TextPrimary,
+                // Handled rows step down one level, not two. TextMuted is
+                // 3.5:1 — under the 4.5:1 body text needs — so a kept habit's
+                // own name became the hardest thing on screen to read, which
+                // is a strange reward for having done it.
+                color = if (status != null) BastionColors.TextTertiary
+                else BastionColors.TextPrimary,
             )
             val sub = buildString {
                 when {
@@ -368,9 +444,9 @@ private fun HabitJournalRow(
                 style = MaterialTheme.typography.bodySmall,
                 color = when {
                     status == LogStatus.FAILED -> BastionColors.Amber
-                    status == LogStatus.SKIPPED -> BastionColors.TextMuted
+                    status == LogStatus.SKIPPED -> BastionColors.SteelBright
                     streak > 0 || weekKept > 0 -> BastionColors.SageBright
-                    else -> BastionColors.TextMuted
+                    else -> BastionColors.TextTertiary
                 },
                 maxLines = 1,
             )
@@ -420,51 +496,61 @@ private fun LogControl(
     val fill = when {
         done -> BastionColors.Sage
         status == LogStatus.FAILED -> BastionColors.Amber
-        else -> BastionColors.SurfaceRaised
+        status == LogStatus.SKIPPED -> BastionColors.Steel
+        else -> BastionColors.TrackEmpty
     }
     val edge = when {
         done -> BastionColors.Sage
         status == LogStatus.FAILED -> BastionColors.Amber
         status == LogStatus.SKIPPED -> BastionColors.Steel
-        count > 0 -> BastionColors.SageDeep
-        else -> BastionColors.Outline
+        count > 0 -> BastionColors.SagePartial
+        // Outline is 1.7:1 — an unticked circle was a rumour rather than a
+        // control, which for the one thing on this screen a man is meant to
+        // press is the wrong element to hide.
+        else -> BastionColors.OutlineStrong
     }
 
+    // 44dp, which is the smallest target Android's own guidance calls
+    // comfortable. It was 34, and it sits next to a row that navigates — so
+    // every near-miss opened the habit instead of logging it.
     Box(
         Modifier
-            .size(34.dp)
+            .size(44.dp)
             .clip(CircleShape)
-            .background(fill)
-            .border(width = 2.dp, color = edge, shape = CircleShape)
             .clickable { onBump() },
         contentAlignment = Alignment.Center,
     ) {
-        when {
-            done -> Text(
-                "✓",
-                color = BastionColors.MidnightDeep,
-                style = MaterialTheme.typography.labelMedium,
-            )
-            status == LogStatus.FAILED -> Text(
-                "✕",
-                color = BastionColors.MidnightDeep,
-                style = MaterialTheme.typography.labelMedium,
-            )
-            // A skip is a deliberate pass, and it should not look like a miss.
-            status == LogStatus.SKIPPED -> Text(
-                "»",
-                color = BastionColors.SteelBright,
-                style = MaterialTheme.typography.labelMedium,
-            )
-            // Partial progress shows the number rather than a fraction of a ring.
-            // At 34dp a ring arc is a smudge; a digit is legible.
-            target > 1 && count > 0 -> Text(
-                count.toString(),
-                color = BastionColors.SageBright,
-                style = MaterialTheme.typography.labelMedium,
-            )
+        Box(
+            Modifier
+                .size(30.dp)
+                .clip(CircleShape)
+                .background(fill)
+                .border(width = 2.dp, color = edge, shape = CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            // Dark glyphs on every filled state. White on sage is 2.5:1 and on
+            // amber worse; the dark is 6.7:1 and reads on both.
+            when {
+                done -> Glyph("✓", BastionColors.MidnightDeep)
+                status == LogStatus.FAILED -> Glyph("✕", BastionColors.MidnightDeep)
+                // A skip is a deliberate pass and should not look like a miss.
+                status == LogStatus.SKIPPED -> Glyph("»", BastionColors.MidnightDeep)
+                // Partial progress shows the number rather than an arc. At this
+                // size a ring segment is a smudge; a digit is legible.
+                target > 1 && count > 0 -> Glyph(count.toString(), BastionColors.SageBright)
+            }
         }
     }
+}
+
+@Composable
+private fun Glyph(text: String, color: Color) {
+    Text(
+        text,
+        color = color,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.Bold,
+    )
 }
 
 /**
