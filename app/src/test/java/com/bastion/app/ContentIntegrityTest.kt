@@ -11,6 +11,7 @@ import com.bastion.app.data.content.MotivationLibrary
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -31,16 +32,60 @@ class ContentIntegrityTest {
     @Test
     fun `daily briefs decode with both modes populated`() {
         val briefs = json.decodeFromString<DailyBriefs>(asset("daily_briefs.json"))
-        assertEquals(30, briefs.days.size)
+        // A floor rather than an exact count. The library is meant to grow, and
+        // a test that has to be edited every time content is added teaches
+        // people to edit the test rather than to think about the content.
+        assertTrue(
+            "the brief library has shrunk to ${briefs.days.size} days",
+            briefs.days.size >= 90,
+        )
         briefs.days.forEachIndexed { index, day ->
             assertEquals("days must be sequential", index + 1, day.day)
             listOf(day.faith, day.discipline).forEach { side ->
                 assertTrue("anchor missing on day ${day.day}", side.anchor.isNotBlank())
+                assertTrue("anchor reference missing on day ${day.day}", side.anchorRef.isNotBlank())
+                assertTrue("title missing on day ${day.day}", side.title.isNotBlank())
                 assertTrue("body missing on day ${day.day}", side.body.isNotBlank())
                 assertTrue("challenge missing on day ${day.day}", side.microChallenge.isNotBlank())
             }
             assertNotNull("faith prompt missing on day ${day.day}", day.faith.prompt)
             assertNotNull("discipline prompt missing on day ${day.day}", day.discipline.prompt)
+        }
+    }
+
+    /**
+     * No day repeats another day's anchor.
+     *
+     * The briefs cycle by `% days.size`, so the library's length is exactly how
+     * long a man goes before he sees the same morning twice. A duplicate anchor
+     * is that repeat arriving early, and it is invisible in review because the
+     * two days are eighty entries apart in the file.
+     */
+    @Test
+    fun `every brief anchors on a different verse or quote`() {
+        val briefs = json.decodeFromString<DailyBriefs>(asset("daily_briefs.json"))
+        val anchors = briefs.days.flatMap { listOf(it.faith.anchor, it.discipline.anchor) }
+        val repeated = anchors.groupBy { it }.filterValues { it.size > 1 }.keys
+        assertTrue(
+            "these anchors are used more than once: ${repeated.map { it.take(50) }}",
+            repeated.isEmpty(),
+        )
+    }
+
+    /**
+     * Prayer is faith-only and reflection is discipline-only.
+     *
+     * The two sides exist so a man in discipline mode is never handed a prayer
+     * he did not ask for, and the whole point collapses quietly if one entry
+     * out of ninety puts the wrong prompt on the wrong side.
+     */
+    @Test
+    fun `each side carries the prompt its mode expects`() {
+        val briefs = json.decodeFromString<DailyBriefs>(asset("daily_briefs.json"))
+        briefs.days.forEach { day ->
+            assertNotNull("day ${day.day} has no prayer on the faith side", day.faith.prayer)
+            assertNull("day ${day.day} puts a prayer on the discipline side", day.discipline.prayer)
+            assertNotNull("day ${day.day} has no reflection on the discipline side", day.discipline.reflection)
         }
     }
 

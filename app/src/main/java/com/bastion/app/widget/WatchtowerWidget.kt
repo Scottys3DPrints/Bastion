@@ -61,13 +61,23 @@ class WatchtowerWidget : GlanceAppWidget() {
                     rankName = state.rank.displayName(faithMode),
                     points = state.points,
                     word = word?.text,
+                    // sourceRef for scripture ("Psalm 27:1"), attribution for a
+                    // quote ("Marcus Aurelius"). Whichever the item actually has.
+                    attribution = word?.sourceRef?.takeIf { it.isNotBlank() }
+                        ?: word?.attribution?.takeIf { it.isNotBlank() },
                 )
             }
         }
     }
 
     @Composable
-    private fun WidgetBody(streak: Int, rankName: String, points: Int, word: String?) {
+    private fun WidgetBody(
+        streak: Int,
+        rankName: String,
+        points: Int,
+        word: String?,
+        attribution: String?,
+    ) {
         Column(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -113,6 +123,26 @@ class WatchtowerWidget : GlanceAppWidget() {
                         textAlign = androidx.glance.text.TextAlign.Center,
                     ),
                     maxLines = 3,
+                )
+            }
+            // The reference, which the widget was dropping.
+            //
+            // A verse without its book, or a line without the man who said it,
+            // is an anonymous slogan — and the app's own content tests require
+            // every quote and scripture to carry attribution precisely because
+            // an unattributed line is one nobody can check. Showing the text and
+            // silently discarding the source undid that on the one surface most
+            // likely to be read.
+            attribution?.let {
+                Spacer(GlanceModifier.height(3.dp))
+                Text(
+                    text = it,
+                    style = TextStyle(
+                        color = ColorProvider(Color(0xFF8792AE)),
+                        fontSize = androidx.compose.ui.unit.TextUnit(10f, androidx.compose.ui.unit.TextUnitType.Sp),
+                        textAlign = androidx.glance.text.TextAlign.Center,
+                    ),
+                    maxLines = 1,
                 )
             }
             Spacer(GlanceModifier.height(10.dp))
