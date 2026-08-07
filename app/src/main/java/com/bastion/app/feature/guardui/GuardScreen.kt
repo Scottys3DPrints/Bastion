@@ -684,7 +684,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                             // point is knowing which one you are in before you
                             // change something.
                             if (settings.tamperLockEnabled)
-                                "On — off-switches wait ${settings.coolingOffHours}h"
+                                "On — off-switches wait ${com.bastion.app.data.repo.GuardRepository.Delay.describe(settings.coolingOffMinutes)}"
                             else
                                 "Off — changes happen right away",
                             style = MaterialTheme.typography.bodySmall,
@@ -791,19 +791,33 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
 
                 Spacer(Modifier.height(Space.lg))
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
-                    listOf(1, 2, 6, 24).forEach { hours ->
-                        HourChip(hours, settings.coolingOffHours == hours) {
+                    com.bastion.app.data.repo.GuardRepository.Delay.CHOICES.forEach { minutes ->
+                        DelayChip(minutes, settings.coolingOffMinutes == minutes) {
                             scope.launch {
                                 // Lengthening the delay is a tightening; shortening waits its own delay.
-                                if (hours >= settings.coolingOffHours || !settings.tamperLockEnabled) {
-                                    graph.settings.setCoolingOffHours(hours)
+                                if (minutes >= settings.coolingOffMinutes || !settings.tamperLockEnabled) {
+                                    graph.settings.setCoolingOffMinutes(minutes)
                                 } else graph.guard.requestWeakening(
-                                    "Shorten the cooling-off delay to ${hours}h",
-                                    payload = "cooloff:$hours",
+                                    "Shorten the cooling-off delay to " +
+                                        com.bastion.app.data.repo.GuardRepository.Delay.describe(minutes),
+                                    payload = "cooloffm:$minutes",
                                 )
                             }
                         }
                     }
+                }
+                if (settings.coolingOffMinutes < com.bastion.app.data.repo.GuardRepository.Delay.TEST_ONLY_BELOW_MINUTES) {
+                    Spacer(Modifier.height(Space.sm))
+                    // Said plainly rather than left for him to work out. A delay
+                    // he can sit through in one go is a rehearsal of the
+                    // mechanism, not the mechanism — and an app that offered it
+                    // as an equal choice would be overstating itself.
+                    Text(
+                        "That is a test setting. A delay you can wait out in one sitting " +
+                            "proves the wall works; it will not stop you at 1am.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BastionColors.Amber,
+                    )
                 }
 
                 if (pendingChanges.isNotEmpty()) {
@@ -875,7 +889,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
         ConfirmDialog(
             title = "Stop guarding ${app.label}?",
             body = if (settings.tamperLockEnabled) {
-                "This won't take effect for ${settings.coolingOffHours} hours. " +
+                "This won't take effect for ${com.bastion.app.data.repo.GuardRepository.Delay.describe(settings.coolingOffMinutes)}. " +
                     "You can cancel it any time before then."
             } else {
                 "You haven't locked in, so this happens straight away."
@@ -907,7 +921,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
         ConfirmDialog(
             title = "Relax ${app.label} to ${mode.label()}?",
             body = if (settings.tamperLockEnabled) {
-                "This won't take effect for ${settings.coolingOffHours} hours. " +
+                "This won't take effect for ${com.bastion.app.data.repo.GuardRepository.Delay.describe(settings.coolingOffMinutes)}. " +
                     "You can cancel it any time before then."
             } else {
                 "You haven't locked in, so this happens straight away."
@@ -961,7 +975,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
     if (confirmUnlock) {
         ConfirmDialog(
             title = "Unlock the guards?",
-            body = "Unlocking waits ${settings.coolingOffHours} hours, like any other weakening. " +
+            body = "Unlocking waits ${com.bastion.app.data.repo.GuardRepository.Delay.describe(settings.coolingOffMinutes)}, like any other weakening. " +
                 "Until then everything stays as it is.",
             confirmLabel = "Request it",
             onConfirm = {
@@ -975,7 +989,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
         ConfirmDialog(
             title = "Turn the content filter off?",
             body = if (settings.tamperLockEnabled) {
-                "This won't take effect for ${settings.coolingOffHours} hours. " +
+                "This won't take effect for ${com.bastion.app.data.repo.GuardRepository.Delay.describe(settings.coolingOffMinutes)}. " +
                     "You can cancel it any time before then."
             } else {
                 "You haven't locked in, so this happens straight away."
@@ -1432,7 +1446,7 @@ private fun GuardedAppRow(
 
 
 @Composable
-private fun HourChip(hours: Int, selected: Boolean, onClick: () -> Unit) {
+private fun DelayChip(minutes: Int, selected: Boolean, onClick: () -> Unit) {
     Box(
         Modifier
             .clip(RoundedCornerShape(16.dp))
@@ -1446,7 +1460,7 @@ private fun HourChip(hours: Int, selected: Boolean, onClick: () -> Unit) {
             .padding(horizontal = 14.dp, vertical = 8.dp)
     ) {
         Text(
-            if (hours == 24) "24h" else "${hours}h",
+            com.bastion.app.data.repo.GuardRepository.Delay.describeShort(minutes),
             style = MaterialTheme.typography.labelMedium,
             color = if (selected) BastionColors.BronzeBright else BastionColors.TextMuted,
         )

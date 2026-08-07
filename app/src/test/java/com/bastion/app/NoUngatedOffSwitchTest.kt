@@ -145,7 +145,18 @@ class NoUngatedOffSwitchTest {
             "setTamperLock" to 1,
             // Lengthening the delay is a tightening and immediate; shortening
             // queues. Both live in the one call site.
-            "setCoolingOffHours" to 1,
+            //
+            // Reviewed at the rename from hours to minutes: the branch is
+            // unchanged, still `minutes >= current || !locked` for the immediate
+            // path. The unit change is what made a five-minute test delay
+            // expressible, and shortening to it while locked still waits out the
+            // delay currently in force — which is the property this line exists
+            // to protect, and the only one that matters.
+            "setCoolingOffMinutes" to 1,
+            // The old hours setter is gone. Pinned at zero so it cannot quietly
+            // come back alongside the new one and reintroduce a second, ungated
+            // way to write the same setting.
+            "setCoolingOffHours" to 0,
             // The DNS watch is only ever stood down from GuardWatchdog, which
             // does its own lock check. No screen writes it.
             "setDnsIntendedOn" to 0,

@@ -131,7 +131,7 @@ private fun GuardDownScreen(layer: String, onResolved: () -> Unit) {
     var wrong by remember { mutableStateOf(false) }
     var waitMillis by remember { mutableStateOf(0L) }
     var hasPartnerCode by remember { mutableStateOf(false) }
-    var coolingOffHours by remember { mutableStateOf(2) }
+    var coolingOffMinutes by remember { mutableStateOf(120) }
     var hostname by remember { mutableStateOf("") }
     var copied by remember { mutableStateOf(false) }
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
@@ -144,7 +144,7 @@ private fun GuardDownScreen(layer: String, onResolved: () -> Unit) {
 
     androidx.compose.runtime.LaunchedEffect(Unit) {
         hasPartnerCode = graph.social.hasPasscode()
-        coolingOffHours = graph.settings.current().coolingOffHours
+        coolingOffMinutes = graph.settings.current().coolingOffMinutes
         hostname = graph.settings.current().dnsHostname
         waitMillis = graph.passcodeGate.waitMillis()
     }
@@ -225,7 +225,7 @@ private fun GuardDownScreen(layer: String, onResolved: () -> Unit) {
             if (!askingCode) {
                 QuietButton(
                     if (hasPartnerCode) "Leave it off — enter the code"
-                    else "Leave it off — wait $coolingOffHours" + "h",
+                    else "Leave it off — wait ${com.bastion.app.data.repo.GuardRepository.Delay.describe(coolingOffMinutes)}",
                     {
                         if (hasPartnerCode) askingCode = true
                         else scope.launch {

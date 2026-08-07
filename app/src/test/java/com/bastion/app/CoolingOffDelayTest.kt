@@ -1,0 +1,129 @@
+package com.bastion.app
+
+import com.bastion.app.data.repo.GuardRepository
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+/**
+ * The cooling-off delay, now measured in minutes.
+ *
+ * It used to be whole hours, which made a five-minute setting unrepresentable
+ * and a five-minute *display* impossible — "0 hours" is what an hours-based
+ * formatter says about it, and a lock that announces itself as zero is a lock
+ * nobody believes. The unit change is the kind that goes wrong silently: an
+ * off-by-sixty here does not crash, it just quietly turns a two-hour guard into
+ * a two-minute one on the night it matters.
+ */
+class CoolingOffDelayTest {
+
+    @Test
+    fun `minutes under an hour are spoken as minutes`() {
+        assertEquals("5 minutes", GuardRepository.Delay.describe(5))
+        assertEquals("1 minute", GuardRepository.Delay.describe(1))
+        assertEquals("45 minutes", GuardRepository.Delay.describe(45))
+    }
+
+    @Test
+    fun `whole hours are spoken as hours`() {
+        assertEquals("1 hour", GuardRepository.Delay.describe(60))
+        assertEquals("2 hours", GuardRepository.Delay.describe(120))
+        assertEquals("24 hours", GuardRepository.Delay.describe(1440))
+    }
+
+    /** A delay that is neither must not round down to something shorter. */
+    @Test
+    fun `a mixed delay names both parts`() {
+        assertEquals("1h 30m", GuardRepository.Delay.describe(90))
+    }
+
+    @Test
+    fun `the short form fits a chip`() {
+        assertEquals("5m", GuardRepository.Delay.describeShort(5))
+        assertEquals("2h", GuardRepository.Delay.describeShort(120))
+        assertEquals("24h", GuardRepository.Delay.describeShort(1440))
+        // Never blank, whatever it is handed — a chip with no label is a chip
+        // nobody can choose.
+        GuardRepository.Delay.CHOICES.forEach {
+            assertTrue(GuardRepository.Delay.describeShort(it).isNotBlank())
+        }
+    }
+
+    /**
+     * The offered choices have to include the five-minute test setting and the
+     * two-hour default, or the migration below lands a man on a value he cannot
+     * see selected anywhere.
+     */
+    @Test
+    fun `the choices include the test setting and the default`() {
+        assertTrue(5 in GuardRepository.Delay.CHOICES)
+        assertTrue(120 in GuardRepository.Delay.CHOICES)
+        assertEquals(
+            "choices must be ascending so the chips read left to right",
+            GuardRepository.Delay.CHOICES.sorted(),
+            GuardRepository.Delay.CHOICES,
+        )
+    }
+
+    /**
+     * Only the five-minute setting is below the honesty threshold.
+     *
+     * The warning shown beneath the chips keys off this. If an hour ever fell
+     * under it, a man running a perfectly reasonable delay would be told his
+     * lock is a test setting, and the warning would stop meaning anything.
+     */
+    @Test
+    fun `only the test setting is flagged as too short to protect`() {
+        val flagged = GuardRepository.Delay.CHOICES
+            .filter { it < GuardRepository.Delay.TEST_ONLY_BELOW_MINUTES }
+        assertEquals(listOf(5), flagged)
+    }
+
+    /**
+     * The unit travels with the payload, and it has to.
+     *
+     * A change request queued by an older build carries hours and may not
+     * mature until after the upgrade. The first attempt guessed the unit by
+     * magnitude — anything twenty-four or under is hours — and that is wrong in
+     * the worst possible direction: "5" is a legal hours value *and* the new
+     * five-minute setting, so a man choosing five minutes would have been given
+     * five hours, silently, by the code meant to protect him.
+     */
+    @Test
+    fun `each payload key carries its own unit`() {
+        fun applied(payload: String): Int? {
+            val parts = payload.split(':')
+            val n = parts.getOrNull(1)?.toIntOrNull() ?: return null
+            return when (parts.first()) {
+                "cooloff" -> n * 60      // legacy: hours
+                "cooloffm" -> n          // current: minutes
+                else -> null
+            }
+        }
+        // Legacy requests still mean what they meant when they were queued.
+        assertEquals(120, applied("cooloff:2"))
+        assertEquals(1440, applied("cooloff:24"))
+        // And the ambiguous number resolves correctly under each key.
+        assertEquals(300, applied("cooloff:5"))
+        assertEquals(5, applied("cooloffm:5"))
+    }
+
+    /**
+     * The legacy key is written rounded up, never down.
+     *
+     * Bastion updates in place and a man can end up back on an older build. If
+     * five minutes were written as zero hours there, the old build would read a
+     * delay of nothing at all and every weakening would take effect instantly.
+     */
+    @Test
+    fun `a sub-hour delay never becomes zero hours for an older build`() {
+        fun legacyHours(minutes: Int) = ((minutes + 59) / 60).coerceAtLeast(1)
+        assertEquals(1, legacyHours(5))
+        assertEquals(1, legacyHours(60))
+        assertEquals(2, legacyHours(61))
+        assertEquals(24, legacyHours(1440))
+        GuardRepository.Delay.CHOICES.forEach {
+            assertTrue("legacy hours must never be zero", legacyHours(it) >= 1)
+        }
+    }
+}

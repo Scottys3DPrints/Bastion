@@ -26,8 +26,16 @@ data class Settings(
     val briefEnabled: Boolean = true,
     val vpnFilterEnabled: Boolean = false,
     val grayscaleEnabled: Boolean = false,
-    /** Weakening a guard waits this many hours before it takes effect. */
-    val coolingOffHours: Int = 2,
+    /**
+     * Weakening a guard waits this many minutes before it takes effect.
+     *
+     * Minutes rather than hours because the shortest honest delay a man might
+     * want is not a whole hour — and because a five-minute setting exists so
+     * the wall and the unlock flow can actually be exercised without waiting
+     * out a real one. Stored under a new key; see [Settings.coolingOffMinutes]
+     * in SettingsStore.read for how an existing hours value is carried over.
+     */
+    val coolingOffMinutes: Int = 120,
     val tamperLockEnabled: Boolean = false,
     val partnerLockEnabled: Boolean = false,
     /** Consecutive wrong partner-code entries; reset by a correct one. */
@@ -214,6 +222,7 @@ class SettingsStore(private val context: Context) {
         val VPN_ENABLED = booleanPreferencesKey("vpn_enabled")
         val GRAYSCALE = booleanPreferencesKey("grayscale")
         val COOLING_OFF = intPreferencesKey("cooling_off_hours")
+        val COOLING_OFF_MINUTES = intPreferencesKey("cooling_off_minutes")
         val TAMPER_LOCK = booleanPreferencesKey("tamper_lock")
         val PARTNER_LOCK = booleanPreferencesKey("partner_lock")
         val GUARD_OFF_SINCE = longPreferencesKey("guard_off_since")
@@ -265,7 +274,14 @@ class SettingsStore(private val context: Context) {
             briefEnabled = p[Keys.BRIEF_ENABLED] ?: true,
             vpnFilterEnabled = p[Keys.VPN_ENABLED] ?: false,
             grayscaleEnabled = p[Keys.GRAYSCALE] ?: false,
-            coolingOffHours = p[Keys.COOLING_OFF] ?: 2,
+            // Minutes if they have been set, otherwise the old hours value
+            // converted, otherwise the default. Reading the legacy key rather
+            // than migrating it in place means a man who never touches the
+            // setting keeps exactly the delay he had, and nobody's lock gets
+            // quietly shortened by an upgrade.
+            coolingOffMinutes = p[Keys.COOLING_OFF_MINUTES]
+                ?: p[Keys.COOLING_OFF]?.let { it * 60 }
+                ?: 120,
             tamperLockEnabled = p[Keys.TAMPER_LOCK] ?: false,
             partnerLockEnabled = p[Keys.PARTNER_LOCK] ?: false,
             guardOffSince = p[Keys.GUARD_OFF_SINCE] ?: 0L,
@@ -324,7 +340,18 @@ class SettingsStore(private val context: Context) {
     suspend fun setBriefEnabled(value: Boolean) = edit { it[Keys.BRIEF_ENABLED] = value }
     suspend fun setVpnEnabled(value: Boolean) = edit { it[Keys.VPN_ENABLED] = value }
     suspend fun setGrayscale(value: Boolean) = edit { it[Keys.GRAYSCALE] = value }
-    suspend fun setCoolingOffHours(value: Int) = edit { it[Keys.COOLING_OFF] = value }
+    /**
+     * Writes both keys, so the value survives a downgrade.
+     *
+     * Bastion updates in place and a man can end up on an older build; if that
+     * build read a stale hours key it would silently restore a delay he had
+     * already changed. The legacy key is kept truthful, rounded up so a
+     * sub-hour delay never becomes zero hours there.
+     */
+    suspend fun setCoolingOffMinutes(value: Int) = edit {
+        it[Keys.COOLING_OFF_MINUTES] = value
+        it[Keys.COOLING_OFF] = ((value + 59) / 60).coerceAtLeast(1)
+    }
     suspend fun setTamperLock(value: Boolean) = edit { it[Keys.TAMPER_LOCK] = value }
     suspend fun setPartnerLock(value: Boolean) = edit { it[Keys.PARTNER_LOCK] = value }
     suspend fun setGuardOffSince(value: Long) = edit { it[Keys.GUARD_OFF_SINCE] = value }

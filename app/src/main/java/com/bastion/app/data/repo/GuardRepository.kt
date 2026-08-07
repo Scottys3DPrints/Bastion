@@ -104,12 +104,12 @@ class GuardRepository(
     // 3am. Tightening a guard, by contrast, is always instant.
 
     suspend fun requestWeakening(description: String, payload: String): GuardChangeRequestEntity {
-        val hours = settings.current().coolingOffHours
+        val minutes = settings.current().coolingOffMinutes
         val now = System.currentTimeMillis()
         val request = GuardChangeRequestEntity(
             id = UUID.randomUUID().toString(),
             requestedAt = now,
-            effectiveAt = now + hours * 60L * 60L * 1000L,
+            effectiveAt = now + minutes * 60L * 1000L,
             description = description,
             payload = payload,
         )
@@ -136,6 +136,50 @@ class GuardRepository(
     }
 
     suspend fun cancelChange(id: String) = guardDao.setChangeStatus(id, ChangeStatus.CANCELLED)
+
+    /**
+     * Everything about the cooling-off delay that is not state.
+     *
+     * A nested object rather than the companion, which already exists and holds
+     * the seeded content. Kept beside the code that applies the delay so the
+     * wording, the choices and the arithmetic cannot drift apart.
+     */
+    object Delay {
+        /**
+         * The delay in words: "5 minutes", "2 hours", "24 hours".
+         *
+         * One formatter for every screen that mentions it, because four screens
+         * hand-rolling "${hours} hours" is how a five-minute delay ends up
+         * announced as "0 hours" on the one screen nobody re-read.
+         */
+        fun describe(minutes: Int): String = when {
+            minutes < 60 -> if (minutes == 1) "1 minute" else "$minutes minutes"
+            minutes % 60 == 0 -> (minutes / 60).let { if (it == 1) "1 hour" else "$it hours" }
+            else -> "${minutes / 60}h ${minutes % 60}m"
+        }
+
+        /** The same thing, short enough for a chip: "5m", "2h", "24h". */
+        fun describeShort(minutes: Int): String = when {
+            minutes < 60 -> "${minutes}m"
+            minutes % 60 == 0 -> "${minutes / 60}h"
+            else -> "${minutes / 60}h${minutes % 60}"
+        }
+
+        /**
+         * The choices offered, in minutes.
+         *
+         * Five minutes is here so the lock, the settings wall and the unlock
+         * flow can be exercised end to end without waiting out a real delay.
+         * It is labelled as a test setting on screen rather than presented as
+         * an equal option, because a delay a man can simply wait out in one
+         * sitting is not protection — the entire mechanism depends on the
+         * weak-moment self being unable to outlast it.
+         */
+        val CHOICES = listOf(5, 60, 120, 360, 1440)
+
+        /** Below this, the delay is a rehearsal rather than a guard. */
+        const val TEST_ONLY_BELOW_MINUTES = 60
+    }
 
     suspend fun maturedChanges() = guardDao.maturedChanges(System.currentTimeMillis())
 
@@ -182,7 +226,21 @@ class GuardRepository(
                     guardDao.removeDomain(it)
                     invalidateFilterCache()
                 }
-                "cooloff" -> parts.getOrNull(1)?.toIntOrNull()?.let { settings.setCoolingOffHours(it) }
+                // Two keys, because the unit changed and the number alone cannot
+                // say which one it is.
+                //
+                // A request queued by an older build carries hours, and it may
+                // not mature until after the upgrade. Guessing by magnitude was
+                // the first attempt and it was wrong in the worst direction:
+                // "5" is a legal hours value *and* the new five-minute setting,
+                // so a man choosing five minutes would have been given five
+                // hours. The payload says which unit it means instead.
+                "cooloff" -> parts.getOrNull(1)?.toIntOrNull()?.let {
+                    settings.setCoolingOffMinutes(it * 60)
+                }
+                "cooloffm" -> parts.getOrNull(1)?.toIntOrNull()?.let {
+                    settings.setCoolingOffMinutes(it)
+                }
                 // Unlocking is itself a weakening and serves the same delay,
                 // otherwise the lock would be a switch that turns itself off.
                 "unlock" -> settings.setTamperLock(false)
