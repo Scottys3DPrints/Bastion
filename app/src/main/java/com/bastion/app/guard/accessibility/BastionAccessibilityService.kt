@@ -220,8 +220,15 @@ class BastionAccessibilityService : AccessibilityService() {
      * cheap while a walk per event would not be.
      */
     private fun guardSettingsScreen(pkg: String, className: String?) {
-        if (!settings.tamperLockEnabled) return
-        if (!GuardedScreens.isSettingsApp(pkg)) return
+        // A lockdown counts as well as the settings lock. Uninstalling during
+        // one would take the running lockdown with it — the countdown, the
+        // guarded apps and the partner's passcode all live in app data — so the
+        // hour a man is most likely to try it is exactly the hour it must not
+        // work.
+        if (!settings.tamperLockEnabled &&
+            !com.bastion.app.guard.lockdown.Lockdown.isActive(settings)
+        ) return
+        if (!GuardedScreens.isWatchedApp(pkg)) return
 
         val now = System.currentTimeMillis()
         if (now - lastSettingsWallAt < SETTINGS_WALL_COOLDOWN_MS) return
@@ -249,6 +256,7 @@ class BastionAccessibilityService : AccessibilityService() {
                 texts = texts,
                 serviceLabel = getString(com.bastion.app.R.string.accessibility_label),
                 dnsHostname = settings.dnsHostname,
+                appLabel = getString(com.bastion.app.R.string.app_name),
             )
         }
 

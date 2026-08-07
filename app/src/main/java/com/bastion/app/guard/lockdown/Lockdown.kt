@@ -74,7 +74,14 @@ object Lockdown {
         else -> "${seconds / 86_400}d"
     }
 
-    private fun remainingMillis(settings: Settings): Long {
+    /**
+     * Milliseconds left, public because a wall needs to say how long.
+     *
+     * Was private with three public wrappers rounding it to minutes or seconds,
+     * which is fine for a countdown display and useless to a caller that wants
+     * to format it its own way.
+     */
+    fun remainingMillis(settings: Settings): Long {
         val byWallClock = settings.lockdownUntil - System.currentTimeMillis()
         // The running lockdown's own length, which is not necessarily the
         // button's: a scheduled lockout carries its own. Falls back to the

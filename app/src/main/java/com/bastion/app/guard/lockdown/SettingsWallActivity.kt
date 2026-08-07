@@ -136,6 +136,7 @@ private fun SettingsWallScreen(
     val context = LocalContext.current
     val graph = remember { BastionGraph.from(context) }
     val isDns = guarded == GuardedScreens.Guarded.PRIVATE_DNS
+    val isUninstall = guarded == GuardedScreens.Guarded.UNINSTALL
 
     var remaining by remember { mutableLongStateOf(-1L) }
     var stillLocked by remember { mutableStateOf(true) }
@@ -147,14 +148,23 @@ private fun SettingsWallScreen(
     LaunchedEffect(Unit) {
         while (true) {
             val settings = graph.settings.current()
-            stillLocked = settings.tamperLockEnabled
+            // Either reason is enough to hold this screen. Reading only the
+            // settings lock would close the wall the instant it was raised
+            // during a lockdown, since a lockdown does not require that lock to
+            // be on — and the lockdown hour is exactly when uninstalling gets
+            // attempted.
+            val lockdown = Lockdown.isActive(settings)
+            stillLocked = settings.tamperLockEnabled || lockdown
             if (!stillLocked) {
                 onLeave()
                 return@LaunchedEffect
             }
-            // The soonest pending unlock, if one has been asked for. Null means
-            // he has not started the wait yet, which is a different sentence.
-            remaining = graph.guard.pendingUnlockRemainingMillis()
+            // Whichever wait is actually holding him. A lockdown has its own
+            // clock and it is the honest number to show while one is running;
+            // otherwise it is the pending unlock, and -1 means he has not asked
+            // for one yet, which is a different sentence again.
+            remaining = if (lockdown) Lockdown.remainingMillis(settings)
+            else graph.guard.pendingUnlockRemainingMillis()
             delay(1_000)
         }
     }
@@ -167,22 +177,37 @@ private fun SettingsWallScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            SectionLabel("You locked these", color = BastionColors.Amber)
+            SectionLabel(
+                if (isUninstall) "Not this way" else "You locked these",
+                color = BastionColors.Amber,
+            )
             Spacer(Modifier.height(Space.md))
             Text(
-                if (isDns) "Private DNS is locked." else "Accessibility is locked.",
+                when {
+                    isUninstall -> "Uninstalling is locked."
+                    isDns -> "Private DNS is locked."
+                    else -> "Accessibility is locked."
+                },
                 style = MaterialTheme.typography.displaySmall,
                 color = BastionColors.TextPrimary,
                 textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(Space.md))
             Text(
-                if (isDns) {
-                    "This is the screen where the resolver gets changed, so it is " +
-                        "shut while you are locked in."
-                } else {
-                    "This is the screen where Guard gets switched off, so it is " +
-                        "shut while you are locked in."
+                when {
+                    // Named plainly, because the cost is the point. Removing the
+                    // app does not just lift the guards — it takes the covenant,
+                    // the counted days and the whole record with it, and a man
+                    // reaching for it at 1am has usually not thought that far.
+                    isUninstall ->
+                        "Removing Bastion would take your covenant, your streak and " +
+                            "every log with it. That is exactly why you locked this."
+                    isDns ->
+                        "This is the screen where the resolver gets changed, so it is " +
+                            "shut while you are locked in."
+                    else ->
+                        "This is the screen where Guard gets switched off, so it is " +
+                            "shut while you are locked in."
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = BastionColors.TextSecondary,

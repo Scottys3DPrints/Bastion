@@ -21,7 +21,31 @@ package com.bastion.app.guard.accessibility
  */
 object GuardedScreens {
 
-    enum class Guarded { ACCESSIBILITY, PRIVATE_DNS }
+    enum class Guarded { ACCESSIBILITY, PRIVATE_DNS, UNINSTALL }
+
+    /**
+     * The system's package installer, whoever ships it.
+     *
+     * Uninstalling is not done by the launcher or by Settings, whatever the
+     * journey looked like. All of them hand off to this, which is why one rule
+     * here covers dragging the icon to the bin, the long-press menu, and the
+     * button on the app's own settings page.
+     */
+    fun isInstallerApp(pkg: String): Boolean = pkg in INSTALLER_PACKAGES
+
+    private val INSTALLER_PACKAGES = setOf(
+        "com.android.packageinstaller",
+        "com.google.android.packageinstaller",
+        "com.android.permissioncontroller",
+        "com.miui.packageinstaller",
+        "com.samsung.android.packageinstaller",
+        "com.oplus.packageinstaller",
+        "com.oppo.packageinstaller",
+        "com.vivo.packageinstaller",
+    )
+
+    /** Any screen this needs to see, so the caller knows when to look. */
+    fun isWatchedApp(pkg: String): Boolean = isSettingsApp(pkg) || isInstallerApp(pkg)
 
     /**
      * Settings, whoever ships it.
@@ -65,9 +89,42 @@ object GuardedScreens {
         texts: Set<String>,
         serviceLabel: String,
         dnsHostname: String,
+        appLabel: String = "",
     ): Guarded? {
-        if (!isSettingsApp(packageName)) return null
         val cls = className.orEmpty().lowercase()
+
+        // Uninstalling, wherever it was started from.
+        //
+        // This is the bypass that takes everything else with it — the guards,
+        // the covenant, the counted days — so it is checked before anything
+        // else and from both directions: the installer's own confirmation
+        // dialog, and Bastion's page in Settings where the button lives.
+        if (isInstallerApp(packageName)) {
+            // The class name has to say uninstall, and that is not fussiness.
+            //
+            // Bastion updates itself through a PackageInstaller session, which
+            // puts up a dialog from this same package, carrying this same app's
+            // name. Matching on the name alone would wall the update — trapping
+            // a locked-in man on a broken version with no way to fix it, where
+            // the only escape left is the uninstall this is trying to prevent.
+            // "Uninstall" appears in the class on AOSP and on every fork of it
+            // seen so far; "install" does not imply it.
+            if (cls.contains("uninstall")) return Guarded.UNINSTALL
+            return null
+        }
+
+        if (!isSettingsApp(packageName)) return null
+
+        // Bastion's own App info page, which is where Settings keeps the
+        // uninstall button. Gated on the app's name being on screen so that
+        // every *other* app's info page stays open — a man must still be able
+        // to manage the rest of his phone.
+        val appInfo = cls.contains("installedappdetails") ||
+            cls.contains("applicationdetails") ||
+            cls.contains("appinfodashboard")
+        if (appInfo && appLabel.isNotBlank() && texts.any { it.equals(appLabel, ignoreCase = true) }) {
+            return Guarded.UNINSTALL
+        }
 
         val dns = cls.contains("privatedns") ||
             viewIds.any { it in PRIVATE_DNS_IDS } ||

@@ -21,12 +21,14 @@ class GuardedScreensTest {
     private val label = "Bastion Guard"
     private val host = "family.cloudflare-dns.com"
 
+    private val appName = "Bastion"
+
     private fun detect(
         pkg: String = "com.android.settings",
         cls: String? = null,
         ids: Set<String> = emptySet(),
         texts: Set<String> = emptySet(),
-    ) = GuardedScreens.detect(pkg, cls, ids, texts, label, host)
+    ) = GuardedScreens.detect(pkg, cls, ids, texts, label, host, appName)
 
     // --- which app counts as Settings --------------------------------------
 
@@ -149,14 +151,109 @@ class GuardedScreensTest {
         )
     }
 
-    /** Bastion's App info page carries the app name, not the service label. */
+    // --- uninstalling -------------------------------------------------------
+
+    /**
+     * Every route to uninstalling ends at the system package installer, whatever
+     * the journey looked like — dragging the icon to the bin, the long-press
+     * menu, or the button on the app's own settings page. One rule covers all
+     * three because they all hand off to the same confirmation dialog.
+     */
     @Test
-    fun `the app info page is not the accessibility page`() {
+    fun `the uninstall confirmation is caught wherever it was started from`() {
+        assertEquals(
+            Guarded.UNINSTALL,
+            detect(
+                pkg = "com.google.android.packageinstaller",
+                cls = "com.android.packageinstaller.UninstallerActivity",
+            ),
+        )
+        assertEquals(
+            Guarded.UNINSTALL,
+            detect(
+                pkg = "com.android.packageinstaller",
+                cls = "com.android.packageinstaller.UninstallAppProgress",
+            ),
+        )
+    }
+
+    /**
+     * The one that would be catastrophic to get wrong.
+     *
+     * Bastion updates itself through a PackageInstaller session, which puts up a
+     * dialog from the same package carrying the same app name. Walling it would
+     * trap a locked-in man on a broken version with no way to fix it — and the
+     * only escape left would be the uninstall this is trying to prevent.
+     */
+    @Test
+    fun `the install dialog for an update is never walled`() {
         assertNull(
+            detect(
+                pkg = "com.google.android.packageinstaller",
+                cls = "com.android.packageinstaller.PackageInstallerActivity",
+                texts = setOf("Bastion", "Update"),
+            )
+        )
+        assertNull(
+            detect(
+                pkg = "com.google.android.packageinstaller",
+                cls = "com.android.packageinstaller.InstallInstalling",
+                texts = setOf("Bastion"),
+            )
+        )
+    }
+
+    /** Bastion's App info page is where Settings keeps the uninstall button. */
+    @Test
+    fun `bastion's app info page is guarded`() {
+        assertEquals(
+            Guarded.UNINSTALL,
             detect(
                 cls = "com.android.settings.applications.InstalledAppDetailsTop",
                 texts = setOf("Bastion", "Uninstall", "Force stop"),
+            ),
+        )
+    }
+
+    /**
+     * And every other app's is not. A man must still be able to manage the rest
+     * of his phone, and walling all of App info would make the phone the app's
+     * hostage rather than the guard's.
+     */
+    @Test
+    fun `another app's info page stays open`() {
+        assertNull(
+            detect(
+                cls = "com.android.settings.applications.InstalledAppDetailsTop",
+                texts = setOf("Instagram", "Uninstall", "Force stop"),
             )
+        )
+    }
+
+    /**
+     * The full app list carries Bastion's name among a hundred others, and it is
+     * not the uninstall screen. Requiring the detail class keeps the list open.
+     */
+    @Test
+    fun `the list of all apps is not the uninstall screen`() {
+        assertNull(
+            detect(
+                cls = "com.android.settings.Settings\$ManageApplicationsActivity",
+                texts = setOf("Bastion", "Instagram", "Chrome"),
+            )
+        )
+    }
+
+    /** Uninstall outranks the rest, since it is the one that ends everything. */
+    @Test
+    fun `uninstall is reported ahead of the settings screens`() {
+        assertEquals(
+            Guarded.UNINSTALL,
+            detect(
+                cls = "com.android.settings.applications.InstalledAppDetailsTop",
+                ids = setOf("accessibility_settings"),
+                texts = setOf("Bastion", label),
+            ),
         )
     }
 
