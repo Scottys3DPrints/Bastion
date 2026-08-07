@@ -244,6 +244,56 @@ class GuardedScreensTest {
         )
     }
 
+    // --- the long-press menu, a screen earlier -------------------------------
+
+    /**
+     * Long-pressing the icon is where an uninstall usually begins, and the menu
+     * that opens carries the button. Catching it here is a whole screen before
+     * the installer's confirmation.
+     */
+    @Test
+    fun `the long-press menu on the icon is guarded`() {
+        assertEquals(
+            Guarded.UNINSTALL,
+            detect(
+                pkg = "com.google.android.apps.nexuslauncher",
+                cls = "com.android.launcher3.popup.PopupContainerWithArrow",
+                texts = setOf("Bastion", "App info", "Uninstall"),
+            ),
+        )
+    }
+
+    /**
+     * And the home screen itself is not, which is the failure that would matter.
+     *
+     * The workspace has Bastion's name under its icon, so matching the label
+     * alone would raise the wall over the launcher and keep raising it — the
+     * phone would be unusable rather than protected. The popup gate is what
+     * separates them, and it is the only thing that does.
+     */
+    @Test
+    fun `the home screen is never walled`() {
+        assertNull(
+            detect(
+                pkg = "com.google.android.apps.nexuslauncher",
+                cls = "com.google.android.apps.nexuslauncher.NexusLauncherActivity",
+                texts = setOf("Bastion", "Chrome", "Messages", "Phone"),
+            )
+        )
+    }
+
+    /** Another app's long-press menu carries that app's name, not this one's. */
+    @Test
+    fun `the long-press menu for a different app stays open`() {
+        assertNull(
+            detect(
+                pkg = "com.google.android.apps.nexuslauncher",
+                cls = "com.android.launcher3.popup.PopupContainerWithArrow",
+                texts = setOf("Chrome", "App info", "Uninstall"),
+            )
+        )
+    }
+
     /** Uninstall outranks the rest, since it is the one that ends everything. */
     @Test
     fun `uninstall is reported ahead of the settings screens`() {

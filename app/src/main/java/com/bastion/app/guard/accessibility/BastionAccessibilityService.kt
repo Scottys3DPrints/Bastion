@@ -72,6 +72,16 @@ class BastionAccessibilityService : AccessibilityService() {
     /** Throttles the settings wall; see [guardSettingsScreen]. */
     private var lastSettingsWallAt = 0L
 
+    /**
+     * The class of the window currently in front, remembered.
+     *
+     * A content-changed event carries the class of the *view* that changed, not
+     * of the screen it changed on, so the guarded-screen check had nothing
+     * usable to match against when run from there. Keeping the last window-state
+     * class is what lets the check run continuously rather than once on arrival.
+     */
+    private var foregroundClassName: String? = null
+
     /** Asked before every re-raise, so the wall never races the lock screen. */
     private val keyguard: android.app.KeyguardManager? by lazy {
         getSystemService(android.app.KeyguardManager::class.java)
@@ -123,11 +133,25 @@ class BastionAccessibilityService : AccessibilityService() {
         when (event.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 onForegroundChanged(pkg)
-                guardSettingsScreen(pkg, event.className?.toString())
+                foregroundClassName = event.className?.toString()
+                guardSettingsScreen(pkg, foregroundClassName)
                 evaluate(pkg, force = true)
             }
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
-            AccessibilityEvent.TYPE_VIEW_SCROLLED -> evaluate(pkg, force = false)
+            AccessibilityEvent.TYPE_VIEW_SCROLLED -> {
+                // Also here, and this is what makes the wall arrive before the
+                // button rather than after it.
+                //
+                // Settings' App info page is identified by Bastion's own name on
+                // it, and at the moment the window opens that name has usually
+                // not been drawn yet — so a check that ran only on arrival
+                // looked at an empty screen, found nothing, and waited for the
+                // next screen change, which was the confirmation dialog. The
+                // page fires content-changed as it populates; running here
+                // catches it the instant the title appears.
+                guardSettingsScreen(pkg, foregroundClassName)
+                evaluate(pkg, force = false)
+            }
         }
     }
 
@@ -931,14 +955,17 @@ class BastionAccessibilityService : AccessibilityService() {
         private const val WALL_RAISE_COOLDOWN_MS = 150L
 
         /**
-         * Longer than the lockdown wall's, and for the opposite reason.
+         * Short, because the screens this guards are ones a man is about to act
+         * on and the wall has to beat his thumb.
          *
-         * That one wants to be instant and relentless. This one has to leave
-         * room for the user to actually leave: raising it again while he is on
-         * his way out would make the exit unreachable, which is the cage this
-         * screen is written not to be.
+         * It was two seconds, chosen to leave room to walk away. That room turns
+         * out to come from somewhere else: leaving goes to the home screen, and
+         * the plain home screen matches nothing here — only a long-press popup
+         * does. So the exit stays reachable at 250ms, and the wall now arrives
+         * while the Uninstall button is still being looked at rather than after
+         * it has been pressed.
          */
-        private const val SETTINGS_WALL_COOLDOWN_MS = 2_000L
+        private const val SETTINGS_WALL_COOLDOWN_MS = 250L
 
         /** Long enough for a label, short enough never to be a message. */
         private const val MAX_IDENTITY_TEXT = 60

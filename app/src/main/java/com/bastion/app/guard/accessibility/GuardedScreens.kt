@@ -44,8 +44,32 @@ object GuardedScreens {
         "com.vivo.packageinstaller",
     )
 
+    /**
+     * The home screen, whoever ships it.
+     *
+     * Long-pressing an icon is where an uninstall usually begins, and the menu
+     * that opens carries the button. Catching it there is a screen earlier than
+     * the installer's confirmation.
+     */
+    fun isLauncherApp(pkg: String): Boolean =
+        pkg in LAUNCHER_PACKAGES || pkg.contains("launcher", ignoreCase = true)
+
+    private val LAUNCHER_PACKAGES = setOf(
+        "com.google.android.apps.nexuslauncher",
+        "com.android.launcher3",
+        "com.sec.android.app.launcher",
+        "com.miui.home",
+        "com.oppo.launcher",
+        "com.oplus.launcher",
+        "net.oneplus.launcher",
+        "com.huawei.android.launcher",
+        "com.microsoft.launcher",
+        "ch.deletescape.lawnchair.plah",
+    )
+
     /** Any screen this needs to see, so the caller knows when to look. */
-    fun isWatchedApp(pkg: String): Boolean = isSettingsApp(pkg) || isInstallerApp(pkg)
+    fun isWatchedApp(pkg: String): Boolean =
+        isSettingsApp(pkg) || isInstallerApp(pkg) || isLauncherApp(pkg)
 
     /**
      * Settings, whoever ships it.
@@ -110,6 +134,23 @@ object GuardedScreens {
             // "Uninstall" appears in the class on AOSP and on every fork of it
             // seen so far; "install" does not imply it.
             if (cls.contains("uninstall")) return Guarded.UNINSTALL
+            return null
+        }
+
+        // The long-press menu on the home screen, which is a screen earlier than
+        // the confirmation dialog and the point most uninstalls actually begin.
+        //
+        // Gated on the window being a popup, and that gate is doing the whole
+        // job. The home screen itself has Bastion's name under its icon, so
+        // matching the label alone would raise the wall over the launcher and
+        // keep raising it — the app would be unusable rather than protected.
+        // A popup window is a different window from the workspace, and the menu
+        // for another app carries that app's name rather than this one's.
+        if (isLauncherApp(packageName)) {
+            val popup = cls.contains("popup") || cls.contains("shortcut") || cls.contains("menu")
+            if (popup && appLabel.isNotBlank() &&
+                texts.any { it.equals(appLabel, ignoreCase = true) }
+            ) return Guarded.UNINSTALL
             return null
         }
 
