@@ -137,6 +137,47 @@ class BrowserFeedRuleTest {
         assertFalse(FeedSurface.isAddressBar(0, 900, 0, 0, 0))
     }
 
+    /**
+     * The in-app browser case, and the reason a Facebook reel opened from a chat
+     * went unblocked.
+     *
+     * Messenger draws the domain as a small centred subtitle under the page
+     * title. It is nowhere near half the screen wide, so the width test never
+     * recognised it and the rule never fired. The web view is the page;
+     * everything above its top edge is the toolbar the host app built, whatever
+     * size it chose to draw the label.
+     */
+    @Test
+    fun `a narrow label above the web view is still the address`() {
+        // A 300px-wide domain label at y=150, with the page starting at y=300.
+        assertTrue(FeedSurface.isBrowserChrome(nodeBottom = 220, webViewTop = 300))
+        // And the width test alone would have rejected exactly that node.
+        assertFalse(
+            FeedSurface.isAddressBar(
+                top = 150, width = 300, windowTop = 0, windowHeight = 2400, windowWidth = 1080,
+            )
+        )
+    }
+
+    /**
+     * A link inside the page is not the address, which is the protection the
+     * width test was there for and which this must not lose.
+     */
+    @Test
+    fun `a link on the page is not the address`() {
+        assertFalse(FeedSurface.isBrowserChrome(nodeBottom = 900, webViewTop = 300))
+        // Exactly at the boundary counts as chrome; one pixel below does not.
+        assertTrue(FeedSurface.isBrowserChrome(nodeBottom = 300, webViewTop = 300))
+        assertFalse(FeedSurface.isBrowserChrome(nodeBottom = 301, webViewTop = 300))
+    }
+
+    /** No web view found means the test cannot speak, and says nothing. */
+    @Test
+    fun `without a web view the chrome test never matches`() {
+        assertFalse(FeedSurface.isBrowserChrome(nodeBottom = 10, webViewTop = 0))
+        assertFalse(FeedSurface.isBrowserChrome(nodeBottom = 0, webViewTop = 0))
+    }
+
     // --- the shipped rules ---------------------------------------------------
 
     @Test

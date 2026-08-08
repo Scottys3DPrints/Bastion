@@ -246,6 +246,27 @@ internal object FeedSurface {
             width >= windowWidth * ADDRESS_BAR_WIDTH
     }
 
+    /**
+     * Whether a node sits in the browser's chrome rather than on the page.
+     *
+     * The web view is the page. Everything drawn above its top edge is the
+     * toolbar the host app built around it, and an address shown there is the
+     * address of what is loaded — whatever size the app chose to draw it.
+     *
+     * This is what the width test could not do. A real browser's omnibox spans
+     * the screen, so half-width was a fair proxy for it; Messenger's in-app
+     * browser puts the domain in a small centred subtitle under the page title,
+     * which is nowhere near half the width and was therefore never recognised.
+     * That is the whole reason a Facebook reel opened from a chat went
+     * unblocked. Measuring against the web view instead asks the question that
+     * actually matters — chrome or content — rather than guessing from size.
+     *
+     * A link inside the page is below the web view's top edge and still fails,
+     * which keeps the protection the width test was there for.
+     */
+    fun isBrowserChrome(nodeBottom: Int, webViewTop: Int): Boolean =
+        webViewTop > 0 && nodeBottom <= webViewTop
+
     /** The top fifth of the window. Enough for a toolbar under a status bar. */
     const val ADDRESS_BAR_BAND = 0.20
 

@@ -484,6 +484,10 @@ class BastionAccessibilityService : AccessibilityService() {
      */
     private fun findMatch(root: AccessibilityNodeInfo, rules: List<FeedRuleEntity>): FeedRuleEntity? {
         val window = windowBoundsOf(root)
+        // Only when a URL rule could fire. An ordinary app with view-id rules
+        // has no web view and should not pay for a walk looking for one.
+        val webViewTop =
+            if (rules.any { it.matchType == MatchType.URL }) webViewTopIn(root) else 0
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
         // Every node fetched via getChild() is owned by us. This runs on the
@@ -548,7 +552,7 @@ class BastionAccessibilityService : AccessibilityService() {
                         // identifiers an app exposes. The gate is on the address
                         // bar instead: see isAddressBarNode.
                         MatchType.URL ->
-                            isAddressBarNode(node, idSegment, window) &&
+                            isAddressBarNode(node, idSegment, window, webViewTop) &&
                                 node.text?.toString()
                                     ?.let { FeedSurface.urlMatches(it, rule.matchValue) } == true
                     }
@@ -656,12 +660,18 @@ class BastionAccessibilityService : AccessibilityService() {
         node: AccessibilityNodeInfo,
         idSegment: String?,
         window: android.graphics.Rect,
+        webViewTop: Int,
     ): Boolean {
         val text = node.text?.toString() ?: return false
         if (!FeedSurface.looksLikeUrl(text)) return false
         if (idSegment != null && idSegment in ADDRESS_BAR_IDS) return true
 
         val bounds = android.graphics.Rect().also { node.getBoundsInScreen(it) }
+        // Above the web view is the toolbar the host app drew, whatever it named
+        // the label or however small it made it. This is the one that catches
+        // the in-app browsers; the width test below only ever caught real ones.
+        if (FeedSurface.isBrowserChrome(bounds.bottom, webViewTop)) return true
+
         return FeedSurface.isAddressBar(
             top = bounds.top,
             width = bounds.width(),
@@ -669,6 +679,35 @@ class BastionAccessibilityService : AccessibilityService() {
             windowHeight = window.height(),
             windowWidth = window.width(),
         )
+    }
+
+    /**
+     * The top edge of the page, so the toolbar above it can be told apart.
+     *
+     * Its own bounded walk, run only when a URL rule is actually in play, so
+     * the common case of a feed rule in an ordinary app pays nothing for it.
+     */
+    private fun webViewTopIn(root: AccessibilityNodeInfo): Int {
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+        val borrowed = mutableListOf<AccessibilityNodeInfo>()
+        var visited = 0
+        try {
+            while (queue.isNotEmpty() && visited < MAX_NODES) {
+                val node = queue.removeFirst()
+                visited++
+                val cls = node.className?.toString().orEmpty()
+                if (cls.contains("WebView", ignoreCase = true)) {
+                    return android.graphics.Rect().also { node.getBoundsInScreen(it) }.top
+                }
+                for (i in 0 until node.childCount) {
+                    node.getChild(i)?.let { queue.add(it); borrowed.add(it) }
+                }
+            }
+            return 0
+        } finally {
+            recycleAll(borrowed)
+        }
     }
 
     private fun covers(bounds: android.graphics.Rect, window: android.graphics.Rect): Boolean =
