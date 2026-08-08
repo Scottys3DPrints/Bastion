@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.bastion.app.core.design.BastionChip
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.Space
 import com.bastion.app.data.db.HabitEntity
@@ -40,7 +41,7 @@ fun HabitSettings(habit: HabitEntity, onEdit: (HabitEntity) -> Unit) {
         Label("How often")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
             ScheduleType.entries.forEach { type ->
-                Chip(
+                BastionChip(
                     label = when (type) {
                         ScheduleType.DAILY -> "Daily"
                         ScheduleType.WEEKDAYS -> "Days"
@@ -73,7 +74,7 @@ fun HabitSettings(habit: HabitEntity, onEdit: (HabitEntity) -> Unit) {
                     listOf("M", "T", "W", "T", "F", "S", "S").forEachIndexed { index, letter ->
                         val iso = index + 1
                         val on = iso in habit.weekdays
-                        Chip(letter, on, Modifier.weight(1f)) {
+                        BastionChip(letter, on, Modifier.weight(1f)) {
                             val next = if (on) habit.weekdays - iso else habit.weekdays + iso
                             onEdit(habit.copy(weekdaysCsv = next.sorted().joinToString(",")))
                         }
@@ -84,7 +85,7 @@ fun HabitSettings(habit: HabitEntity, onEdit: (HabitEntity) -> Unit) {
                 Spacer(Modifier.height(Space.sm))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
                     listOf(2, 3, 4, 7).forEach { n ->
-                        Chip("$n days", habit.everyNDays == n, Modifier.weight(1f)) {
+                        BastionChip("$n days", habit.everyNDays == n, Modifier.weight(1f)) {
                             onEdit(
                                 habit.copy(
                                     everyNDays = n,
@@ -99,7 +100,7 @@ fun HabitSettings(habit: HabitEntity, onEdit: (HabitEntity) -> Unit) {
                 Spacer(Modifier.height(Space.sm))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
                     listOf(1, 2, 3, 5).forEach { n ->
-                        Chip("$n×", habit.timesPerWeek == n, Modifier.weight(1f)) {
+                        BastionChip("$n×", habit.timesPerWeek == n, Modifier.weight(1f)) {
                             onEdit(habit.copy(timesPerWeek = n))
                         }
                     }
@@ -118,7 +119,7 @@ fun HabitSettings(habit: HabitEntity, onEdit: (HabitEntity) -> Unit) {
         Label("When in the day")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
             TimeOfDay.entries.forEach { slot ->
-                Chip(slot.label, habit.timeOfDay == slot, Modifier.weight(1f)) {
+                BastionChip(slot.label, habit.timeOfDay == slot, Modifier.weight(1f)) {
                     onEdit(habit.copy(timeOfDay = slot))
                 }
             }
@@ -128,7 +129,7 @@ fun HabitSettings(habit: HabitEntity, onEdit: (HabitEntity) -> Unit) {
         Label("How many a day")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
             listOf(1, 2, 3, 5, 8).forEach { n ->
-                Chip(if (n == 1) "Once" else "$n×", habit.targetCount == n, Modifier.weight(1f)) {
+                BastionChip(if (n == 1) "Once" else "$n×", habit.targetCount == n, Modifier.weight(1f)) {
                     onEdit(habit.copy(targetCount = n))
                 }
             }
@@ -157,49 +158,4 @@ private fun Label(text: String) {
 @Composable
 private fun Note(text: String) {
     Text(text, style = MaterialTheme.typography.bodySmall, color = BastionColors.TextTertiary)
-}
-
-/**
- * A chip that is a chip, not a bordered box.
- *
- * Written here rather than pulled from the design system because nothing there
- * is quite this — ChoiceRow owns a whole row and takes an enum, and these are
- * several small independent groups.
- */
-@Composable
-internal fun Chip(
-    label: String,
-    selected: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-) {
-    val shape = RoundedCornerShape(Space.sm)
-    Box(
-        modifier
-            // 40dp, up from 36. These sit four and seven to a row, so each one
-            // is already narrow; short as well made them fiddly to hit.
-            .height(40.dp)
-            .clip(shape)
-            // Selected is a filled sage chip, not a slightly lighter grey one.
-            // The old pair — SurfaceHigh against Surface — differ by 1.15:1,
-            // which is to say they do not differ. On a row of seven weekday
-            // chips there was no way to see which days were actually chosen.
-            .background(if (selected) BastionColors.Sage else BastionColors.Surface)
-            .border(
-                width = if (selected) 0.dp else 1.dp,
-                color = if (selected) Color.Transparent else BastionColors.OutlineStrong,
-                shape = shape,
-            )
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            label,
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-            // Dark on sage is 6.7:1; the light text that looks right in a mock
-            // is 2.5:1 and unreadable in daylight.
-            color = if (selected) BastionColors.MidnightDeep else BastionColors.TextSecondary,
-        )
-    }
 }

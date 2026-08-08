@@ -516,7 +516,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
             // one undifferentiated list — the complaint was that it all felt
             // like the same part. Naming what each group is for is most of the
             // fix; the shared surface behind each one does the rest.
-            SectionLabel("What is guarded")
+            Section("What is guarded", spacing = Space.lg) {
             GuardedAppsSection(
                 apps = guardedApps,
                 guardRunning = serviceRunning,
@@ -592,8 +592,9 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 },
                 onLearn = { showLearnMode = true },
             )
+            }
 
-            SectionLabel("How hard it is to undo")
+            Section("How hard it is to undo", spacing = Space.md) {
 
             // --- Tamper resistance ---
             BastionCard(accent = BastionColors.Bronze) {
@@ -790,19 +791,21 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
             // Everything that is configured rather than acted on. The panic
             // button itself lives on the home screen, where it can be reached
             // without going looking; only its plan belongs here.
-            SectionLabel("Extra protection")
+            }
 
-            LockdownPlanCard(settings = settings, graph = graph)
+            Section("Extra protection", spacing = Space.md) {
+                LockdownPlanCard(settings = settings, graph = graph)
 
-            // Directly beneath the plan it obeys. Putting the schedule on the
-            // Settings screen would have split one feature across two places and
-            // left the question "what will it actually do at ten o'clock?"
-            // answered a tab away from where it is asked.
-            ScheduledLockdownCard(settings = settings, graph = graph)
+                // Directly beneath the plan it obeys. Putting the schedule on
+                // the Settings screen would have split one feature across two
+                // places and left the question "what will it actually do at ten
+                // o'clock?" answered a tab away from where it is asked.
+                ScheduledLockdownCard(settings = settings, graph = graph)
 
-            PrivateDnsCard()
+                PrivateDnsCard()
 
-            GrayscaleCard(settings = settings, graph = graph)
+                GrayscaleCard(settings = settings, graph = graph)
+            }
         }
     }
 

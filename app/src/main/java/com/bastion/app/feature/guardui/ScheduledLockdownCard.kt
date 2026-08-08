@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.bastion.app.core.alarm.ScheduledLockdown
 import com.bastion.app.core.alarm.ScheduledLockdownScheduler
+import com.bastion.app.core.design.BastionChip
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.ChoiceRow
 import com.bastion.app.core.design.GroupDivider
@@ -95,14 +96,14 @@ fun ScheduledLockdownCard(settings: Settings, graph: BastionGraph) {
         ) {
             Column(Modifier.weight(1f)) {
                 Text(
-                    "Lock down every night",
+                    "Curfew",
                     style = MaterialTheme.typography.bodyLarge,
                     color = BastionColors.TextPrimary,
                 )
                 Spacer(Modifier.height(Space.xs))
                 Text(
                     if (settings.scheduledLockdownEnabled) {
-                        "On — ${clockTime(settings)} for " +
+                        "${curfewDaysLine(settings)} at ${clockTime(settings)} for " +
                             Lockdown.describe(settings.scheduledLockdownSeconds)
                     } else {
                         "Off — the button is the only way in"
@@ -177,6 +178,38 @@ fun ScheduledLockdownCard(settings: Settings, graph: BastionGraph) {
             GroupDivider()
             Spacer(Modifier.height(Space.md))
             Text(
+                "On these days",
+                style = MaterialTheme.typography.bodyMedium,
+                color = BastionColors.TextSecondary,
+            )
+            Spacer(Modifier.height(Space.sm))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+            ) {
+                listOf("M", "T", "W", "T", "F", "S", "S").forEachIndexed { index, letter ->
+                    val iso = index + 1
+                    // No days chosen means every day, which is what this always
+                    // was — so an untouched curfew keeps behaving exactly as it
+                    // did before the choice existed.
+                    val on = settings.curfewDays.isEmpty() || iso in settings.curfewDays
+                    BastionChip(letter, on, Modifier.weight(1f)) {
+                        if (!running) {
+                            val current = settings.curfewDays.ifEmpty { (1..7).toList() }
+                            val next = if (iso in current) current - iso else current + iso
+                            // Every day off would be a curfew that never runs
+                            // while reading as switched on. Falling back to
+                            // "every day" is the honest reading of taking the
+                            // last one away.
+                            applyThen { graph.settings.setCurfewDays(next) }
+                        }
+                    }
+                }
+            }
+
+            GroupDivider()
+            Spacer(Modifier.height(Space.md))
+            Text(
                 "Holds for",
                 style = MaterialTheme.typography.bodyMedium,
                 color = BastionColors.TextSecondary,
@@ -212,15 +245,57 @@ fun ScheduledLockdownCard(settings: Settings, graph: BastionGraph) {
                 color = BastionColors.SageBright,
             )
 
-            Spacer(Modifier.height(Space.sm))
+            GroupDivider()
+            Spacer(Modifier.height(Space.md))
             Text(
-                // What it will actually do, in the words of the plan he set for
-                // the button — because that is literally what runs.
-                "When it starts: ${planSummaryLine(settings)}. Edit any of that in " +
-                    "Panic lockdown above; the two share one plan.",
-                style = MaterialTheme.typography.bodySmall,
+                "What it does",
+                style = MaterialTheme.typography.bodyMedium,
+                color = BastionColors.TextSecondary,
+            )
+            Spacer(Modifier.height(Space.xs))
+            Text(
+                // Its own switches now rather than the button's. A curfew is a
+                // routine and a panic press is a crisis; they do not want the
+                // same response, and sharing one plan meant changing either
+                // changed both.
+                "Separate from the panic button's plan, so a routine and a crisis " +
+                    "can do different things.",
+                style = MaterialTheme.typography.labelSmall,
                 color = BastionColors.TextMuted,
             )
+            Spacer(Modifier.height(Space.sm))
+            CurfewToggle(
+                "Take the phone away",
+                "Raises the countdown wall.",
+                settings.curfewLockScreen,
+                enabled = !running,
+            ) { on ->
+                applyThen { graph.settings.setCurfewLockScreen(on) }
+                if (on && !BastionDeviceAdmin.isActive(context)) {
+                    BastionDeviceAdmin.requestActivation(context)
+                }
+            }
+            CurfewToggle(
+                "Turn the website filter on",
+                "Only if you have already given VPN permission.",
+                settings.curfewFilter,
+                enabled = !running,
+            ) { on -> applyThen { graph.settings.setCurfewFilter(on) } }
+            CurfewToggle(
+                "Drain the colour",
+                "Dims every guarded app while it runs.",
+                settings.curfewGrayscale,
+                enabled = !running,
+            ) { on -> applyThen { graph.settings.setCurfewGrayscale(on) } }
+            CurfewToggle(
+                "Tell your partner",
+                // Off by default, and this says why: a man switching it on
+                // should know what he is signing his partner up for.
+                "A message every time it starts, which on a daily curfew is a " +
+                    "message every day.",
+                settings.curfewTellPartner,
+                enabled = !running,
+            ) { on -> applyThen { graph.settings.setCurfewTellPartner(on) } }
 
             if (!exact) {
                 Spacer(Modifier.height(Space.md))
@@ -294,3 +369,47 @@ private fun planSummaryLine(settings: Settings): String = buildList {
  * he wakes up to and the second is the whole feature.
  */
 private val SCHEDULED_LENGTHS = listOf(30, 30 * 60, 60 * 60, 2 * 60 * 60, 8 * 60 * 60)
+
+/** One switch in the curfew's own plan. */
+@Composable
+private fun CurfewToggle(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    enabled: Boolean,
+    onChange: (Boolean) -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium, color = BastionColors.TextPrimary)
+            Text(subtitle, style = MaterialTheme.typography.labelSmall, color = BastionColors.TextTertiary)
+        }
+        Switch(
+            checked = checked,
+            enabled = enabled,
+            onCheckedChange = onChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = BastionColors.MidnightDeep,
+                checkedTrackColor = BastionColors.Bronze,
+                uncheckedThumbColor = BastionColors.TextTertiary,
+                uncheckedTrackColor = BastionColors.SurfaceHigh,
+                uncheckedBorderColor = BastionColors.OutlineStrong,
+            ),
+        )
+    }
+}
+
+/** "Every day", "Weekends", "Mon, Wed, Fri" — the schedule in words. */
+private fun curfewDaysLine(settings: Settings): String {
+    val days = settings.curfewDays
+    if (days.isEmpty() || days.size == 7) return "Every day"
+    val sorted = days.sorted()
+    if (sorted == listOf(6, 7)) return "Weekends"
+    if (sorted == (1..5).toList()) return "Weekdays"
+    val names = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+    return sorted.joinToString(", ") { names[it - 1] }
+}

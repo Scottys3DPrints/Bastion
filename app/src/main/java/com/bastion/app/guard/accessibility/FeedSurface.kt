@@ -174,7 +174,21 @@ internal object FeedSurface {
     fun urlMatches(text: String, fragment: String): Boolean {
         if (fragment.isBlank()) return false
         val url = normaliseUrl(text)
-        return url.isNotEmpty() && url.startsWith(normaliseUrl(fragment))
+        val rule = normaliseUrl(fragment)
+        if (url.isEmpty() || rule.isEmpty()) return false
+        if (url == rule) return true
+        // The boundary, and it is load-bearing now that rules name whole hosts.
+        //
+        // A bare startsWith matches instagram.com.evil.co against instagram.com,
+        // because the lookalike genuinely begins with the real host — a rule
+        // meant to close one site would have quietly claimed every domain
+        // registered underneath a name that starts the same way. Requiring the
+        // next character to be a path separator means the rule has to have
+        // consumed the whole host, and it does the same job one level down:
+        // youtube.com/shorts no longer catches youtube.com/shortsomething.
+        return url.length > rule.length &&
+            url.startsWith(rule) &&
+            url[rule.length] == '/'
     }
 
     private fun normaliseUrl(raw: String): String {

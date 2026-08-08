@@ -51,6 +51,9 @@ class ScheduledLockdownReceiver : BroadcastReceiver() {
                     appContext,
                     durationSeconds = settings.scheduledLockdownSeconds,
                     fromBackground = true,
+                    // The curfew's own plan, not the panic button's. A routine
+                    // and a crisis do not want the same response.
+                    plan = Lockdown.planFor(settings),
                 )
 
                 // Re-armed for tomorrow here rather than set as a repeating
@@ -80,6 +83,35 @@ object ScheduledLockdown {
         val today = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)
         return if (today.isAfter(now)) today else today.plusDays(1)
     }
+
+    /**
+     * The same, but only on the days chosen.
+     *
+     * An empty list means every day, which is what this always was. Walking
+     * forward a day at a time rather than computing the offset: seven steps at
+     * most, and it is obviously correct at a glance, which matters more here
+     * than the arithmetic would save.
+     */
+    fun nextRunAfter(
+        now: LocalDateTime,
+        hour: Int,
+        minute: Int,
+        days: List<Int>,
+    ): LocalDateTime {
+        var candidate = nextRunAfter(now, hour, minute)
+        if (days.isEmpty()) return candidate
+        // Eight, not seven: the first candidate may already be tomorrow, so a
+        // seven-step walk could stop one short of coming back round.
+        repeat(8) {
+            if (candidate.dayOfWeek.value in days) return candidate
+            candidate = candidate.plusDays(1)
+        }
+        return candidate
+    }
+
+    /** Whether a window starting at [start] is one of the chosen days. */
+    fun runsOn(start: LocalDateTime, days: List<Int>): Boolean =
+        days.isEmpty() || start.dayOfWeek.value in days
 
     /**
      * The most recent time hour:minute came round, at or before [now].
@@ -143,6 +175,7 @@ object ScheduledLockdownScheduler {
             LocalDateTime.now(),
             settings.scheduledLockdownHour,
             settings.scheduledLockdownMinute,
+            settings.curfewDays,
         )
         val triggerAt = next.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
@@ -217,15 +250,27 @@ object ScheduledLockdownScheduler {
         )
         if (owed <= 0) return
 
-        val start = ScheduledLockdown.windowStartAtOrBefore(
+        val startAt = ScheduledLockdown.windowStartAtOrBefore(
             now,
             settings.scheduledLockdownHour,
             settings.scheduledLockdownMinute,
-        ).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        )
+        // A window that began on a day the curfew does not run is not owed.
+        // Without this, a Friday-only curfew would be served on Saturday morning
+        // by the catch-up, because the window it walks back to began the night
+        // before and nothing asked which night that was.
+        if (!ScheduledLockdown.runsOn(startAt, settings.curfewDays)) return
+
+        val start = startAt.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         if (start <= settings.scheduledLockdownLastRun) return
 
         BastionGraph.from(context).settings.setScheduledLockdownLastRun(start)
-        Lockdown.trigger(context, durationSeconds = owed, fromBackground = true)
+        Lockdown.trigger(
+            context,
+            durationSeconds = owed,
+            fromBackground = true,
+            plan = Lockdown.planFor(settings),
+        )
     }
 
     private fun pendingIntent(context: Context): PendingIntent = PendingIntent.getBroadcast(

@@ -205,6 +205,18 @@ fun Section(
     label: String? = null,
     modifier: Modifier = Modifier,
     trailing: @Composable (() -> Unit)? = null,
+    /**
+     * The gap between things *inside* the section, which is not the gap between
+     * sections and was the whole problem.
+     *
+     * The scaffold spaces its own children by [Space.section], and a screen that
+     * emits a heading and then four cards as five separate children gets that
+     * 24dp everywhere: between the heading and the thing it labels, and between
+     * every card in the group. Nothing then reads as belonging to anything, and
+     * the screen looks like a list of unrelated slabs — which is exactly the
+     * complaint. One section is one child, with its own tighter rhythm inside.
+     */
+    spacing: Dp = Space.md,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(modifier.fillMaxWidth()) {
@@ -217,9 +229,15 @@ fun Section(
                 label?.let { SectionLabel(it) }
                 trailing?.invoke()
             }
-            Spacer(Modifier.height(Space.md))
+            // Closer to its content than to the section above it. A heading
+            // equidistant from both belongs to neither.
+            Spacer(Modifier.height(Space.sm))
         }
-        content()
+        Column(
+            Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(spacing),
+            content = content,
+        )
     }
 }
 

@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.bastion.app.core.design.BastionChip
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.BastionScaffold
 import com.bastion.app.core.design.EmptyState
@@ -199,7 +200,7 @@ private data class HabitStats(
 private fun TimeframePicker(selected: Timeframe, onSelect: (Timeframe) -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
         Timeframe.entries.forEach { t ->
-            Chip(t.label, t == selected, Modifier.weight(1f)) { onSelect(t) }
+            BastionChip(t.label, t == selected, Modifier.weight(1f)) { onSelect(t) }
         }
     }
 }

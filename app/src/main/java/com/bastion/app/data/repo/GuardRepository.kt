@@ -379,8 +379,10 @@ class GuardRepository(
          *
          * 1 was the original app rules. 2 added the browser and in-app-browser
          * URL rules, which existing installs would otherwise never have seen.
+         * 3 replaced those with host rules, because the path ones could not fire
+         * against a browser that does not display a path.
          */
-        const val BUILT_IN_RULES_VERSION = 2
+        const val BUILT_IN_RULES_VERSION = 3
 
         private fun browserFeedRules(): List<FeedRuleEntity> =
             BROWSER_PACKAGES.flatMap { (pkg, name) ->
@@ -392,20 +394,34 @@ class GuardRepository(
         /**
          * Where the short-form feeds live on the web.
          *
-         * Paths rather than whole hosts, deliberately. Blocking instagram.com
-         * outright would close messages and search along with the reels, which
-         * is the whole distinction feed-only guarding exists to draw.
+         * Hosts, not paths, and this was the bug rather than a preference.
+         *
+         * The first version matched instagram.com/reel, on the reasoning that
+         * blocking the whole host would close web messaging along with the
+         * reels. That is a good principle and it cannot be applied here,
+         * because a browser does not reliably show the path. Chrome's omnibox
+         * trims what it displays, and an in-app browser — Messenger's, the one
+         * this was asked for — shows the page title or the bare domain in its
+         * header and no path at all. A path rule matched against "instagram.com"
+         * is a rule that can never fire, which is exactly what was reported.
+         *
+         * So the site is the unit in a browser. The distinction feed-only
+         * guarding draws is preserved where it can actually be drawn: inside the
+         * apps, by the view-id rules, where messaging and search keep working.
+         * A browser is the bypass route rather than the place a man reads his
+         * messages, and treating it as the whole site is the honest reading of
+         * what these rules are for.
+         *
+         * YouTube keeps its path, because youtube.com in a browser is genuinely
+         * used for things that are not Shorts. It fires when the path is
+         * visible and does nothing when it is not, which is stated here so that
+         * is a known limit rather than a surprise.
          */
         private val BLOCKED_URLS = listOf(
-            // One entry, not two. Matching is a prefix on the normalised
-            // address, so instagram.com/reel already covers /reels and /reel/
-            // — shipping both would be a rule that can never be the reason for
-            // a block, which reads as coverage and is not.
-            "Instagram reels" to "instagram.com/reel",
-            "Facebook reels" to "facebook.com/reel",
-            "Facebook watch" to "facebook.com/watch",
+            "Instagram on the web" to "instagram.com",
+            "Facebook on the web" to "facebook.com",
+            "TikTok on the web" to "tiktok.com",
             "YouTube Shorts" to "youtube.com/shorts",
-            "TikTok" to "tiktok.com",
         )
 
         /**

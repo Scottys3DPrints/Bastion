@@ -157,25 +157,30 @@ class BrowserFeedRuleTest {
         }
     }
 
+    /**
+     * Hosts, because a browser does not reliably show a path.
+     *
+     * The first version matched instagram.com/reel and was reported as not
+     * working. Chrome's omnibox trims what it displays and an in-app browser —
+     * Messenger's, the one this was asked for — shows the bare domain or the
+     * page title in its header. A path rule compared against "instagram.com" is
+     * a rule that can never fire.
+     */
     @Test
-    fun `the reel destinations are all covered`() {
+    fun `the sites are covered by host so a trimmed address still matches`() {
         val values = GuardRepository.builtInFeedRules()
             .filter { it.matchType == MatchType.URL }
             .map { it.matchValue }
             .toSet()
-        // instagram.com/reel rather than /reels: matching is a prefix on the
-        // normalised address, so the shorter one covers both and shipping the
-        // longer one as well would be a rule that can never fire.
-        listOf(
-            "instagram.com/reel",
-            "facebook.com/reel",
-            "facebook.com/watch",
-            "youtube.com/shorts",
-        ).forEach {
+        listOf("instagram.com", "facebook.com", "tiktok.com").forEach {
             assertTrue("no rule for $it", it in values)
         }
-        // And the destination a man would actually type still matches.
-        assertTrue(FeedSurface.urlMatches("instagram.com/reels", "instagram.com/reel"))
+        // The case that was failing: the address bar shows the host alone.
+        assertTrue(FeedSurface.urlMatches("instagram.com", "instagram.com"))
+        assertTrue(FeedSurface.urlMatches("facebook.com", "facebook.com"))
+        // And the full address still matches the same rule.
+        assertTrue(FeedSurface.urlMatches("https://www.instagram.com/reels/", "instagram.com"))
+        assertTrue(FeedSurface.urlMatches("m.facebook.com/watch", "facebook.com"))
     }
 
     /** Ids stay unique once the cross product is generated, or upserts collide. */
@@ -185,20 +190,33 @@ class BrowserFeedRuleTest {
         assertEquals(rules.size, rules.map { it.id }.distinct().size)
     }
 
-    /** Every URL rule names a path, so no rule closes a whole site by accident. */
+    /**
+     * A lookalike host must still not match, which is the protection that
+     * survives the move from paths to hosts.
+     *
+     * Blocking the whole site in a browser is now deliberate — see above for
+     * why a path cannot be relied on there — so the guard that matters is no
+     * longer "is there a path" but "is this actually that site".
+     */
     @Test
-    fun `no url rule blocks a bare host`() {
-        GuardRepository.builtInFeedRules()
+    fun `a host rule does not catch a different site`() {
+        assertFalse(FeedSurface.urlMatches("notinstagram.com", "instagram.com"))
+        assertFalse(FeedSurface.urlMatches("instagram.com.evil.co/x", "instagram.com"))
+        assertFalse(FeedSurface.urlMatches("facebookmarketplace.co", "facebook.com"))
+    }
+
+    /**
+     * YouTube keeps its path, and that is a stated limit rather than an
+     * oversight: youtube.com in a browser is genuinely used for things that are
+     * not Shorts, so the rule fires when the path is visible and does nothing
+     * when the browser hides it.
+     */
+    @Test
+    fun `youtube is still matched by path`() {
+        val values = GuardRepository.builtInFeedRules()
             .filter { it.matchType == MatchType.URL }
-            .forEach {
-                // TikTok is the deliberate exception: the whole site is the feed,
-                // so there is no rest-of-the-app to protect.
-                if (it.matchValue != "tiktok.com") {
-                    assertTrue(
-                        "${it.matchValue} would block an entire site",
-                        it.matchValue.contains('/'),
-                    )
-                }
-            }
+            .map { it.matchValue }
+        assertTrue("youtube.com/shorts" in values)
+        assertFalse("a bare youtube.com rule would close the whole site", "youtube.com" in values)
     }
 }

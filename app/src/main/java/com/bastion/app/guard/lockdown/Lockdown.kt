@@ -119,10 +119,36 @@ object Lockdown {
      * already delivered it as a notification, because a background process
      * cannot open a message composer and should not try.
      */
+    /**
+     * What a lockdown actually does, so a curfew can differ from a panic press.
+     *
+     * The two used to share one set of switches, deliberately — two plans that
+     * could drift apart is two things to keep true. That held right up until the
+     * curfew needed its own answer: changing what runs every night at ten also
+     * changed what the break-glass button does, which is a different decision
+     * about a different moment.
+     */
+    data class Plan(
+        val lockScreen: Boolean,
+        val filter: Boolean,
+        val grayscale: Boolean,
+        val tellPartner: Boolean,
+    )
+
+    /** The curfew's plan. */
+    fun planFor(settings: Settings) = Plan(
+        lockScreen = settings.curfewLockScreen,
+        filter = settings.curfewFilter,
+        grayscale = settings.curfewGrayscale,
+        tellPartner = settings.curfewTellPartner,
+    )
+
     suspend fun trigger(
         context: Context,
         durationSeconds: Int? = null,
         fromBackground: Boolean = false,
+        /** Null means the break-glass button's plan, which is the default. */
+        plan: Plan? = null,
     ): Intent? {
         val graph = BastionGraph.from(context)
         val settings = graph.settings.current()
@@ -145,9 +171,16 @@ object Lockdown {
         } else 0
         graph.settings.setLockdownSpanSeconds(maxOf(seconds, runningSpan))
 
-        if (settings.lockdownGrayscale) graph.settings.setGrayscale(true)
+        val active = plan ?: Plan(
+            lockScreen = settings.lockdownLockScreen,
+            filter = settings.lockdownFilter,
+            grayscale = settings.lockdownGrayscale,
+            tellPartner = settings.lockdownTellPartner,
+        )
 
-        if (settings.lockdownFilter) {
+        if (active.grayscale) graph.settings.setGrayscale(true)
+
+        if (active.filter) {
             graph.settings.setVpnEnabled(true)
             // Only starts if consent was already given; the VPN dialog cannot be
             // raised from here, and a lockdown must not stall waiting on a prompt.
@@ -156,7 +189,7 @@ object Lockdown {
             }
         }
 
-        val partnerIntent = if (settings.lockdownTellPartner) {
+        val partnerIntent = if (active.tellPartner) {
             graph.social.partnerOnce()?.let { partner ->
                 Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("smsto:${partner.contact}"))
                     .putExtra(
@@ -182,7 +215,7 @@ object Lockdown {
         // away. Raising the wall is what makes this a lockout rather than a
         // gesture — see LockdownWallActivity for what that does and does not
         // mean without Device Owner.
-        if (settings.lockdownLockScreen) LockdownWallActivity.raise(context, fromBackground)
+        if (active.lockScreen) LockdownWallActivity.raise(context, fromBackground)
 
         // A composer nobody asked for cannot be opened over whatever is on
         // screen at 10pm, and from a receiver Android would refuse anyway. It

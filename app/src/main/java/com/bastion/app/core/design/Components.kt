@@ -30,6 +30,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -308,3 +309,51 @@ fun RowDivider() {
 @Suppress("unused")
 @Composable
 fun HorizontalSpace(width: androidx.compose.ui.unit.Dp) = Spacer(Modifier.width(width))
+
+/**
+ * A chip that is a chip, not a bordered box.
+ *
+ * ChoiceRow owns a whole row and takes an enum; this is the one for several
+ * small independent groups — weekday letters, delay lengths, schedule types.
+ *
+ * It lived in the habits package until a second feature needed it, which is
+ * the moment a shared control stops being a local detail. A cross-feature
+ * import of a UI atom is how a design system quietly stops being one.
+ */
+@Composable
+fun BastionChip(
+    label: String,
+    selected: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(Space.sm)
+    Box(
+        modifier
+            // 40dp, up from 36. These sit four and seven to a row, so each one
+            // is already narrow; short as well made them fiddly to hit.
+            .height(40.dp)
+            .clip(shape)
+            // Selected is a filled sage chip, not a slightly lighter grey one.
+            // The old pair — SurfaceHigh against Surface — differ by 1.15:1,
+            // which is to say they do not differ. On a row of seven weekday
+            // chips there was no way to see which days were actually chosen.
+            .background(if (selected) BastionColors.Sage else BastionColors.Surface)
+            .border(
+                width = if (selected) 0.dp else 1.dp,
+                color = if (selected) Color.Transparent else BastionColors.OutlineStrong,
+                shape = shape,
+            )
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            // Dark on sage is 6.7:1; the light text that looks right in a mock
+            // is 2.5:1 and unreadable in daylight.
+            color = if (selected) BastionColors.MidnightDeep else BastionColors.TextSecondary,
+        )
+    }
+}

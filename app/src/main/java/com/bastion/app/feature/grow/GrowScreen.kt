@@ -50,6 +50,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.bastion.app.core.design.BastionCard
+import com.bastion.app.core.design.BastionChip
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.Space
 import com.bastion.app.core.design.ChoiceRow

@@ -193,7 +193,39 @@ data class Settings(
      * a night already handled. 0 means it has never run.
      */
     val scheduledLockdownLastRun: Long = 0L,
-)
+    /**
+     * Which days it runs, as ISO weekday numbers. Empty means every day.
+     *
+     * It was called a nightly lockdown and it only ever was one — the same hour,
+     * seven days a week. A man whose hard night is Friday and Saturday had to
+     * choose between a curfew he did not want on a Tuesday and no curfew at all.
+     */
+    val curfewDaysCsv: String = "",
+    /**
+     * The curfew's own plan, rather than the break-glass button's.
+     *
+     * Sharing one plan was deliberate — two that could drift apart is two things
+     * to keep true — but it made the curfew unconfigurable: changing what it did
+     * changed what the panic button did, which is a different decision entirely.
+     * A curfew is a routine and a panic press is a crisis, and they do not want
+     * the same response.
+     */
+    val curfewLockScreen: Boolean = true,
+    val curfewFilter: Boolean = true,
+    val curfewGrayscale: Boolean = true,
+    /**
+     * Off by default, unlike the button's.
+     *
+     * Telling a partner about one bad moment is the point. Texting him the same
+     * message at ten o'clock every night is noise he will learn to ignore, and
+     * the message that actually matters arrives inside that noise.
+     */
+    val curfewTellPartner: Boolean = false,
+) {
+    /** The chosen days, parsed. Empty means every day. */
+    val curfewDays: List<Int>
+        get() = curfewDaysCsv.split(',').mapNotNull { it.trim().toIntOrNull() }.filter { it in 1..7 }
+}
 
 /**
  * Small, non-relational state: the knobs, not the confessions.
@@ -271,6 +303,11 @@ class SettingsStore(private val context: Context) {
         val SCHEDULED_LOCKDOWN_MINUTE = intPreferencesKey("scheduled_lockdown_minute")
         val SCHEDULED_LOCKDOWN_SECONDS = intPreferencesKey("scheduled_lockdown_seconds")
         val SCHEDULED_LOCKDOWN_LAST_RUN = longPreferencesKey("scheduled_lockdown_last_run")
+        val CURFEW_DAYS = stringPreferencesKey("curfew_days")
+        val CURFEW_LOCK_SCREEN = booleanPreferencesKey("curfew_lock_screen")
+        val CURFEW_FILTER = booleanPreferencesKey("curfew_filter")
+        val CURFEW_GRAYSCALE = booleanPreferencesKey("curfew_grayscale")
+        val CURFEW_TELL_PARTNER = booleanPreferencesKey("curfew_tell_partner")
     }
 
     val settings: Flow<Settings> = context.dataStore.data.map { p ->
@@ -335,6 +372,11 @@ class SettingsStore(private val context: Context) {
             scheduledLockdownMinute = p[Keys.SCHEDULED_LOCKDOWN_MINUTE] ?: 0,
             scheduledLockdownSeconds = p[Keys.SCHEDULED_LOCKDOWN_SECONDS] ?: (60 * 60),
             scheduledLockdownLastRun = p[Keys.SCHEDULED_LOCKDOWN_LAST_RUN] ?: 0L,
+            curfewDaysCsv = p[Keys.CURFEW_DAYS] ?: "",
+            curfewLockScreen = p[Keys.CURFEW_LOCK_SCREEN] ?: true,
+            curfewFilter = p[Keys.CURFEW_FILTER] ?: true,
+            curfewGrayscale = p[Keys.CURFEW_GRAYSCALE] ?: true,
+            curfewTellPartner = p[Keys.CURFEW_TELL_PARTNER] ?: false,
         )
     }
 
@@ -406,6 +448,14 @@ class SettingsStore(private val context: Context) {
     suspend fun setLockdownFilter(value: Boolean) = edit { it[Keys.LOCKDOWN_FILTER] = value }
     suspend fun setLockdownGrayscale(value: Boolean) = edit { it[Keys.LOCKDOWN_GRAYSCALE] = value }
     suspend fun setLockdownTellPartner(value: Boolean) = edit { it[Keys.LOCKDOWN_PARTNER] = value }
+    suspend fun setCurfewDays(days: List<Int>) = edit {
+        it[Keys.CURFEW_DAYS] = days.sorted().joinToString(",")
+    }
+    suspend fun setCurfewLockScreen(v: Boolean) = edit { it[Keys.CURFEW_LOCK_SCREEN] = v }
+    suspend fun setCurfewFilter(v: Boolean) = edit { it[Keys.CURFEW_FILTER] = v }
+    suspend fun setCurfewGrayscale(v: Boolean) = edit { it[Keys.CURFEW_GRAYSCALE] = v }
+    suspend fun setCurfewTellPartner(v: Boolean) = edit { it[Keys.CURFEW_TELL_PARTNER] = v }
+
     suspend fun setScheduledLockdownEnabled(value: Boolean) = edit {
         it[Keys.SCHEDULED_LOCKDOWN] = value
     }
@@ -442,3 +492,4 @@ class SettingsStore(private val context: Context) {
         }
     }
 }
+
