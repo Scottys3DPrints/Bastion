@@ -122,23 +122,34 @@ fun BastionFilterChip(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Offered but not choosable, for an option that exists and cannot be taken
+     * right now — an hour of today that has not arrived. Hiding it instead makes
+     * the row change length through the day, so a man hunts for a chip that was
+     * there an hour ago; greyed out, the row keeps its shape and says why.
+     */
+    enabled: Boolean = true,
 ) {
     FilterChip(
         selected = selected,
         onClick = onClick,
         modifier = modifier,
+        enabled = enabled,
         label = { Text(label, style = MaterialTheme.typography.labelMedium) },
         colors = FilterChipDefaults.filterChipColors(
             containerColor = Color.Transparent,
             labelColor = BastionColors.TextSecondary,
             selectedContainerColor = BastionColors.BronzeDeep,
             selectedLabelColor = BastionColors.BronzeBright,
+            disabledContainerColor = Color.Transparent,
+            disabledLabelColor = BastionColors.TextMuted,
         ),
         border = FilterChipDefaults.filterChipBorder(
-            enabled = true,
+            enabled = enabled,
             selected = selected,
-            borderColor = BastionColors.Outline,
+            borderColor = BastionColors.OutlineStrong,
             selectedBorderColor = BastionColors.Bronze,
+            disabledBorderColor = BastionColors.OutlineSoft,
         ),
     )
 }

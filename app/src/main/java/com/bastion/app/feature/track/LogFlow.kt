@@ -255,23 +255,44 @@ private fun StepTitle(text: String, hint: String? = null) {
  */
 @Composable
 private fun WhenStep(entry: LogEntry, onChange: (LogEntry) -> Unit) {
-    val today = LocalDate.now()
+    // Read once per composition rather than per chip. Every shortcut, every
+    // disabled hour and the read-out all have to agree about what "now" is, and
+    // four separate LocalTime.now() calls is how a chip lights up against a
+    // moment a different chip was measured from.
+    val now = remember { LocalDateTime.now() }
+    val today = now.toLocalDate()
+
     StepTitle(
         "When was it?",
         "It counts against the day it happened, not the day you told anyone.",
     )
 
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
-        WhenChip("Just now", entry.date == today && entry.time.hour == LocalTime.now().hour) {
-            onChange(entry.copy(date = today, time = LocalTime.now()))
-        }
-        WhenChip("Earlier today", entry.date == today && entry.time.hour != LocalTime.now().hour) {
-            onChange(entry.copy(date = today, time = LocalTime.of(22, 0)))
-        }
-        WhenChip("Yesterday", entry.date == today.minusDays(1)) {
-            onChange(entry.copy(date = today.minusDays(1), time = LocalTime.of(22, 0)))
-        }
-    }
+    // What is actually selected, in one sentence.
+    //
+    // There was no read-out at all. With three shortcuts, fourteen day chips and
+    // nine hour chips on one screen, nothing said what had been chosen — and the
+    // shortcut highlighting was derived from incidental comparisons rather than
+    // from the value, so a chip could light up that the man had never tapped.
+    Text(
+        LogMoment.describe(entry.date, entry.time, now),
+        style = MaterialTheme.typography.titleMedium,
+        color = BastionColors.BronzeBright,
+        modifier = Modifier.fillMaxWidth(),
+    )
+
+    Spacer(Modifier.height(Space.lg))
+    FlowRowChips(
+        options = LogMoment.quickMoments(now),
+        label = { it.label },
+        // Selected by what the entry *is*, not by a rule about what it is not.
+        selected = { quick ->
+            entry.date == quick.at.toLocalDate() &&
+                entry.time.hour == quick.at.hour
+        },
+        onSelect = { quick ->
+            onChange(entry.copy(date = quick.at.toLocalDate(), time = quick.at.toLocalTime()))
+        },
+    )
 
     Spacer(Modifier.height(Space.section))
     SectionLabel("Day")
@@ -289,30 +310,35 @@ private fun WhenStep(entry: LogEntry, onChange: (LogEntry) -> Unit) {
             }
         },
         selected = { it == entry.date },
-        onSelect = { onChange(entry.copy(date = it)) },
+        onSelect = { date ->
+            // Moving to today can strand the hour in the future — picking
+            // yesterday at 10pm and then tapping Today, at nine in the morning.
+            // Pull it back to the most recent hour that has actually happened.
+            val safe = if (LogMoment.isFuture(date, entry.time, now)) {
+                LocalTime.of(LogMoment.nearestHour(now.toLocalTime()), 0)
+            } else entry.time
+            onChange(entry.copy(date = date, time = safe))
+        },
     )
 
     Spacer(Modifier.height(Space.section))
     SectionLabel("Roughly what time")
     Spacer(Modifier.height(Space.sm))
     FlowRowChips(
-        options = listOf(0, 3, 6, 9, 12, 15, 18, 21, 23),
+        options = LogMoment.hourOptions(),
         label = { hour ->
             when (hour) {
                 0 -> "Midnight"
                 12 -> "Midday"
-                23 -> "Late"
                 else -> LocalTime.of(hour, 0).format(DateTimeFormatter.ofPattern("h a"))
             }
         },
-        selected = { it == entry.time.hour },
+        // An hour of today that has not arrived is shown and refused, rather
+        // than silently accepted as it used to be.
+        enabled = { LogMoment.hourAvailable(it, entry.date, now) },
+        selected = { it == LogMoment.nearestHour(entry.time) },
         onSelect = { onChange(entry.copy(time = LocalTime.of(it, 0))) },
     )
-}
-
-@Composable
-private fun WhenChip(label: String, selected: Boolean, onClick: () -> Unit) {
-    BastionFilterChip(label = label, selected = selected, onClick = onClick)
 }
 
 @Composable
@@ -514,6 +540,7 @@ private fun <T> FlowRowChips(
     label: (T) -> String,
     selected: (T) -> Boolean,
     onSelect: (T) -> Unit,
+    enabled: (T) -> Boolean = { true },
 ) {
     FlowRow(
         Modifier.fillMaxWidth(),
@@ -524,6 +551,7 @@ private fun <T> FlowRowChips(
             BastionFilterChip(
                 label = label(option),
                 selected = selected(option),
+                enabled = enabled(option),
                 onClick = { onSelect(option) },
             )
         }
