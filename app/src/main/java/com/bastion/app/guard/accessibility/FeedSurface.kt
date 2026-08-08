@@ -177,18 +177,24 @@ internal object FeedSurface {
         val rule = normaliseUrl(fragment)
         if (url.isEmpty() || rule.isEmpty()) return false
         if (url == rule) return true
-        // The boundary, and it is load-bearing now that rules name whole hosts.
+        if (url.length <= rule.length || !url.startsWith(rule)) return false
+
+        // Strict at the host, loose along the path, and the asymmetry is the
+        // point rather than an inconsistency.
         //
-        // A bare startsWith matches instagram.com.evil.co against instagram.com,
-        // because the lookalike genuinely begins with the real host — a rule
-        // meant to close one site would have quietly claimed every domain
-        // registered underneath a name that starts the same way. Requiring the
-        // next character to be a path separator means the rule has to have
-        // consumed the whole host, and it does the same job one level down:
-        // youtube.com/shorts no longer catches youtube.com/shortsomething.
-        return url.length > rule.length &&
-            url.startsWith(rule) &&
-            url[rule.length] == '/'
+        // At the host a bare prefix is dangerous: instagram.com.evil.co begins
+        // with instagram.com, so a rule meant to close one site would have
+        // claimed every domain registered underneath a name that starts the
+        // same way. A host rule therefore has to have consumed the whole host,
+        // which means the next character must be a separator.
+        //
+        // Along the path the opposite is true. Facebook writes the same feed as
+        // /reel/<id> and as /reels, and a rule naming /reel that refused /reels
+        // is a rule that misses half of what it was written for — which is
+        // precisely what "recognises Facebook but not Facebook reels" would have
+        // become. There is no lookalike risk here: the host has already been
+        // matched exactly, so everything after it belongs to the same site.
+        return if (rule.contains('/')) true else url[rule.length] == '/'
     }
 
     private fun normaliseUrl(raw: String): String {

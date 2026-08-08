@@ -59,9 +59,14 @@ class FeedRuleTest {
      */
     @Test
     fun `no rule is a prefix of another rule for the same app`() {
-        // Within a match type. A view id and an address are compared against
-        // different things entirely, so one cannot shadow the other.
-        rules.groupBy { it.packageName to it.matchType }.forEach { (key, forApp) ->
+        // Among the rules that ship switched on, and within a match type.
+        //
+        // A view id and an address are compared against different things, so
+        // one cannot shadow the other. And the whole-site browser rules are a
+        // deliberate superset of the path ones — facebook.com does contain
+        // facebook.com/reel — which is exactly why they ship switched off. A
+        // rule nobody has turned on cannot shadow anything.
+        rules.filter { it.enabled }.groupBy { it.packageName to it.matchType }.forEach { (key, forApp) ->
             val pkg = key.first
             forApp.forEach { rule ->
                 val shadowed = forApp.filter {

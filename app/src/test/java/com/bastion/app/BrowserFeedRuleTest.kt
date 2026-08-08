@@ -199,6 +199,87 @@ class BrowserFeedRuleTest {
     }
 
     /**
+     * The reels, not the whole site.
+     *
+     * Reported from a phone: Messenger was recognising facebook.com and closing
+     * all of it, when what wanted closing was the reels. Blocking a man's
+     * messages to stop him watching videos is the wrong trade, and it was only
+     * made because a path rule could not fire while the address bar was going
+     * unfound. Now that it is found, the path is back.
+     */
+    @Test
+    fun `the reel paths ship switched on`() {
+        val on = GuardRepository.builtInFeedRules()
+            .filter { it.matchType == MatchType.URL && it.enabled }
+            .map { it.matchValue }
+            .toSet()
+        listOf(
+            "facebook.com/reel",
+            "facebook.com/watch",
+            "instagram.com/reel",
+            "youtube.com/shorts",
+        ).forEach { assertTrue("$it should be on by default", it in on) }
+    }
+
+    /**
+     * And the whole-site rules ship off.
+     *
+     * They are the fallback for a browser that shows only a domain, which is a
+     * bigger hammer than most men want. It should be chosen rather than
+     * discovered after the fact.
+     */
+    @Test
+    fun `the whole-site rules ship switched off`() {
+        val bySite = GuardRepository.builtInFeedRules()
+            .filter { it.matchType == MatchType.URL }
+            .filter { it.matchValue in setOf("instagram.com", "facebook.com") }
+        assertTrue("the whole-site rules should still exist", bySite.isNotEmpty())
+        bySite.forEach { assertFalse("${it.matchValue} must ship off", it.enabled) }
+    }
+
+    /**
+     * Facebook writes the same feed as /reel/<id> and as /reels, so a rule
+     * naming /reel has to catch both or it misses half of what it is for.
+     */
+    @Test
+    fun `a path rule matches the longer spellings of the same feed`() {
+        listOf(
+            "facebook.com/reel/1234567890",
+            "facebook.com/reels",
+            "facebook.com/reels/",
+            "m.facebook.com/reels?source=x",
+            "https://www.facebook.com/reel/99",
+        ).forEach {
+            assertTrue("$it should match", FeedSurface.urlMatches(it, "facebook.com/reel"))
+        }
+    }
+
+    /** The rest of the site stays open, which is the entire point of the path. */
+    @Test
+    fun `a path rule leaves messages alone`() {
+        listOf(
+            "facebook.com",
+            "facebook.com/messages",
+            "facebook.com/marketplace",
+            "m.facebook.com/friends",
+        ).forEach {
+            assertFalse("$it should be open", FeedSurface.urlMatches(it, "facebook.com/reel"))
+        }
+    }
+
+    /**
+     * The asymmetry, stated. A host rule stays strict because a lookalike
+     * domain genuinely begins with the real host; a path rule does not need to,
+     * because the host has already matched exactly.
+     */
+    @Test
+    fun `the host boundary stays strict while the path one relaxes`() {
+        assertFalse(FeedSurface.urlMatches("facebook.com.evil.co/reel", "facebook.com"))
+        assertFalse(FeedSurface.urlMatches("facebookmarketplace.co", "facebook.com"))
+        assertTrue(FeedSurface.urlMatches("facebook.com/reelsomething", "facebook.com/reel"))
+    }
+
+    /**
      * Hosts, because a browser does not reliably show a path.
      *
      * The first version matched instagram.com/reel and was reported as not

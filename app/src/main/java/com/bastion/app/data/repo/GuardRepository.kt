@@ -121,9 +121,27 @@ class GuardRepository(
         if (!current.guardSeeded) return
         if (current.builtInRulesVersion >= BUILT_IN_RULES_VERSION) return
 
-        val existing = guardDao.feedRules().first().map { it.id }.toSet()
+        val onDisk = guardDao.feedRules().first()
+        val existing = onDisk.map { it.id }.toSet()
         val added = builtInFeedRules().filterNot { it.id in existing }
         if (added.isNotEmpty()) guardDao.upsertRules(added)
+
+        // The one place this reaches back and changes something already there.
+        //
+        // Generation 3 shipped whole-site browser rules switched on, and that
+        // was the app's choice rather than the user's: it closed all of Facebook
+        // in a browser when what he wanted closed was the reels. Now that the
+        // path rules can fire, those are on and this correction turns the
+        // whole-site ones off — undoing a default this app set, not a decision a
+        // man made. He can switch them back on from the same screen, and they
+        // are the answer when a browser will not show a path.
+        if (current.builtInRulesVersion == 3) {
+            val retired = setOf("instagram.com", "facebook.com", "tiktok.com")
+            onDisk.filter { it.builtIn && it.matchType == MatchType.URL && it.matchValue in retired }
+                .filter { it.enabled }
+                .forEach { guardDao.upsertRule(it.copy(enabled = false)) }
+        }
+
         settings.setBuiltInRulesVersion(BUILT_IN_RULES_VERSION)
     }
 
@@ -380,48 +398,57 @@ class GuardRepository(
          * 1 was the original app rules. 2 added the browser and in-app-browser
          * URL rules, which existing installs would otherwise never have seen.
          * 3 replaced those with host rules, because the path ones could not fire
-         * against a browser that does not display a path.
+         * against a browser that does not display a path. 4 brought the paths
+         * back once the address bar was being found, and switched the
+         * whole-site rules off.
          */
-        const val BUILT_IN_RULES_VERSION = 3
+        const val BUILT_IN_RULES_VERSION = 4
 
         private fun browserFeedRules(): List<FeedRuleEntity> =
             BROWSER_PACKAGES.flatMap { (pkg, name) ->
-                BLOCKED_URLS.map { (label, url) ->
+                BLOCKED_PATHS.map { (label, url) ->
                     rule(pkg, "$name · $label", MatchType.URL, url)
+                } + BLOCKED_SITES.map { (label, url) ->
+                    // Off until asked for. See rule()'s enabled parameter.
+                    rule(pkg, "$name · $label", MatchType.URL, url, enabled = false)
                 }
             }
 
         /**
-         * Where the short-form feeds live on the web.
+         * The feeds themselves, by path.
          *
-         * Hosts, not paths, and this was the bug rather than a preference.
+         * These went out as host rules for one release because a path rule
+         * could never fire — the address bar was not being found at all, so
+         * nothing was matched against and the host was the only thing that
+         * could work. Once the bar was located properly the path came back
+         * within reach, and the path is what a man actually wants closed:
+         * "recognises Facebook but not Facebook reels" is a blocker that has
+         * taken his messages away to stop him watching videos.
          *
-         * The first version matched instagram.com/reel, on the reasoning that
-         * blocking the whole host would close web messaging along with the
-         * reels. That is a good principle and it cannot be applied here,
-         * because a browser does not reliably show the path. Chrome's omnibox
-         * trims what it displays, and an in-app browser — Messenger's, the one
-         * this was asked for — shows the page title or the bare domain in its
-         * header and no path at all. A path rule matched against "instagram.com"
-         * is a rule that can never fire, which is exactly what was reported.
-         *
-         * So the site is the unit in a browser. The distinction feed-only
-         * guarding draws is preserved where it can actually be drawn: inside the
-         * apps, by the view-id rules, where messaging and search keep working.
-         * A browser is the bypass route rather than the place a man reads his
-         * messages, and treating it as the whole site is the honest reading of
-         * what these rules are for.
-         *
-         * YouTube keeps its path, because youtube.com in a browser is genuinely
-         * used for things that are not Shorts. It fires when the path is
-         * visible and does nothing when it is not, which is stated here so that
-         * is a known limit rather than a surprise.
+         * Path rules match by prefix along the path, so /reel covers /reel/<id>
+         * and /reels alike — Facebook writes the same feed both ways.
          */
-        private val BLOCKED_URLS = listOf(
-            "Instagram on the web" to "instagram.com",
-            "Facebook on the web" to "facebook.com",
-            "TikTok on the web" to "tiktok.com",
+        private val BLOCKED_PATHS = listOf(
+            "Instagram reels" to "instagram.com/reel",
+            "Facebook reels" to "facebook.com/reel",
+            "Facebook watch" to "facebook.com/watch",
             "YouTube Shorts" to "youtube.com/shorts",
+        )
+
+        /**
+         * The whole site, for when the path cannot be seen.
+         *
+         * Some browsers show only the domain, and against those a path rule has
+         * nothing to compare. These are the fallback for that, and they ship
+         * switched off: closing Facebook entirely is a bigger hammer than most
+         * men want, and it should be chosen rather than discovered. TikTok is
+         * here rather than above because the whole site is the feed — there is
+         * no rest-of-the-site to protect.
+         */
+        private val BLOCKED_SITES = listOf(
+            "All of Instagram" to "instagram.com",
+            "All of Facebook" to "facebook.com",
+            "All of TikTok" to "tiktok.com",
         )
 
         /**
@@ -446,13 +473,26 @@ class GuardRepository(
             "com.instagram.android" to "Instagram",
         )
 
-        private fun rule(pkg: String, label: String, type: MatchType, value: String) = FeedRuleEntity(
+        private fun rule(
+            pkg: String,
+            label: String,
+            type: MatchType,
+            value: String,
+            /**
+             * Whether it arrives switched on.
+             *
+             * The whole-site browser rules ship off: they are a bigger hammer
+             * than most men want, and a rule that closes Facebook entirely
+             * should be chosen rather than discovered.
+             */
+            enabled: Boolean = true,
+        ) = FeedRuleEntity(
             id = "builtin_${pkg}_${value}".take(120),
             packageName = pkg,
             label = label,
             matchType = type,
             matchValue = value,
-            enabled = true,
+            enabled = enabled,
             builtIn = true,
         )
 
