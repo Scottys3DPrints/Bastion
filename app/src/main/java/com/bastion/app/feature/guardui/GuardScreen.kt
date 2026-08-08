@@ -1400,6 +1400,79 @@ private fun LearnModeSheet(onClose: () -> Unit) {
             )
             Spacer(Modifier.height(Space.md))
 
+            // Why a browser rule is or is not firing, in the place a man is
+            // already standing when he notices it did not.
+            //
+            // Shown only where an address rule could apply, so it never appears
+            // on an ordinary app. Four attempts were made at the in-app-browser
+            // path without ever seeing what the service actually had in front of
+            // it, and every one of them was a guess that could not be checked.
+            // This is the screen that ends that.
+            if (current.urlRuleCount > 0 || current.webViewFound) {
+                Text(
+                    "Web address rules",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = BastionColors.TextPrimary,
+                )
+                Spacer(Modifier.height(Space.xs))
+                Text(
+                    buildString {
+                        append(
+                            when (current.guardedAs) {
+                                null -> "This app is not guarded, so nothing here can fire. "
+                                "FEED_ONLY" -> "Guarded as feeds only. "
+                                else -> "Guarded as ${current.guardedAs?.lowercase()}, " +
+                                    "which blocks the whole app rather than using these rules. "
+                            }
+                        )
+                        append("${current.urlRuleCount} address ")
+                        append(if (current.urlRuleCount == 1) "rule is" else "rules are")
+                        append(" switched on. ")
+                        append(
+                            if (current.webViewFound) "A web page was found on this screen."
+                            else "No web page found on this screen."
+                        )
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextTertiary,
+                )
+                Spacer(Modifier.height(Space.sm))
+
+                if (current.addresses.isEmpty()) {
+                    Text(
+                        // The outcome no further release can fix, and the one I
+                        // could not see from a laptop. Said plainly so the next
+                        // step is a switch rather than another guess.
+                        "No web address is visible on this screen. Nothing can be matched " +
+                            "against, however the rule is written — this browser shows only " +
+                            "the page title. Turn on the whole-site rule for this app instead.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.Amber,
+                    )
+                } else {
+                    current.addresses.forEach { seen ->
+                        Row(
+                            Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                seen.text,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = if (seen.isAddressBar) BastionColors.SageBright
+                                else BastionColors.TextTertiary,
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                seen.reason,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = BastionColors.TextMuted,
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(Space.lg))
+            }
+
             val qualifying = current.viewIds.filter { it.wouldBlock }
             val shown = if (showAll) current.viewIds else qualifying
             if (qualifying.isEmpty() && !showAll) {

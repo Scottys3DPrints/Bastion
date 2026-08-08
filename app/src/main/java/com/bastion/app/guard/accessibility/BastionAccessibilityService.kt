@@ -682,6 +682,62 @@ class BastionAccessibilityService : AccessibilityService() {
     }
 
     /**
+     * Every address on screen, and whether each was taken as the address bar.
+     *
+     * The diagnostic half of [isAddressBarNode]: same tests, but reporting the
+     * answer instead of acting on it. If a browser shows no address at all this
+     * comes back empty, which is the one outcome no amount of matching can fix
+     * and the one I could not see from here.
+     */
+    private fun seenAddresses(
+        root: AccessibilityNodeInfo,
+        window: android.graphics.Rect,
+        webViewTop: Int,
+    ): List<SeenAddress> {
+        val out = LinkedHashMap<String, SeenAddress>()
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+        val borrowed = mutableListOf<AccessibilityNodeInfo>()
+        var visited = 0
+        try {
+            while (queue.isNotEmpty() && visited < MAX_NODES) {
+                val node = queue.removeFirst()
+                visited++
+                val text = node.text?.toString()
+                if (text != null && FeedSurface.looksLikeUrl(text)) {
+                    val id = node.viewIdResourceName?.substringAfterLast('/')
+                    val bounds = android.graphics.Rect().also { node.getBoundsInScreen(it) }
+                    val byId = id != null && id in ADDRESS_BAR_IDS
+                    val byChrome = FeedSurface.isBrowserChrome(bounds.bottom, webViewTop)
+                    val byWidth = FeedSurface.isAddressBar(
+                        top = bounds.top,
+                        width = bounds.width(),
+                        windowTop = window.top,
+                        windowHeight = window.height(),
+                        windowWidth = window.width(),
+                    )
+                    out[text] = SeenAddress(
+                        text = text,
+                        isAddressBar = byId || byChrome || byWidth,
+                        reason = when {
+                            byId -> "named as the address bar"
+                            byChrome -> "above the page"
+                            byWidth -> "a wide bar at the top"
+                            else -> "on the page, treated as a link"
+                        },
+                    )
+                }
+                for (i in 0 until node.childCount) {
+                    node.getChild(i)?.let { queue.add(it); borrowed.add(it) }
+                }
+            }
+            return out.values.toList()
+        } finally {
+            recycleAll(borrowed)
+        }
+    }
+
+    /**
      * The top edge of the page, so the toolbar above it can be told apart.
      *
      * Its own bounded walk, run only when a URL rule is actually in play, so
@@ -801,6 +857,18 @@ class BastionAccessibilityService : AccessibilityService() {
         recycleAll(borrowed)
 
         val pkg = root.packageName?.toString().orEmpty()
+        val rules = rulesByPackage[pkg].orEmpty()
+
+        // The browser diagnosis, which exists because four attempts at the
+        // in-app-browser path were made without ever seeing what the service
+        // actually had in front of it. Guessing from a laptop is how a fix ships
+        // that cannot work; this turns "still not working" into a sentence
+        // naming the link that is broken.
+        val webViewTop = webViewTopIn(root)
+        val addresses = if (rules.any { it.matchType == MatchType.URL }) {
+            seenAddresses(root, windowBoundsOf(root), webViewTop)
+        } else emptyList()
+
         learnedIds.value = LearnCapture(
             packageName = pkg,
             // Ids that would actually block sort first; there are usually one
@@ -811,7 +879,12 @@ class BastionAccessibilityService : AccessibilityService() {
             // The live verdict: does this screen match a rule that already
             // exists? Answers "is what I am looking at right now covered?"
             // without having to leave the app and find out the hard way.
-            blockedNow = findMatch(root, rulesByPackage[pkg].orEmpty()) != null,
+            blockedNow = findMatch(root, rules) != null,
+            guardedAs = guardedApps[pkg]?.mode?.name,
+            ruleCount = rules.size,
+            urlRuleCount = rules.count { it.matchType == MatchType.URL },
+            webViewFound = webViewTop > 0,
+            addresses = addresses,
         )
     }
 
@@ -907,11 +980,36 @@ class BastionAccessibilityService : AccessibilityService() {
     /** One identifier on screen, and whether a rule on it would actually fire. */
     data class LearnedId(val id: String, val wouldBlock: Boolean)
 
+    /**
+     * One address seen on screen, and why it did or did not count.
+     *
+     * Only strings that pass [FeedSurface.looksLikeUrl] are ever captured, which
+     * is the same filter matching uses — so this shows exactly what the matcher
+     * was allowed to look at and nothing more. A message with spaces in it never
+     * reaches here, which is the privacy contract holding rather than being
+     * suspended for the sake of a diagnostic.
+     */
+    data class SeenAddress(
+        val text: String,
+        /** Whether it was accepted as the address bar rather than a link. */
+        val isAddressBar: Boolean,
+        /** Why, in a word: the id, the toolbar, its width, or nothing. */
+        val reason: String,
+    )
+
     data class LearnCapture(
         val packageName: String,
         val viewIds: List<LearnedId>,
         /** Whether an existing rule already covers the captured screen. */
         val blockedNow: Boolean,
+        /** How this app is guarded, if at all. Null when it is not. */
+        val guardedAs: String? = null,
+        /** Enabled rules that could fire here, and how many name an address. */
+        val ruleCount: Int = 0,
+        val urlRuleCount: Int = 0,
+        /** Whether a web view was found, which is how browser chrome is located. */
+        val webViewFound: Boolean = false,
+        val addresses: List<SeenAddress> = emptyList(),
     )
 
     companion object {
