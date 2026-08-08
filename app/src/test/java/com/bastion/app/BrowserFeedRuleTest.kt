@@ -178,6 +178,43 @@ class BrowserFeedRuleTest {
         assertFalse(FeedSurface.isBrowserChrome(nodeBottom = 0, webViewTop = 0))
     }
 
+    // --- the width guess, withdrawn where it is unsafe ------------------------
+
+    /**
+     * A link somebody sent must never wall the conversation it arrived in.
+     *
+     * The whole-site rules turn a guess into a hazard. `facebook.com/reel` is
+     * not a thing anyone types to a friend, so a width false-positive had
+     * nothing to match and cost nothing. `facebook.com` is precisely what people
+     * send each other, and a wide link bubble near the top of a short chat sits
+     * inside the band the width test calls a toolbar.
+     *
+     * So in a messaging app the width guess is withdrawn and the web view is the
+     * only evidence accepted. This is the test that stops a blocker from taking
+     * away someone's messages.
+     */
+    @Test
+    fun `in a messaging app with no page open the width guess is withdrawn`() {
+        assertFalse(FeedSurface.addressBarWidthCounts(inAppBrowser = true, webViewFound = false))
+    }
+
+    /** With a page actually open, the in-app browser is a browser again. */
+    @Test
+    fun `an open page restores the width guess`() {
+        assertTrue(FeedSurface.addressBarWidthCounts(inAppBrowser = true, webViewFound = true))
+    }
+
+    /**
+     * Chrome keeps it either way. Its omnibox is the case the width test was
+     * written for, and Chrome does not always expose a node the web-view walk
+     * recognises — removing the fallback there would break what works.
+     */
+    @Test
+    fun `a real browser keeps the width guess with or without a web view`() {
+        assertTrue(FeedSurface.addressBarWidthCounts(inAppBrowser = false, webViewFound = false))
+        assertTrue(FeedSurface.addressBarWidthCounts(inAppBrowser = false, webViewFound = true))
+    }
+
     // --- the shipped rules ---------------------------------------------------
 
     @Test
@@ -222,19 +259,37 @@ class BrowserFeedRuleTest {
     }
 
     /**
-     * And the whole-site rules ship off.
+     * And the whole-site rules ship off in a real browser, on in a web view.
      *
-     * They are the fallback for a browser that shows only a domain, which is a
-     * bigger hammer than most men want. It should be chosen rather than
-     * discovered after the fact.
+     * In Chrome the site rule is a bigger hammer than most men want — it closes
+     * all of Facebook when what was asked for was the reels — so it should be
+     * chosen rather than discovered after the fact.
+     *
+     * Inside Messenger it is not a bigger hammer, it is the only hammer. That
+     * web view shows a domain and no path, so the path rule is matched against
+     * something that cannot contain it; and closing facebook.com there takes
+     * nothing away, because the messaging this app exists to protect is the app
+     * the user is already standing in.
      */
     @Test
-    fun `the whole-site rules ship switched off`() {
+    fun `the whole-site rules ship off in browsers and on in web views`() {
         val bySite = GuardRepository.builtInFeedRules()
             .filter { it.matchType == MatchType.URL }
             .filter { it.matchValue in setOf("instagram.com", "facebook.com") }
         assertTrue("the whole-site rules should still exist", bySite.isNotEmpty())
-        bySite.forEach { assertFalse("${it.matchValue} must ship off", it.enabled) }
+
+        val (inApp, real) = bySite.partition { it.packageName in GuardRepository.IN_APP_BROWSERS }
+        assertTrue("no in-app browser carries a whole-site rule", inApp.isNotEmpty())
+        inApp.forEach {
+            assertTrue(
+                "${it.packageName}/${it.matchValue} must ship on — it is the only " +
+                    "rule that web view's address bar can ever satisfy",
+                it.enabled,
+            )
+        }
+        real.forEach {
+            assertFalse("${it.packageName}/${it.matchValue} must ship off", it.enabled)
+        }
     }
 
     /**

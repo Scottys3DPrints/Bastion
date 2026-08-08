@@ -273,6 +273,25 @@ internal object FeedSurface {
     fun isBrowserChrome(nodeBottom: Int, webViewTop: Int): Boolean =
         webViewTop > 0 && nodeBottom <= webViewTop
 
+    /**
+     * Whether the width test is allowed to stand in for an address bar here.
+     *
+     * The width test guesses. It says "wide, and near the top, so probably a
+     * bar", and that guess was safe while the rules named a path: nobody types
+     * `facebook.com/reel` into a chat, so a false positive had nothing to match.
+     * The site rules make it unsafe, because `facebook.com` is exactly what does
+     * get sent to people, and a wide link bubble near the top of a short
+     * conversation would wall the conversation.
+     *
+     * So inside an in-app browser the guess is withdrawn and only the web view
+     * counts. That is not a loss: a web view is the page, and a browser with no
+     * page open is a screen with no address on it to find. What it protects is
+     * the thing this app must never do — take away a man's messages because he
+     * was sent a link.
+     */
+    fun addressBarWidthCounts(inAppBrowser: Boolean, webViewFound: Boolean): Boolean =
+        !inAppBrowser || webViewFound
+
     /** The top fifth of the window. Enough for a toolbar under a status bar. */
     const val ADDRESS_BAR_BAND = 0.20
 

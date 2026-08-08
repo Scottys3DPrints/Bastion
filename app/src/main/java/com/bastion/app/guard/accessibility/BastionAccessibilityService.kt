@@ -12,6 +12,7 @@ import com.bastion.app.data.db.BlockMode
 import com.bastion.app.data.db.FeedRuleEntity
 import com.bastion.app.data.db.GuardedAppEntity
 import com.bastion.app.data.db.MatchType
+import com.bastion.app.data.repo.GuardRepository
 import com.bastion.app.feature.panic.PanicActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -488,6 +489,12 @@ class BastionAccessibilityService : AccessibilityService() {
         // has no web view and should not pay for a walk looking for one.
         val webViewTop =
             if (rules.any { it.matchType == MatchType.URL }) webViewTopIn(root) else 0
+        // See FeedSurface.addressBarWidthCounts. Inside a messaging app the
+        // width guess would fire on a link somebody sent.
+        val widthCounts = FeedSurface.addressBarWidthCounts(
+            inAppBrowser = root.packageName?.toString() in GuardRepository.IN_APP_BROWSERS,
+            webViewFound = webViewTop > 0,
+        )
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
         // Every node fetched via getChild() is owned by us. This runs on the
@@ -552,7 +559,7 @@ class BastionAccessibilityService : AccessibilityService() {
                         // identifiers an app exposes. The gate is on the address
                         // bar instead: see isAddressBarNode.
                         MatchType.URL ->
-                            isAddressBarNode(node, idSegment, window, webViewTop) &&
+                            isAddressBarNode(node, idSegment, window, webViewTop, widthCounts) &&
                                 node.text?.toString()
                                     ?.let { FeedSurface.urlMatches(it, rule.matchValue) } == true
                     }
@@ -661,6 +668,7 @@ class BastionAccessibilityService : AccessibilityService() {
         idSegment: String?,
         window: android.graphics.Rect,
         webViewTop: Int,
+        widthCounts: Boolean,
     ): Boolean {
         val text = node.text?.toString() ?: return false
         if (!FeedSurface.looksLikeUrl(text)) return false
@@ -671,6 +679,7 @@ class BastionAccessibilityService : AccessibilityService() {
         // the label or however small it made it. This is the one that catches
         // the in-app browsers; the width test below only ever caught real ones.
         if (FeedSurface.isBrowserChrome(bounds.bottom, webViewTop)) return true
+        if (!widthCounts) return false
 
         return FeedSurface.isAddressBar(
             top = bounds.top,

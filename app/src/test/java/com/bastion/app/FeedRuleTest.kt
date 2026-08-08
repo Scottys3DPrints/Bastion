@@ -61,12 +61,20 @@ class FeedRuleTest {
     fun `no rule is a prefix of another rule for the same app`() {
         // Among the rules that ship switched on, and within a match type.
         //
-        // A view id and an address are compared against different things, so
-        // one cannot shadow the other. And the whole-site browser rules are a
-        // deliberate superset of the path ones — facebook.com does contain
-        // facebook.com/reel — which is exactly why they ship switched off. A
-        // rule nobody has turned on cannot shadow anything.
-        rules.filter { it.enabled }.groupBy { it.packageName to it.matchType }.forEach { (key, forApp) ->
+        // A view id and an address are compared against different things, so one
+        // cannot shadow the other. The whole-site browser rules are a deliberate
+        // superset of the path ones — facebook.com does contain facebook.com/reel
+        // — which is why they ship switched off in a real browser, where the path
+        // is visible and the narrow rule can do the work.
+        //
+        // Inside an in-app browser they ship on, and there the shadowing is the
+        // point rather than a bug: those show a domain and no path, so the path
+        // rule has nothing to compare and the site rule is the only one that can
+        // ever fire. Shadowing an unreachable rule costs nothing.
+        val inApp = GuardRepository.IN_APP_BROWSERS
+        rules.filter { it.enabled }
+            .filterNot { it.packageName in inApp && !it.matchValue.contains('/') }
+            .groupBy { it.packageName to it.matchType }.forEach { (key, forApp) ->
             val pkg = key.first
             forApp.forEach { rule ->
                 val shadowed = forApp.filter {
@@ -103,6 +111,50 @@ class FeedRuleTest {
     @Test
     fun `rule ids are unique`() {
         assertEquals(rules.size, rules.map { it.id }.distinct().size)
+    }
+
+    /**
+     * A browser ships with a rule that its own address bar can satisfy.
+     *
+     * This is the invariant behind five failed attempts at Facebook reels in
+     * Messenger. A path rule needs a path on screen. Chrome shows one; the web
+     * view inside Messenger shows the domain alone, so every rule naming
+     * `/reel` was matched against something that never contained it. The fix is
+     * not a better matcher — it is shipping each browser the rule it can
+     * actually satisfy.
+     *
+     * So: in-app browsers get the site rule on, real browsers get the path
+     * rules and keep the site off. Both halves are asserted, because either one
+     * silently flipping is a browser that stops blocking or an app that gets
+     * closed entirely.
+     */
+    @Test
+    fun `every browser ships a rule its address bar can satisfy`() {
+        val urlRules = rules.filter { it.matchType == MatchType.URL }
+        val browsers = urlRules.map { it.packageName }.distinct()
+        assertTrue("No browser rules ship at all", browsers.isNotEmpty())
+
+        browsers.forEach { pkg ->
+            val on = urlRules.filter { it.packageName == pkg && it.enabled }
+            val sitesOn = on.filter { !it.matchValue.contains('/') }
+            if (pkg in GuardRepository.IN_APP_BROWSERS) {
+                assertTrue(
+                    "$pkg is a web view with no path in its address bar, so a " +
+                        "path rule can never fire there and it needs a whole-site " +
+                        "rule switched on. None is.",
+                    sitesOn.isNotEmpty(),
+                )
+            } else {
+                assertTrue(
+                    "$pkg shows a full address, so the path rules do the work and " +
+                        "the whole-site rules must stay off — on, they close the " +
+                        "entire site when the user asked for the feed: " +
+                        sitesOn.joinToString { it.matchValue },
+                    sitesOn.isEmpty(),
+                )
+                assertTrue("$pkg has no enabled path rule to block anything", on.isNotEmpty())
+            }
+        }
     }
 
     /**

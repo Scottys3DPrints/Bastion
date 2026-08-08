@@ -142,6 +142,24 @@ class GuardRepository(
                 .forEach { guardDao.upsertRule(it.copy(enabled = false)) }
         }
 
+        // And the correction to that correction, for the in-app browsers only.
+        //
+        // Generation 4 switched every whole-site rule off on the reasoning that
+        // a path is narrower and kinder. That is true in Chrome and false in
+        // Messenger, which shows no path at all — so for those three the switch
+        // took away the only rule that could ever fire. Turning them back on is
+        // undoing my own default a second time rather than overriding a man's
+        // choice, and it is the last time this flips: after here the switch on
+        // the Guard screen is his.
+        if (current.builtInRulesVersion < 5) {
+            val sites = setOf("instagram.com", "facebook.com", "tiktok.com")
+            guardDao.feedRules().first()
+                .filter { it.builtIn && it.matchType == MatchType.URL }
+                .filter { it.packageName in IN_APP_BROWSERS && it.matchValue in sites }
+                .filter { !it.enabled }
+                .forEach { guardDao.upsertRule(it.copy(enabled = true)) }
+        }
+
         settings.setBuiltInRulesVersion(BUILT_IN_RULES_VERSION)
     }
 
@@ -400,19 +418,49 @@ class GuardRepository(
          * 3 replaced those with host rules, because the path ones could not fire
          * against a browser that does not display a path. 4 brought the paths
          * back once the address bar was being found, and switched the
-         * whole-site rules off.
+         * whole-site rules off. 5 turned them back on for the in-app
+         * browsers only, where the domain is all that is ever shown.
          */
-        const val BUILT_IN_RULES_VERSION = 4
+        const val BUILT_IN_RULES_VERSION = 5
 
         private fun browserFeedRules(): List<FeedRuleEntity> =
             BROWSER_PACKAGES.flatMap { (pkg, name) ->
+                val inApp = pkg in IN_APP_BROWSERS
                 BLOCKED_PATHS.map { (label, url) ->
                     rule(pkg, "$name · $label", MatchType.URL, url)
                 } + BLOCKED_SITES.map { (label, url) ->
-                    // Off until asked for. See rule()'s enabled parameter.
-                    rule(pkg, "$name · $label", MatchType.URL, url, enabled = false)
+                    // On for the in-app browsers, off for the real ones, and the
+                    // split is what the browser can actually show rather than a
+                    // preference. See IN_APP_BROWSERS.
+                    rule(pkg, "$name · $label", MatchType.URL, url, enabled = inApp)
                 }
             }
+
+        /**
+         * The web views that live inside another app, where only the site rule
+         * can work — and where it costs nothing.
+         *
+         * Two reports bracket this. With host rules, Messenger was recognised
+         * and Facebook closed. With path rules it stopped working entirely.
+         * Between them that says what no amount of reasoning from here could:
+         * the address these show is the domain alone, with no path to match
+         * against. A path rule has nothing to compare and never will.
+         *
+         * Which makes the trade that was worth arguing about in Chrome
+         * disappear here. Closing facebook.com inside *Messenger's* link viewer
+         * costs a man nothing he cannot do in Messenger itself — his messages
+         * are the app he is already standing in. The reason to prefer a path
+         * was to keep web messaging open, and there is no web messaging to keep
+         * open inside a messaging app.
+         *
+         * The path rules ship on for these too, harmlessly: if one of them ever
+         * does show a path, the narrower rule is there and matches first.
+         */
+        internal val IN_APP_BROWSERS = setOf(
+            "com.facebook.orca",
+            "com.facebook.katana",
+            "com.instagram.android",
+        )
 
         /**
          * The feeds themselves, by path.
