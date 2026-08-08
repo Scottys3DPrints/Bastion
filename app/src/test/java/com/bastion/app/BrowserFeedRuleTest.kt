@@ -215,6 +215,98 @@ class BrowserFeedRuleTest {
         assertTrue(FeedSurface.addressBarWidthCounts(inAppBrowser = false, webViewFound = true))
     }
 
+    // --- reels-only where the address bar has no path -------------------------
+
+    /**
+     * A swipe through a reel is a whole screen; reading is not.
+     *
+     * Messenger's web view shows `facebook.com` on a reel and on a photo alike,
+     * so the address cannot separate them and something else has to. This is it:
+     * a reel feed replaces the viewport every swipe, and a man reading a post
+     * somebody sent him moves a paragraph at a time.
+     */
+    @Test
+    fun `a swipe pages the screen and reading does not`() {
+        val h = 2000
+        assertTrue(FeedSurface.isPagingScroll(deltaY = 2000, windowHeight = h))
+        assertTrue(FeedSurface.isPagingScroll(deltaY = 1200, windowHeight = h))
+        // Upwards counts too — swiping back through reels is still reels.
+        assertTrue(FeedSurface.isPagingScroll(deltaY = -1800, windowHeight = h))
+        // A paragraph, a comment, a nudge.
+        assertFalse(FeedSurface.isPagingScroll(deltaY = 300, windowHeight = h))
+        assertFalse(FeedSurface.isPagingScroll(deltaY = -400, windowHeight = h))
+        assertFalse(FeedSurface.isPagingScroll(deltaY = 0, windowHeight = h))
+    }
+
+    /** No window, no fraction to measure against, no claim. */
+    @Test
+    fun `a scroll with no window to measure against says nothing`() {
+        assertFalse(FeedSurface.isPagingScroll(deltaY = 5000, windowHeight = 0))
+        assertFalse(FeedSurface.isPagingScroll(deltaY = 5000, windowHeight = -1))
+    }
+
+    /**
+     * A friend's Facebook link opens and stays open.
+     *
+     * This is the failure the whole-site rule caused and the reason it was
+     * rejected the first time: land on a post somebody sent, and the wall
+     * arrives before a word of it is read. Nothing has paged yet, so nothing
+     * closes.
+     */
+    @Test
+    fun `a shared link opens without walling`() {
+        assertFalse(FeedSurface.siteRuleReady(isSiteRule = true, inAppBrowser = true, pagedScrolls = 0))
+        assertFalse(FeedSurface.siteRuleReady(isSiteRule = true, inAppBrowser = true, pagedScrolls = 1))
+    }
+
+    /** Two screens gone by is the feed doing the only thing a feed does. */
+    @Test
+    fun `paging twice closes the page`() {
+        assertTrue(FeedSurface.siteRuleReady(isSiteRule = true, inAppBrowser = true, pagedScrolls = 2))
+        assertTrue(FeedSurface.siteRuleReady(isSiteRule = true, inAppBrowser = true, pagedScrolls = 9))
+    }
+
+    /**
+     * The gate is for the site rule in a web view and nothing else.
+     *
+     * A path rule has already named the feed — `facebook.com/reel` is not
+     * somewhere a man arrives by accident — and a real browser shows its path,
+     * so neither needs to wait for permission it has already been given.
+     */
+    @Test
+    fun `a named feed and a real browser never wait`() {
+        assertTrue(FeedSurface.siteRuleReady(isSiteRule = false, inAppBrowser = true, pagedScrolls = 0))
+        assertTrue(FeedSurface.siteRuleReady(isSiteRule = true, inAppBrowser = false, pagedScrolls = 0))
+        assertTrue(FeedSurface.siteRuleReady(isSiteRule = false, inAppBrowser = false, pagedScrolls = 0))
+    }
+
+    /** What counts as naming a whole site, which is what the gate keys on. */
+    @Test
+    fun `a rule with no path is a site rule`() {
+        assertTrue(FeedSurface.isSiteRule("facebook.com"))
+        assertTrue(FeedSurface.isSiteRule("instagram.com"))
+        assertFalse(FeedSurface.isSiteRule("facebook.com/reel"))
+        assertFalse(FeedSurface.isSiteRule("youtube.com/shorts"))
+    }
+
+    /**
+     * And the two halves agree on the shipped rules.
+     *
+     * The gate reads a rule's match value to decide whether to wait. If a
+     * whole-site rule ever grew a path, or a path rule lost one, the gate would
+     * silently swap which of them waits — and the failure would look like the
+     * bug this fixes rather than like a typo.
+     */
+    @Test
+    fun `the shipped rules fall on the side of the gate they are meant to`() {
+        val urlRules = GuardRepository.builtInFeedRules().filter { it.matchType == MatchType.URL }
+        val sites = urlRules.filter { FeedSurface.isSiteRule(it.matchValue) }.map { it.matchValue }.toSet()
+        val paths = urlRules.filterNot { FeedSurface.isSiteRule(it.matchValue) }.map { it.matchValue }.toSet()
+        assertTrue("facebook.com should be a site rule", "facebook.com" in sites)
+        assertTrue("facebook.com/reel should be a path rule", "facebook.com/reel" in paths)
+        assertTrue("no rule should be both", sites.intersect(paths).isEmpty())
+    }
+
     // --- the shipped rules ---------------------------------------------------
 
     @Test

@@ -160,6 +160,25 @@ class GuardRepository(
                 .forEach { guardDao.upsertRule(it.copy(enabled = true)) }
         }
 
+        // Names, brought up to date. Nothing else about the row is touched.
+        //
+        // A rule keeps its id across generations, so a row already on the phone
+        // never picks up a rename — and this generation renames the web-view
+        // site rules from "All of Facebook" to "Scrolling Facebook" because the
+        // paging gate changed what they cost. Leaving the old name in place
+        // would describe a price the rule no longer charges, to the one person
+        // deciding whether to pay it.
+        //
+        // `enabled` is carried over from disk rather than from the built-in
+        // definition, so this cannot quietly switch anything on or off.
+        val labels = builtInFeedRules().associate { it.id to it.label }
+        guardDao.feedRules().first()
+            .filter { it.builtIn }
+            .forEach { row ->
+                val label = labels[row.id] ?: return@forEach
+                if (label != row.label) guardDao.upsertRule(row.copy(label = label))
+            }
+
         settings.setBuiltInRulesVersion(BUILT_IN_RULES_VERSION)
     }
 
@@ -428,7 +447,8 @@ class GuardRepository(
                 val inApp = pkg in IN_APP_BROWSERS
                 BLOCKED_PATHS.map { (label, url) ->
                     rule(pkg, "$name · $label", MatchType.URL, url)
-                } + BLOCKED_SITES.map { (label, url) ->
+                } + BLOCKED_SITES.map { (wideLabel, scrollLabel, url) ->
+                    val label = if (inApp) scrollLabel else wideLabel
                     // On for the in-app browsers, off for the real ones, and the
                     // split is what the browser can actually show rather than a
                     // preference. See IN_APP_BROWSERS.
@@ -493,10 +513,21 @@ class GuardRepository(
          * here rather than above because the whole site is the feed — there is
          * no rest-of-the-site to protect.
          */
+        /**
+         * The whole-site rules, under the two names they deserve.
+         *
+         * The same match value means different things in the two places it
+         * ships. In Chrome it closes the site on arrival, and "All of Facebook"
+         * is exactly what a man is agreeing to. In a web view it waits for the
+         * page to start paging like a feed before it closes anything — see
+         * FeedSurface.siteRuleReady — so calling it "all of Facebook" there
+         * would be asking him to accept a cost the rule does not charge, and he
+         * would leave it switched off for a reason that is not true.
+         */
         private val BLOCKED_SITES = listOf(
-            "All of Instagram" to "instagram.com",
-            "All of Facebook" to "facebook.com",
-            "All of TikTok" to "tiktok.com",
+            Triple("All of Instagram", "Scrolling Instagram", "instagram.com"),
+            Triple("All of Facebook", "Scrolling Facebook", "facebook.com"),
+            Triple("All of TikTok", "Scrolling TikTok", "tiktok.com"),
         )
 
         /**
@@ -529,9 +560,11 @@ class GuardRepository(
             /**
              * Whether it arrives switched on.
              *
-             * The whole-site browser rules ship off: they are a bigger hammer
-             * than most men want, and a rule that closes Facebook entirely
-             * should be chosen rather than discovered.
+             * The whole-site rules ship off in a real browser, where they close
+             * the site on arrival and are a bigger hammer than most men want.
+             * They ship on inside a web view, where they are the only rule that
+             * address bar can satisfy and where the paging gate keeps them from
+             * charging that price. See IN_APP_BROWSERS.
              */
             enabled: Boolean = true,
         ) = FeedRuleEntity(
