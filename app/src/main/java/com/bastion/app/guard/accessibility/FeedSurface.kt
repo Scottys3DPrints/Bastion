@@ -292,53 +292,6 @@ internal object FeedSurface {
     fun addressBarWidthCounts(inAppBrowser: Boolean, webViewFound: Boolean): Boolean =
         !inAppBrowser || webViewFound
 
-    /**
-     * Whether a scroll moved the page by roughly a whole screen.
-     *
-     * This is the signal that survives when the address bar has no path in it.
-     * A reel feed does not scroll, it *pages*: every swipe replaces the viewport
-     * with the next video, one screen height at a time, forever. Reading moves a
-     * paragraph. So the shape of the gesture says what the URL will not.
-     *
-     * Deliberately measured against the window rather than counted, because a
-     * count cannot tell reading a long post from watching reels and this can. It
-     * is a weaker claim than a view id and it is used for less: not "this is a
-     * reel", only "this is not somebody reading a link a friend sent".
-     */
-    fun isPagingScroll(deltaY: Int, windowHeight: Int): Boolean {
-        if (windowHeight <= 0) return false
-        return kotlin.math.abs(deltaY) >= windowHeight * PAGING_SCROLL_FRACTION
-    }
-
-    /**
-     * Whether a whole-site rule has earned the right to close the screen yet.
-     *
-     * A site rule inside a messaging app's web view is the only rule that can
-     * fire there, and firing it the moment the page opens is the behaviour a man
-     * already rejected: a friend sends a Facebook post and the wall arrives
-     * before he has read a word of it. Everything else is left alone —
-     * a path rule names the feed itself and needs no permission, and a real
-     * browser shows the path so it never gets here.
-     *
-     * Two pages, not one. A single hard fling down an article clears a screen
-     * height by itself; two in a row is the feed doing the only thing it does.
-     * The cost when this is wrong is two reels, and the cost of getting it wrong
-     * the other way is a blocker that eats his messages — so it errs here.
-     */
-    fun siteRuleReady(isSiteRule: Boolean, inAppBrowser: Boolean, pagedScrolls: Int): Boolean {
-        if (!isSiteRule || !inAppBrowser) return true
-        return pagedScrolls >= REQUIRED_PAGING_SCROLLS
-    }
-
-    /** A rule that names a host and nothing after it, so it covers a whole site. */
-    fun isSiteRule(matchValue: String): Boolean = !matchValue.contains('/')
-
-    /** Three fifths of the window. Short enough for a swipe, long enough to mean one. */
-    const val PAGING_SCROLL_FRACTION = 0.6
-
-    /** See [siteRuleReady]. */
-    const val REQUIRED_PAGING_SCROLLS = 2
-
     /** The top fifth of the window. Enough for a toolbar under a status bar. */
     const val ADDRESS_BAR_BAND = 0.20
 

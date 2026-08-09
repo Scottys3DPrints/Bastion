@@ -90,18 +90,6 @@ class BastionAccessibilityService : AccessibilityService() {
 
     /** Consecutive scans that have seen the player; see [checkFeed]. */
     private var feedHitStreak = 0
-
-    /**
-     * Whole-screen scrolls on the page currently open in an in-app browser.
-     *
-     * The one signal left once the address bar turns out to carry no path. See
-     * [FeedSurface.siteRuleReady] for what it is allowed to decide, and
-     * [FeedSurface.isPagingScroll] for what counts as one.
-     *
-     * Reset on every window change, which is a new page or a new app — so this
-     * only ever describes the thing on screen right now.
-     */
-    private var pagedScrolls = 0
     private var foregroundPackage: String? = null
     private var foregroundSince = 0L
 
@@ -147,17 +135,11 @@ class BastionAccessibilityService : AccessibilityService() {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 onForegroundChanged(pkg)
                 foregroundClassName = event.className?.toString()
-                // A new page is a new question. Scrolls counted on the last one
-                // must not be spent closing this one.
-                pagedScrolls = 0
                 guardSettingsScreen(pkg, foregroundClassName)
                 evaluate(pkg, force = true)
             }
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
             AccessibilityEvent.TYPE_VIEW_SCROLLED -> {
-                if (event.eventType == AccessibilityEvent.TYPE_VIEW_SCROLLED) {
-                    countPagingScroll(pkg, event)
-                }
                 // Also here, and this is what makes the wall arrive before the
                 // button rather than after it.
                 //
@@ -172,34 +154,6 @@ class BastionAccessibilityService : AccessibilityService() {
                 evaluate(pkg, force = false)
             }
         }
-    }
-
-    /**
-     * Counts the swipes that replace the screen, and only inside a web view
-     * living in another app.
-     *
-     * Everywhere else this would be noise: a real browser shows its path, and an
-     * app is matched on view ids that name the feed outright. Here there is
-     * nothing else — the address reads `facebook.com` on a reel and on a photo
-     * alike — so the gesture is the evidence.
-     *
-     * Nothing about the page is read to do this. The event carries a distance
-     * and the window carries a height; neither is content, and neither outlives
-     * the comparison. The privacy contract at the top of this file is not bent
-     * to get the answer.
-     */
-    private fun countPagingScroll(pkg: String, event: AccessibilityEvent) {
-        if (pkg !in GuardRepository.IN_APP_BROWSERS) return
-        // scrollDeltaY landed in API 28. Below it the distance is simply not
-        // reported, and a guess dressed as a measurement is worse than the
-        // whole-site rule this is trying to soften — so on those builds the
-        // site rule keeps its old behaviour and closes the page on arrival.
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.P) {
-            pagedScrolls = FeedSurface.REQUIRED_PAGING_SCROLLS
-            return
-        }
-        val height = resources.displayMetrics.heightPixels
-        if (FeedSurface.isPagingScroll(event.scrollDeltaY, height)) pagedScrolls++
     }
 
     private fun onForegroundChanged(pkg: String) {
@@ -217,7 +171,6 @@ class BastionAccessibilityService : AccessibilityService() {
             // switch would let one stray hit in the old app count towards an
             // interruption in the new one.
             feedHitStreak = 0
-            pagedScrolls = 0
             if (shield.isShowing) shield.hide()
         }
     }
@@ -494,20 +447,6 @@ class BastionAccessibilityService : AccessibilityService() {
         feedHitStreak++
         if (feedHitStreak < REQUIRED_FEED_HITS) return
 
-        // The whole-site rule waits for the page to start behaving like a feed.
-        //
-        // In Messenger's web view this is the only rule that can fire at all,
-        // and on arrival it closed every Facebook link a friend ever sent. See
-        // FeedSurface.siteRuleReady. The streak is kept rather than reset: the
-        // match is real and still standing, it has just not earned the wall yet.
-        if (!FeedSurface.siteRuleReady(
-                isSiteRule = matched.matchType == MatchType.URL &&
-                    FeedSurface.isSiteRule(matched.matchValue),
-                inAppBrowser = pkg in GuardRepository.IN_APP_BROWSERS,
-                pagedScrolls = pagedScrolls,
-            )
-        ) return
-
         run {
             if (System.currentTimeMillis() - lastInterruptAt < INTERRUPT_COOLDOWN_MS) return
             lastInterruptAt = System.currentTimeMillis()
@@ -537,7 +476,6 @@ class BastionAccessibilityService : AccessibilityService() {
                 autoDismissMillis = 8_000,
             )
             feedHitStreak = 0
-            pagedScrolls = 0
         }
     }
 
