@@ -101,6 +101,87 @@ class BrowserFeedRuleTest {
         assertFalse(FeedSurface.urlMatches("instagram.com.evil.co/reels", "instagram.com/reels"))
     }
 
+    /**
+     * A site rule reaches its own subdomains, and enumerating them is a game
+     * against a company that can add one tomorrow.
+     *
+     * `web.facebook.com` and `mbasic.facebook.com` are the same site through a
+     * different front door. A rule that said "all of Facebook" and then let
+     * mbasic through would be a wall with a gap in it that only the determined
+     * find — which is exactly the person it is there for.
+     */
+    @Test
+    fun `a site rule covers its subdomains`() {
+        listOf(
+            "facebook.com",
+            "www.facebook.com",
+            "m.facebook.com",
+            "web.facebook.com",
+            "mbasic.facebook.com",
+            "web.facebook.com/reel/123",
+        ).forEach {
+            assertTrue("$it should match", FeedSurface.urlMatches(it, "facebook.com"))
+        }
+    }
+
+    /**
+     * And the dot is what keeps that safe.
+     *
+     * Reaching down the host is only sound while the boundary is a real label
+     * separator. Without it, matching a suffix would claim notfacebook.com and
+     * matching a prefix would claim facebook.com.evil.co — the two mirror-image
+     * ways a host test goes wrong, both of which this must refuse.
+     */
+    @Test
+    fun `reaching down the host stops at the label boundary`() {
+        assertFalse(FeedSurface.urlMatches("notfacebook.com", "facebook.com"))
+        assertFalse(FeedSurface.urlMatches("myfacebook.com/reel", "facebook.com"))
+        assertFalse(FeedSurface.urlMatches("facebook.com.evil.co", "facebook.com"))
+        assertFalse(FeedSurface.urlMatches("facebook.company.co", "facebook.com"))
+    }
+
+    /** A path rule reaches subdomains too, and still refuses the rest of the site. */
+    @Test
+    fun `a path rule keeps its path while reaching subdomains`() {
+        assertTrue(FeedSurface.urlMatches("web.facebook.com/reel/99", "facebook.com/reel"))
+        assertFalse(FeedSurface.urlMatches("web.facebook.com/messages", "facebook.com/reel"))
+    }
+
+    /**
+     * The share link, which is how a reel actually arrives in a chat.
+     *
+     * Nobody sends `facebook.com/reel/1234`; Facebook rewrites it to an
+     * `fb.watch` link on the way out. Closing facebook.com and leaving fb.watch
+     * open is closing the front door of a building with two, and the open one is
+     * the door reels come through.
+     */
+    @Test
+    fun `the share-link domains are a separate site and are covered`() {
+        assertFalse("fb.watch is not a subdomain of facebook.com", FeedSurface.urlMatches("fb.watch/aB3xY", "facebook.com"))
+        assertTrue(FeedSurface.urlMatches("fb.watch/aB3xY", "fb.watch"))
+        assertTrue(FeedSurface.urlMatches("https://fb.watch/aB3xY/", "fb.watch"))
+        assertTrue(FeedSurface.urlMatches("vt.tiktok.com/ZS123/", "vt.tiktok.com"))
+
+        val shipped = GuardRepository.builtInFeedRules().map { it.matchValue }.toSet()
+        assertTrue("fb.watch should ship as a rule", "fb.watch" in shipped)
+        assertTrue("vt.tiktok.com should ship as a rule", "vt.tiktok.com" in shipped)
+    }
+
+    /**
+     * And Messenger arrives with Facebook closed, which is what was asked for
+     * after seeing what it costs.
+     */
+    @Test
+    fun `messenger ships with facebook closed`() {
+        val messenger = GuardRepository.builtInFeedRules()
+            .filter { it.packageName == "com.facebook.orca" && it.matchType == MatchType.URL }
+        listOf("facebook.com", "fb.watch").forEach { value ->
+            val rule = messenger.firstOrNull { it.matchValue == value }
+            assertTrue("Messenger has no $value rule at all", rule != null)
+            assertTrue("Messenger's $value rule must ship on", rule!!.enabled)
+        }
+    }
+
     // --- the address bar, when the browser does not name it ------------------
 
     @Test

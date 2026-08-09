@@ -160,6 +160,28 @@ class GuardRepository(
                 .forEach { guardDao.upsertRule(it.copy(enabled = true)) }
         }
 
+        // Facebook, closed in Messenger, because that was asked for outright.
+        //
+        // Generation 5's note said the switch was his from then on, and this is
+        // not a walk-back of that — it is the switch being used. The ask was
+        // "have it be just blocking of Facebook in general for Messenger", made
+        // after seeing exactly what it costs, which is more informed consent
+        // than a default has any right to. Doing it here rather than leaving him
+        // to find the toggle is the difference between a decision honoured and a
+        // decision he has to implement himself.
+        //
+        // Messenger alone, and Facebook alone. The reels reach him through the
+        // chat window, and nothing was said about Instagram or about the other
+        // web views, so nothing else is touched.
+        if (current.builtInRulesVersion < 7) {
+            val facebook = setOf("facebook.com", "fb.watch")
+            guardDao.feedRules().first()
+                .filter { it.builtIn && it.matchType == MatchType.URL }
+                .filter { it.packageName == "com.facebook.orca" && it.matchValue in facebook }
+                .filter { !it.enabled }
+                .forEach { guardDao.upsertRule(it.copy(enabled = true)) }
+        }
+
         // Names, brought up to date. Nothing else about the row is touched.
         //
         // A rule keeps its id across generations, so a row already on the phone
@@ -439,9 +461,11 @@ class GuardRepository(
          * back once the address bar was being found, and switched the
          * whole-site rules off. 5 turned them back on for the in-app
          * browsers only, where the domain is all that is ever shown. 6 only
-         * repairs the names, after a scroll gate came and went.
+         * repairs the names, after a scroll gate came and went. 7 adds the
+         * share-link domains and closes Facebook in Messenger, asked for
+         * outright.
          */
-        const val BUILT_IN_RULES_VERSION = 6
+        const val BUILT_IN_RULES_VERSION = 7
 
         private fun browserFeedRules(): List<FeedRuleEntity> =
             BROWSER_PACKAGES.flatMap { (pkg, name) ->
@@ -513,10 +537,26 @@ class GuardRepository(
          * here rather than above because the whole site is the feed — there is
          * no rest-of-the-site to protect.
          */
+        /**
+         * Whole sites, for the browsers where a path cannot be seen.
+         *
+         * Subdomains come along for free — see FeedSurface.urlMatches, which
+         * matches down the host rather than along it — so `web.facebook.com` and
+         * `mbasic.facebook.com` need no rules of their own.
+         *
+         * The short-link domains do, because they are different sites. A reel
+         * shared into a chat usually arrives as an `fb.watch` link, and that is
+         * the single likeliest way a Facebook feed reaches a man who has just
+         * asked for Facebook to be closed in Messenger. Blocking facebook.com
+         * and leaving fb.watch open would be closing the front door of a
+         * building with two.
+         */
         private val BLOCKED_SITES = listOf(
             "All of Instagram" to "instagram.com",
             "All of Facebook" to "facebook.com",
+            "Facebook share links" to "fb.watch",
             "All of TikTok" to "tiktok.com",
+            "TikTok share links" to "vt.tiktok.com",
         )
 
         /**

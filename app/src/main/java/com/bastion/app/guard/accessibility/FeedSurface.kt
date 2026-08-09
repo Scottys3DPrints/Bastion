@@ -176,25 +176,34 @@ internal object FeedSurface {
         val url = normaliseUrl(text)
         val rule = normaliseUrl(fragment)
         if (url.isEmpty() || rule.isEmpty()) return false
-        if (url == rule) return true
-        if (url.length <= rule.length || !url.startsWith(rule)) return false
 
-        // Strict at the host, loose along the path, and the asymmetry is the
-        // point rather than an inconsistency.
+        // Host and path are compared separately, because the safe comparison is
+        // the opposite one on each side.
+        val ruleHost = rule.substringBefore('/')
+        val urlHost = url.substringBefore('/')
+
+        // Down the host, never along it. `facebook.com` should cover
+        // `web.facebook.com` and `mbasic.facebook.com` — those are the same site
+        // wearing a different front door, and enumerating them is a losing game
+        // against a company that can add one tomorrow.
         //
-        // At the host a bare prefix is dangerous: instagram.com.evil.co begins
-        // with instagram.com, so a rule meant to close one site would have
-        // claimed every domain registered underneath a name that starts the
-        // same way. A host rule therefore has to have consumed the whole host,
-        // which means the next character must be a separator.
-        //
-        // Along the path the opposite is true. Facebook writes the same feed as
-        // /reel/<id> and as /reels, and a rule naming /reel that refused /reels
-        // is a rule that misses half of what it was written for — which is
-        // precisely what "recognises Facebook but not Facebook reels" would have
-        // become. There is no lookalike risk here: the host has already been
-        // matched exactly, so everything after it belongs to the same site.
-        return if (rule.contains('/')) true else url[rule.length] == '/'
+        // The dot is what makes that safe. A bare prefix would have claimed
+        // instagram.com.evil.co, and a bare suffix would claim notinstagram.com;
+        // requiring the boundary to be a real label separator rules out both. A
+        // subdomain of a site belongs to that site, and nothing else does.
+        if (urlHost != ruleHost && !urlHost.endsWith(".$ruleHost")) return false
+
+        // A rule that names only a host has said everything it means to say.
+        val rulePath = rule.substringAfter('/', "")
+        if (rulePath.isEmpty()) return true
+
+        // Along the path, loose. Facebook writes the same feed as /reel/<id> and
+        // as /reels, and a rule naming /reel that refused /reels misses half of
+        // what it was written for — which is precisely what "recognises Facebook
+        // but not Facebook reels" would have become. There is no lookalike risk
+        // left here: the host has already been settled, so everything after it
+        // belongs to the same site.
+        return url.substringAfter('/', "").startsWith(rulePath)
     }
 
     private fun normaliseUrl(raw: String): String {
