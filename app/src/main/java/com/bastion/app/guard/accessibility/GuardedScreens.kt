@@ -67,6 +67,21 @@ object GuardedScreens {
         "ch.deletescape.lawnchair.plah",
     )
 
+    /**
+     * Whether a node is the long-press menu's container.
+     *
+     * Split out so the service can find that container in the tree and read
+     * only what is inside it. Kept here, beside the identifiers it tests
+     * against, because the two halves of this decision — which node is the
+     * menu, and what makes a menu Bastion's — are one rule and drift apart the
+     * moment they live in different files.
+     */
+    fun isLauncherMenuNode(viewId: String?, className: String): Boolean =
+        (viewId != null && viewId in LAUNCHER_POPUP_IDS) ||
+            className.contains("popupcontainer") ||
+            className.contains("deepshortcut") ||
+            className.contains("popupmenu")
+
     /** Any screen this needs to see, so the caller knows when to look. */
     fun isWatchedApp(pkg: String): Boolean =
         isSettingsApp(pkg) || isInstallerApp(pkg) || isLauncherApp(pkg)
@@ -114,8 +129,19 @@ object GuardedScreens {
         serviceLabel: String,
         dnsHostname: String,
         appLabel: String = "",
+        /**
+         * The class carried by the event itself, alongside the window's.
+         *
+         * A long-press menu on the home screen is usually not a window at all —
+         * most launchers add it as a view inside the workspace they already
+         * own — so no window-state change fires and the remembered class stays
+         * the launcher's activity for as long as the menu is open. The content
+         * change that *does* fire carries the menu's own class, and reading
+         * both is what lets this see a screen that never opened a window.
+         */
+        eventClassName: String? = null,
     ): Guarded? {
-        val cls = className.orEmpty().lowercase()
+        val cls = (className.orEmpty() + " " + eventClassName.orEmpty()).lowercase()
 
         // Uninstalling, wherever it was started from.
         //
@@ -147,7 +173,13 @@ object GuardedScreens {
         // A popup window is a different window from the workspace, and the menu
         // for another app carries that app's name rather than this one's.
         if (isLauncherApp(packageName)) {
-            val popup = cls.contains("popup") || cls.contains("shortcut") || cls.contains("menu")
+            // Recognised by identifier as well as by class, because the class
+            // is the half that was failing. Launcher3 and its forks put the
+            // menu inside the workspace window rather than a new one, so on
+            // those phones nothing ever reported a popup and the wall waited
+            // for a confirmation screen the man had already reached.
+            val popup = cls.contains("popup") || cls.contains("shortcut") ||
+                cls.contains("menu") || viewIds.any { it in LAUNCHER_POPUP_IDS }
             if (popup && appLabel.isNotBlank() &&
                 texts.any { it.equals(appLabel, ignoreCase = true) }
             ) return Guarded.UNINSTALL
@@ -160,7 +192,20 @@ object GuardedScreens {
         // uninstall button. Gated on the app's name being on screen so that
         // every *other* app's info page stays open — a man must still be able
         // to manage the rest of his phone.
-        val appInfo = cls.contains("installedappdetails") ||
+        // By identifier first, because on Android 12 and later the class is
+        // no help: App info is served by the generic `SubSettings` container,
+        // the same one behind a dozen other pages, and every fragment name this
+        // used to look for stopped appearing in the window class years ago. The
+        // page still carries an entity header naming its subject and a row of
+        // action buttons, and no other Settings page carries both of those with
+        // Bastion's name in the header.
+        //
+        // The header is what makes the pairing safe. A list of every app also
+        // has Bastion's name somewhere on it, and walling that would make the
+        // phone unmanageable — but a list has no entity header, because it is
+        // not about any one app.
+        val appInfo = viewIds.any { it in APP_INFO_IDS } ||
+            cls.contains("installedappdetails") ||
             cls.contains("applicationdetails") ||
             cls.contains("appinfodashboard")
         if (appInfo && appLabel.isNotBlank() && texts.any { it.equals(appLabel, ignoreCase = true) }) {
@@ -195,6 +240,45 @@ object GuardedScreens {
         "private_dns_mode_dialog",
         "private_dns_hostname",
         "edit_text_private_dns",
+    )
+
+    /**
+     * The header and action-button identifiers on an app's own Settings page.
+     *
+     * These say "this page is about one app" rather than naming which one; the
+     * name comes from the header text matched beside them. Both halves are
+     * needed — the identifiers alone would wall every app's page and take the
+     * rest of the phone with them.
+     */
+    private val APP_INFO_IDS = setOf(
+        "entity_header_title",
+        "entity_header_content",
+        "app_detail_title",
+        "uninstall_button",
+        "action_buttons",
+        "two_buttons_panel",
+        "app_info_layout",
+        "installed_app_details",
+    )
+
+    /**
+     * The long-press menu's own container, whoever ships the launcher.
+     *
+     * Paired with the app's name found *inside* that container, never merely
+     * somewhere on screen: the workspace behind the menu has Bastion's name
+     * under its icon, so a looser test would raise the wall every time any
+     * other app was long-pressed — and, on a launcher that keeps the menu in
+     * the same window, would keep raising it over the home screen itself.
+     */
+    private val LAUNCHER_POPUP_IDS = setOf(
+        "deep_shortcuts_container",
+        "popup_container",
+        "shortcuts_container",
+        "system_shortcut",
+        "deep_shortcut",
+        "widget_shortcut",
+        "app_menu",
+        "quick_action_menu",
     )
 
     private val ACCESSIBILITY_IDS = setOf(

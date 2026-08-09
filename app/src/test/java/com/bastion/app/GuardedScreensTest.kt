@@ -28,7 +28,8 @@ class GuardedScreensTest {
         cls: String? = null,
         ids: Set<String> = emptySet(),
         texts: Set<String> = emptySet(),
-    ) = GuardedScreens.detect(pkg, cls, ids, texts, label, host, appName)
+        eventCls: String? = null,
+    ) = GuardedScreens.detect(pkg, cls, ids, texts, label, host, appName, eventCls)
 
     // --- which app counts as Settings --------------------------------------
 
@@ -232,7 +233,11 @@ class GuardedScreensTest {
 
     /**
      * The full app list carries Bastion's name among a hundred others, and it is
-     * not the uninstall screen. Requiring the detail class keeps the list open.
+     * not the uninstall screen.
+     *
+     * What keeps it open is the entity header. A list is not about any one app,
+     * so it has no header naming one — and that absence is the whole difference
+     * between "Bastion appears here" and "this page is Bastion's".
      */
     @Test
     fun `the list of all apps is not the uninstall screen`() {
@@ -240,6 +245,48 @@ class GuardedScreensTest {
             detect(
                 cls = "com.android.settings.Settings\$ManageApplicationsActivity",
                 texts = setOf("Bastion", "Instagram", "Chrome"),
+            )
+        )
+        // And under the generic container every modern build actually reports,
+        // where the class says nothing either way.
+        assertNull(
+            detect(
+                cls = "com.android.settings.SubSettings",
+                ids = setOf("apps_list", "recycler_view"),
+                texts = setOf("Bastion", "Instagram", "Chrome"),
+            )
+        )
+    }
+
+    /**
+     * App info under the container name every modern build actually reports.
+     *
+     * This is the case that was missing, and it was not an edge: since Android
+     * 12 the App info page is served by `SubSettings`, the same generic shell
+     * behind a dozen other pages, and every fragment name this looked for
+     * stopped appearing in the window class years ago. The page was walled on
+     * paper and open on the phone.
+     */
+    @Test
+    fun `app info is caught under the generic container`() {
+        assertEquals(
+            Guarded.UNINSTALL,
+            detect(
+                cls = "com.android.settings.SubSettings",
+                ids = setOf("entity_header_title", "action_buttons"),
+                texts = setOf("Bastion", "Uninstall", "Force stop"),
+            ),
+        )
+    }
+
+    /** Another app's page, under the same container, still opens. */
+    @Test
+    fun `app info for another app is not walled under the generic container`() {
+        assertNull(
+            detect(
+                cls = "com.android.settings.SubSettings",
+                ids = setOf("entity_header_title", "action_buttons"),
+                texts = setOf("Instagram", "Uninstall", "Force stop"),
             )
         )
     }
@@ -278,6 +325,74 @@ class GuardedScreensTest {
                 pkg = "com.google.android.apps.nexuslauncher",
                 cls = "com.google.android.apps.nexuslauncher.NexusLauncherActivity",
                 texts = setOf("Bastion", "Chrome", "Messages", "Phone"),
+            )
+        )
+    }
+
+    /**
+     * The menu that never opened a window, which is most of them.
+     *
+     * Launcher3 and its forks add the long-press menu as a view inside the
+     * workspace they already own, so no window-state change fires and the
+     * remembered class stays the launcher's activity for as long as the menu is
+     * up. Every test above passed while the phone did nothing, because they all
+     * handed in a class the phone never reported.
+     *
+     * Two things fix it and both are asserted here: the class carried by the
+     * content-changed event, and the container's own identifier.
+     */
+    @Test
+    fun `the menu is caught when no window opened for it`() {
+        // By the event's class, with the window still reporting the launcher.
+        assertEquals(
+            Guarded.UNINSTALL,
+            detect(
+                pkg = "com.google.android.apps.nexuslauncher",
+                cls = "com.google.android.apps.nexuslauncher.NexusLauncherActivity",
+                eventCls = "com.android.launcher3.popup.PopupContainerWithArrow",
+                texts = setOf("Bastion", "App info", "Uninstall"),
+            ),
+        )
+        // And by identifier alone, for a skin that named its class something
+        // this has never heard of.
+        assertEquals(
+            Guarded.UNINSTALL,
+            detect(
+                pkg = "com.miui.home",
+                cls = "com.miui.home.launcher.Launcher",
+                ids = setOf("deep_shortcuts_container"),
+                texts = setOf("Bastion", "App info", "Uninstall"),
+            ),
+        )
+    }
+
+    /**
+     * And the widened test must not widen the failure that matters.
+     *
+     * With the menu recognised by identifier, the home screen behind it is
+     * still the home screen: it has no menu container in it, so nothing fires.
+     * The service narrows what it reads to the menu's own subtree for the same
+     * reason — see menuIn — because the workspace underneath has Bastion's name
+     * on it whichever app was actually pressed.
+     */
+    @Test
+    fun `the home screen is still not walled once identifiers count`() {
+        assertNull(
+            detect(
+                pkg = "com.miui.home",
+                cls = "com.miui.home.launcher.Launcher",
+                ids = setOf("workspace", "hotseat", "page_indicator"),
+                texts = setOf("Bastion", "Chrome", "Messages"),
+            )
+        )
+        // A menu is open, but it is not Bastion's — the name is absent from
+        // what the service read inside it.
+        assertNull(
+            detect(
+                pkg = "com.miui.home",
+                cls = "com.miui.home.launcher.Launcher",
+                ids = setOf("deep_shortcuts_container"),
+                texts = setOf("Instagram", "App info", "Uninstall"),
             )
         )
     }

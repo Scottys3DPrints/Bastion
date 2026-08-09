@@ -74,6 +74,18 @@ class BastionAccessibilityService : AccessibilityService() {
     private var lastSettingsWallAt = 0L
 
     /**
+     * Throttles the *reading* the settings wall does, which is the expensive
+     * half and the one that runs when nothing is found.
+     *
+     * The wall's own cooldown only starts once a wall has gone up, so on a
+     * screen that never matches there was nothing holding the walk back at all
+     * — and a launcher emits content changes continuously while a man simply
+     * looks at his home screen. Short enough to be invisible: 150ms is well
+     * inside the time it takes to move a thumb to a menu item.
+     */
+    private var lastSettingsScanAt = 0L
+
+    /**
      * The class of the window currently in front, remembered.
      *
      * A content-changed event carries the class of the *view* that changed, not
@@ -135,7 +147,7 @@ class BastionAccessibilityService : AccessibilityService() {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 onForegroundChanged(pkg)
                 foregroundClassName = event.className?.toString()
-                guardSettingsScreen(pkg, foregroundClassName)
+                guardSettingsScreen(pkg, foregroundClassName, foregroundClassName)
                 evaluate(pkg, force = true)
             }
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
@@ -150,7 +162,7 @@ class BastionAccessibilityService : AccessibilityService() {
                 // next screen change, which was the confirmation dialog. The
                 // page fires content-changed as it populates; running here
                 // catches it the instant the title appears.
-                guardSettingsScreen(pkg, foregroundClassName)
+                guardSettingsScreen(pkg, foregroundClassName, event.className?.toString())
                 evaluate(pkg, force = false)
             }
         }
@@ -244,7 +256,7 @@ class BastionAccessibilityService : AccessibilityService() {
      * this runs on every window change in Settings and a walk per screen is
      * cheap while a walk per event would not be.
      */
-    private fun guardSettingsScreen(pkg: String, className: String?) {
+    private fun guardSettingsScreen(pkg: String, className: String?, eventClassName: String?) {
         // A lockdown counts as well as the settings lock. Uninstalling during
         // one would take the running lockdown with it — the countdown, the
         // guarded apps and the partner's passcode all live in app data — so the
@@ -267,13 +279,40 @@ class BastionAccessibilityService : AccessibilityService() {
             texts = emptySet(),
             serviceLabel = "",
             dnsHostname = "",
+            eventClassName = eventClassName,
         )
 
         if (guarded == null) {
+            if (now - lastSettingsScanAt < SETTINGS_SCAN_THROTTLE_MS) return
+            lastSettingsScanAt = now
             val root = rootInActiveWindow ?: return
             val ids = mutableSetOf<String>()
             val texts = mutableSetOf<String>()
-            collectIdentity(root, ids, texts)
+
+            // On the home screen the search is narrowed to the menu itself.
+            //
+            // The workspace behind the menu has Bastion's name written under
+            // its icon, so a whole-tree read says "Bastion is on screen" no
+            // matter which app was long-pressed — and on the launchers that
+            // keep the menu inside the workspace window, it says it when
+            // nothing has been pressed at all. The wall would then stand over
+            // the home screen permanently, which is not protection, it is a
+            // phone nobody can use.
+            //
+            // Reading only inside the menu asks the question that was actually
+            // meant: not "is Bastion somewhere behind this", but "is this menu
+            // Bastion's".
+            val scope = if (GuardedScreens.isLauncherApp(pkg)) menuIn(root) else null
+            collectIdentity(scope ?: root, ids, texts)
+            if (scope != null) {
+                // The container's own identifier lives on the node itself, and
+                // collectIdentity starts from its children downwards in the
+                // usual case; adding it explicitly keeps the popup test honest
+                // when the menu holds nothing else identifiable.
+                scope.viewIdResourceName?.substringAfterLast('/')?.let { ids.add(it) }
+                scope.recycle()
+            }
+
             guarded = GuardedScreens.detect(
                 packageName = pkg,
                 className = className,
@@ -282,12 +321,49 @@ class BastionAccessibilityService : AccessibilityService() {
                 serviceLabel = getString(com.bastion.app.R.string.accessibility_label),
                 dnsHostname = settings.dnsHostname,
                 appLabel = getString(com.bastion.app.R.string.app_name),
+                eventClassName = eventClassName,
             )
         }
 
         if (guarded == null) return
         lastSettingsWallAt = now
         com.bastion.app.guard.lockdown.SettingsWallActivity.raise(this, guarded)
+    }
+
+    /**
+     * The long-press menu inside a launcher's tree, if one is open.
+     *
+     * Returns the container so the caller can read that subtree alone. Null
+     * when no menu is open, which is the ordinary state of a home screen and
+     * has to stay cheap — this runs on content changes, and a launcher emits
+     * plenty of those on its own.
+     *
+     * The caller owns what comes back and recycles it.
+     */
+    private fun menuIn(root: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+        val borrowed = mutableListOf<AccessibilityNodeInfo>()
+        var visited = 0
+        try {
+            while (queue.isNotEmpty() && visited < MAX_NODES) {
+                val node = queue.removeFirst()
+                visited++
+                val id = node.viewIdResourceName?.substringAfterLast('/')
+                val cls = node.className?.toString().orEmpty().lowercase()
+                if (GuardedScreens.isLauncherMenuNode(id, cls)) {
+                    // A copy, so the original can be recycled with the rest of
+                    // the walk and the caller still has something to read.
+                    return AccessibilityNodeInfo.obtain(node)
+                }
+                for (i in 0 until node.childCount) {
+                    node.getChild(i)?.let { queue.add(it); borrowed.add(it) }
+                }
+            }
+            return null
+        } finally {
+            recycleAll(borrowed)
+        }
     }
 
     /**
@@ -1112,6 +1188,9 @@ class BastionAccessibilityService : AccessibilityService() {
          * it has been pressed.
          */
         private const val SETTINGS_WALL_COOLDOWN_MS = 250L
+
+        /** See [lastSettingsScanAt]. */
+        private const val SETTINGS_SCAN_THROTTLE_MS = 150L
 
         /** Long enough for a label, short enough never to be a message. */
         private const val MAX_IDENTITY_TEXT = 60
