@@ -331,10 +331,73 @@ class ContentIntegrityTest {
             .forEach {
                 assertTrue("${it.id} has no attribution", !it.attribution.isNullOrBlank())
                 if (it.type == "scripture") {
-                    assertEquals("${it.id} must name its translation", "WEB", it.translation)
                     assertTrue("${it.id} has no reference", !it.sourceRef.isNullOrBlank())
                 }
             }
+    }
+
+    /**
+     * Every volume the library draws from, named, and each held to its own rule.
+     *
+     * A Bible verse has to say which translation it is, because the wording is
+     * the translator's and the reader is owed that. The LDS standard works are
+     * not translations in that sense — they have one text apiece — so they
+     * carry no translation field, and demanding one would either be a lie or a
+     * blocked import.
+     *
+     * The closed list is the point. This test's real job is to fail when a
+     * scripture arrives from a volume nobody decided to include: the library is
+     * assembled in bulk, and a bulk import that quietly widens what a faith-mode
+     * user is shown is the kind of change that should have to be typed out here
+     * first.
+     */
+    @Test
+    fun `every scripture names a volume the library actually carries`() {
+        val volumes = setOf(
+            "The Bible",
+            "The Book of Mormon",
+            "Doctrine and Covenants",
+            "The Pearl of Great Price",
+        )
+        motivation.items.filter { it.type == "scripture" }.forEach {
+            assertTrue(
+                "${it.id} is from '${it.attribution}', which no one added to the list",
+                it.attribution in volumes,
+            )
+            if (it.attribution == "The Bible") {
+                assertEquals("${it.id} must name its translation", "WEB", it.translation)
+            } else {
+                assertEquals(
+                    "${it.id} is not a translation and must not claim to be one",
+                    null,
+                    it.translation,
+                )
+            }
+        }
+    }
+
+    /**
+     * And each volume is present in usable numbers rather than as a token.
+     *
+     * One Book of Mormon verse among forty from the Bible is not "the library
+     * has the Book of Mormon" — on a daily rotation it is a verse a man sees
+     * twice a year. The floor is low on purpose; it is here to catch a volume
+     * being dropped by a re-import, not to dictate the balance.
+     */
+    @Test
+    fun `each scripture volume has a real presence`() {
+        val byVolume = motivation.items
+            .filter { it.type == "scripture" }
+            .groupBy { it.attribution }
+        listOf(
+            "The Bible",
+            "The Book of Mormon",
+            "Doctrine and Covenants",
+            "The Pearl of Great Price",
+        ).forEach {
+            val n = byVolume[it].orEmpty().size
+            assertTrue("$it is down to $n verses", n >= 3)
+        }
     }
 
     /**

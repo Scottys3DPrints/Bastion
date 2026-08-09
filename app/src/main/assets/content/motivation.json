@@ -1,7 +1,7 @@
 {
  "version": 1,
- "count": 448,
- "note": "Motivation library for Bastion. Scriptures are WEB (public domain). Reframes, urge_lines, affirmations and prayers are original (Bastion). Quotes carry a `verified` flag: items whose attribution is unsourced or known to belong to someone else are marked false and are never shown — see ContentRepository.motivationFor. A misattributed line undermines the one thing this app is selling.",
+ "count": 478,
+ "note": "Motivation library for Bastion. Bible scriptures are WEB (public domain). The Book of Mormon (1830), Doctrine and Covenants (1835) and Pearl of Great Price (1851) are public domain in their own right and carry no translation field. Reframes, urge_lines, affirmations and prayers are original (Bastion). Quotes carry a `verified` flag: items whose attribution is unsourced or known to belong to someone else are marked false and are never shown — see ContentRepository.motivationFor. A misattributed line undermines the one thing this app is selling.",
  "items": [
   {
    "id": "scripture_0001",
@@ -1039,6 +1039,821 @@
    "triggers": [],
    "moments": [
     "daily"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0041",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "I will go and do the things which the Lord hath commanded, for I know that the Lord giveth no commandments unto the children of men, save he shall prepare a way for them that they may accomplish the thing which he commandeth them.",
+   "attribution": "The Book of Mormon",
+   "source": "1 Nephi 3:7",
+   "sourceRef": "1 Nephi 3:7",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "escape",
+    "trust",
+    "strength"
+   ],
+   "triggers": [
+    "stress"
+   ],
+   "moments": [
+    "daily",
+    "urge"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0042",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "And why should I yield to sin, because of my flesh? Yea, why should I give way to temptations, that the evil one have place in my heart to destroy my peace and afflict my soul? Awake, my soul! No longer droop in sin. Rejoice, O my heart, and give place no more for the enemy of my soul.",
+   "attribution": "The Book of Mormon",
+   "source": "2 Nephi 4:27-28",
+   "sourceRef": "2 Nephi 4:27-28",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "temptation",
+    "resistance",
+    "heart"
+   ],
+   "triggers": [
+    "loneliness"
+   ],
+   "moments": [
+    "urge",
+    "relapse"
+   ],
+   "length": "long",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0043",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Remember, to be carnally-minded is death, and to be spiritually-minded is life eternal.",
+   "attribution": "The Book of Mormon",
+   "source": "2 Nephi 9:39",
+   "sourceRef": "2 Nephi 9:39",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "mind",
+    "spirit",
+    "purity"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily",
+    "urge"
+   ],
+   "length": "short",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0044",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "For the natural man is an enemy to God, and has been from the fall of Adam, and will be, forever and ever, unless he yields to the enticings of the Holy Spirit, and putteth off the natural man and becometh a saint through the atonement of Christ the Lord.",
+   "attribution": "The Book of Mormon",
+   "source": "Mosiah 3:19",
+   "sourceRef": "Mosiah 3:19",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "identity",
+    "new_creation",
+    "spirit"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0045",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "But this much I can tell you, that if ye do not watch yourselves, and your thoughts, and your words, and your deeds, and observe the commandments of God, and continue in the faith of what ye have heard concerning the coming of our Lord, even unto the end of your lives, ye must perish. And now, O man, remember, and perish not.",
+   "attribution": "The Book of Mormon",
+   "source": "Mosiah 4:30",
+   "sourceRef": "Mosiah 4:30",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "vigilance",
+    "mind",
+    "perseverance"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily"
+   ],
+   "length": "long",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0046",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Have ye spiritually been born of God? Have ye received his image in your countenances? Have ye experienced this mighty change in your hearts?",
+   "attribution": "The Book of Mormon",
+   "source": "Alma 5:14",
+   "sourceRef": "Alma 5:14",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "identity",
+    "renewal",
+    "heart"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily",
+    "milestone"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0047",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Humble yourselves before the Lord, and call on his holy name, and watch and pray continually, that ye may not be tempted above that which ye can bear, and thus be led by the Holy Spirit.",
+   "attribution": "The Book of Mormon",
+   "source": "Alma 13:28",
+   "sourceRef": "Alma 13:28",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "temptation",
+    "prayer",
+    "vigilance"
+   ],
+   "triggers": [
+    "stress",
+    "anxiety"
+   ],
+   "moments": [
+    "urge",
+    "daily"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0048",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "This life is the time for men to prepare to meet God. Do not procrastinate the day of your repentance; for after this day of life, which is given us to prepare for eternity, behold, if we do not improve our time while in this life, then cometh the night of darkness wherein there can be no labor performed.",
+   "attribution": "The Book of Mormon",
+   "source": "Alma 34:32-33",
+   "sourceRef": "Alma 34:32-33",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "perseverance",
+    "honesty",
+    "renewal"
+   ],
+   "triggers": [
+    "boredom"
+   ],
+   "moments": [
+    "daily",
+    "relapse"
+   ],
+   "length": "long",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0049",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Whosoever shall put their trust in God shall be supported in their trials, and their troubles, and their afflictions, and shall be lifted up at the last day.",
+   "attribution": "The Book of Mormon",
+   "source": "Alma 36:3",
+   "sourceRef": "Alma 36:3",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "trust",
+    "strength",
+    "hope"
+   ],
+   "triggers": [
+    "stress",
+    "loneliness"
+   ],
+   "moments": [
+    "urge",
+    "daily",
+    "relapse"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0050",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Counsel with the Lord in all thy doings, and he will direct thee for good; yea, when thou liest down at night lie down unto the Lord, that he may watch over you in your sleep; and when thou risest in the morning let thy heart be full of thanks unto God.",
+   "attribution": "The Book of Mormon",
+   "source": "Alma 37:37",
+   "sourceRef": "Alma 37:37",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "guidance",
+    "prayer",
+    "presence"
+   ],
+   "triggers": [
+    "loneliness",
+    "tiredness"
+   ],
+   "moments": [
+    "daily",
+    "urge"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0051",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Remember, remember that it is upon the rock of our Redeemer, who is Christ, the Son of God, that ye must build your foundation; that when the devil shall send forth his mighty winds, yea, his shafts in the whirlwind, when all his hail and his mighty storm shall beat upon you, it shall have no power over you to drag you down.",
+   "attribution": "The Book of Mormon",
+   "source": "Helaman 5:12",
+   "sourceRef": "Helaman 5:12",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "refuge",
+    "strength",
+    "resistance"
+   ],
+   "triggers": [
+    "stress",
+    "anxiety"
+   ],
+   "moments": [
+    "urge",
+    "daily"
+   ],
+   "length": "long",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0052",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Watch and pray always, lest ye be tempted by the devil, and ye be led away captive by him.",
+   "attribution": "The Book of Mormon",
+   "source": "3 Nephi 18:18",
+   "sourceRef": "3 Nephi 18:18",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "vigilance",
+    "prayer",
+    "temptation"
+   ],
+   "triggers": [],
+   "moments": [
+    "urge",
+    "daily"
+   ],
+   "length": "short",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0053",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "And if men come unto me I will show unto them their weakness. I give unto men weakness that they may be humble; and my grace is sufficient for all men that humble themselves before me; for if they humble themselves before me, and have faith in me, then will I make weak things become strong unto them.",
+   "attribution": "The Book of Mormon",
+   "source": "Ether 12:27",
+   "sourceRef": "Ether 12:27",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "weakness",
+    "grace",
+    "strength"
+   ],
+   "triggers": [
+    "loneliness"
+   ],
+   "moments": [
+    "relapse",
+    "daily",
+    "urge"
+   ],
+   "length": "long",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0054",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Pray unto the Father with all the energy of heart, that ye may be filled with this love, which he hath bestowed upon all who are true followers of his Son, Jesus Christ; that ye may become the sons of God; that when he shall appear we shall be like him.",
+   "attribution": "The Book of Mormon",
+   "source": "Moroni 7:48",
+   "sourceRef": "Moroni 7:48",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "prayer",
+    "identity",
+    "hope"
+   ],
+   "triggers": [
+    "loneliness"
+   ],
+   "moments": [
+    "daily"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0055",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Come unto Christ, and be perfected in him, and deny yourselves of all ungodliness; and if ye shall deny yourselves of all ungodliness, and love God with all your might, mind and strength, then is his grace sufficient for you.",
+   "attribution": "The Book of Mormon",
+   "source": "Moroni 10:32",
+   "sourceRef": "Moroni 10:32",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "grace",
+    "self_control",
+    "purity"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily",
+    "milestone"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0056",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Nevertheless, he that repents and does the commandments of the Lord shall be forgiven.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 1:32",
+   "sourceRef": "1:32",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "mercy",
+    "renewal",
+    "hope"
+   ],
+   "triggers": [
+    "loneliness"
+   ],
+   "moments": [
+    "relapse",
+    "daily"
+   ],
+   "length": "short",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0057",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Look unto me in every thought; doubt not, fear not.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 6:36",
+   "sourceRef": "6:36",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "mind",
+    "fear",
+    "trust"
+   ],
+   "triggers": [
+    "anxiety",
+    "stress"
+   ],
+   "moments": [
+    "urge",
+    "daily"
+   ],
+   "length": "short",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0058",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Pray always, that you may come off conqueror; yea, that you may conquer Satan, and that you may escape the hands of the servants of Satan that do uphold his work.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 10:5",
+   "sourceRef": "10:5",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "prayer",
+    "resistance",
+    "escape"
+   ],
+   "triggers": [],
+   "moments": [
+    "urge",
+    "daily"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0059",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "For behold, I, God, have suffered these things for all, that they might not suffer if they would repent.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 19:16",
+   "sourceRef": "19:16",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "mercy",
+    "grace",
+    "hope"
+   ],
+   "triggers": [
+    "loneliness"
+   ],
+   "moments": [
+    "relapse"
+   ],
+   "length": "short",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0060",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Behold, he who has repented of his sins, the same is forgiven, and I, the Lord, remember them no more.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 58:42",
+   "sourceRef": "58:42",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "mercy",
+    "shame",
+    "renewal"
+   ],
+   "triggers": [
+    "loneliness"
+   ],
+   "moments": [
+    "relapse",
+    "daily"
+   ],
+   "length": "short",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0061",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Behold, the Lord requireth the heart and a willing mind; and the willing and obedient shall eat the good of the land of Zion in these last days.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 64:34",
+   "sourceRef": "64:34",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "heart",
+    "mind",
+    "discipline"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0062",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "And ye cannot bear all things now; nevertheless, be of good cheer, for I will lead you along.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 78:18",
+   "sourceRef": "78:18",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "comfort",
+    "hope",
+    "presence"
+   ],
+   "triggers": [
+    "loneliness",
+    "tiredness"
+   ],
+   "moments": [
+    "relapse",
+    "daily",
+    "urge"
+   ],
+   "length": "short",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0063",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "I, the Lord, am bound when ye do what I say; but when ye do not what I say, ye have no promise.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 82:10",
+   "sourceRef": "82:10",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "covenant",
+    "discipline",
+    "honor"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily"
+   ],
+   "length": "short",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0064",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Cease to be idle; cease to be unclean; cease to find fault one with another; cease to sleep longer than is needful; retire to thy bed early, that ye may not be weary; arise early, that your bodies and your minds may be invigorated.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 88:124",
+   "sourceRef": "88:124",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "discipline",
+    "purity",
+    "body"
+   ],
+   "triggers": [
+    "boredom",
+    "tiredness"
+   ],
+   "moments": [
+    "daily"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0065",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Let thy bowels also be full of charity towards all men, and to the household of faith, and let virtue garnish thy thoughts unceasingly; then shall thy confidence wax strong in the presence of God.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 121:45",
+   "sourceRef": "121:45",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "purity",
+    "mind",
+    "presence"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily",
+    "urge",
+    "milestone"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0066",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "The Holy Ghost shall be thy constant companion, and thy scepter an unchanging scepter of righteousness and truth; and thy dominion shall be an everlasting dominion, and without compulsory means it shall flow unto thee forever and ever.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 121:46",
+   "sourceRef": "121:46",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "presence",
+    "honor",
+    "spirit"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily",
+    "milestone"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0067",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "There is a law, irrevocably decreed in heaven before the foundations of this world, upon which all blessings are predicated — and when we obtain any blessing from God, it is by obedience to that law upon which it is predicated.",
+   "attribution": "Doctrine and Covenants",
+   "source": "Doctrine and Covenants 130:20-21",
+   "sourceRef": "130:20-21",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "discipline",
+    "covenant",
+    "word"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0068",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "Satan came tempting him, saying: Moses, son of man, worship me. And it came to pass that Moses looked upon Satan and said: Who art thou? For behold, I am a son of God.",
+   "attribution": "The Pearl of Great Price",
+   "source": "Moses 1:12-13",
+   "sourceRef": "Moses 1:12-13",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "identity",
+    "resistance",
+    "temptation"
+   ],
+   "triggers": [
+    "loneliness"
+   ],
+   "moments": [
+    "urge",
+    "daily"
+   ],
+   "length": "medium",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0069",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "For behold, this is my work and my glory — to bring to pass the immortality and eternal life of man.",
+   "attribution": "The Pearl of Great Price",
+   "source": "Moses 1:39",
+   "sourceRef": "Moses 1:39",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "hope",
+    "identity",
+    "presence"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily",
+    "milestone"
+   ],
+   "length": "short",
+   "publicDomain": true,
+   "verified": true
+  },
+  {
+   "id": "scripture_0070",
+   "type": "scripture",
+   "modes": [
+    "faith"
+   ],
+   "text": "We believe in being honest, true, chaste, benevolent, virtuous, and in doing good to all men. If there is anything virtuous, lovely, or of good report or praiseworthy, we seek after these things.",
+   "attribution": "The Pearl of Great Price",
+   "source": "Articles of Faith 1:13",
+   "sourceRef": "Articles of Faith 1:13",
+   "translation": null,
+   "title": null,
+   "themes": [
+    "purity",
+    "honesty",
+    "honor"
+   ],
+   "triggers": [],
+   "moments": [
+    "daily",
+    "milestone"
    ],
    "length": "medium",
    "publicDomain": true,
