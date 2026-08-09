@@ -90,8 +90,10 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
             Text(
                 // Says plainly that it cannot be called off, because discovering
                 // that by trying would feel like a trap rather than a decision.
-                "Guarded apps stay closed until it ends. Clearing Bastion's data or turning "
-                    + "Guard off would end it — Android lets no app be truly uncloseable.",
+                "Guarded apps stay closed until the timer runs out. Nothing here " +
+                    "will end it early. Wiping Bastion's data or switching Guard " +
+                    "off would — no app on Android can truly close that door, and " +
+                    "saying otherwise would be a promise this cannot keep.",
                 style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.TextMuted,
             )
@@ -99,10 +101,14 @@ fun LockdownCard(settings: Settings, graph: BastionGraph, showPlanLink: Boolean 
             SectionLabel("Panic lockdown")
             Spacer(Modifier.height(Space.sm))
             Text(
-                "One button that shuts everything down for " +
-                    "${Lockdown.describe(settings.lockdownSeconds)} — closes your " +
-                    "guarded apps, turns on the filter, locks your screen. Once " +
-                    "started it can't be called off until the timer ends.",
+                // What it is for, then what it does, then the catch. The old
+                // line led with the mechanism and buried the one fact a man
+                // needs before he presses it.
+                "For the moment you can feel it coming and do not trust yourself " +
+                    "to hold. Closes every guarded app, turns the filter on and " +
+                    "locks your screen for " +
+                    "${Lockdown.describe(settings.lockdownSeconds)}. It cannot be " +
+                    "called off once it starts — that is the whole point of it.",
                 style = MaterialTheme.typography.bodySmall,
                 color = BastionColors.TextMuted,
             )
@@ -196,8 +202,10 @@ fun LockdownCompactButton(
         contentColor = BastionColors.Amber,
     ) {
         if (active) {
-            // Seconds below a minute: a 30-second rehearsal that reads "0m"
-            // for its whole life looks broken rather than short.
+            // Seconds below a minute, for the tail of the countdown. No length
+            // this short can be chosen any more, but every lockdown passes
+            // through its last minute, and one that reads "0m" while still
+            // holding the phone looks broken rather than nearly over.
             val secondsLeft = Lockdown.remainingSeconds(settings)
             val label = when {
                 secondsLeft >= 3600 -> "${secondsLeft / 3600}h"
@@ -275,7 +283,11 @@ fun LockdownPlanCard(settings: Settings, graph: BastionGraph) {
                 SectionLabel("Panic lockdown")
                 Spacer(Modifier.height(Space.sm))
                 Text(
-                    "${Lockdown.describeShort(settings.lockdownSeconds)} · ${planSummary(settings)}",
+                    // What the button will do, before it is pressed. This card
+                    // exists so that is knowable in advance rather than
+                    // discovered by a press that cannot be taken back.
+                    "What the button does: ${planSummary(settings)}, for " +
+                        Lockdown.describe(settings.lockdownSeconds),
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
@@ -317,10 +329,6 @@ private fun LockdownPlanDialog(
                 SectionLabel("How long")
                 Spacer(Modifier.height(Space.sm))
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
-                    // 30 seconds is a rehearsal setting, and it is first for a
-                    // reason: this plan cannot be called off once it starts, so
-                    // the only safe way to find out what it actually does to
-                    // your phone is to try it at a length that costs nothing.
                     LOCKDOWN_LENGTHS.forEach { seconds ->
                         val chosen = settings.lockdownSeconds == seconds
                         Box(
@@ -343,14 +351,6 @@ private fun LockdownPlanDialog(
                             )
                         }
                     }
-                }
-                if (settings.lockdownSeconds < 60) {
-                    Spacer(Modifier.height(Space.sm))
-                    Text(
-                        "A rehearsal length. Set it back to something real once you have seen it work.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = BastionColors.Amber,
-                    )
                 }
 
                 Spacer(Modifier.height(Space.lg))
@@ -444,9 +444,11 @@ private fun PlanToggle(
 /**
  * The lengths offered, in seconds.
  *
- * 30 seconds is deliberately in the list rather than hidden behind a debug
- * flag: the plan is un-cancellable by design, so a man has to be able to
- * rehearse it before he trusts it with an evening.
+ * The list opened with 30 seconds for a while, so the plan could be rehearsed
+ * before being trusted with an evening. It is gone. A length that costs nothing
+ * to sit through is a length that protects nothing, and offering it beside the
+ * real ones made a picker where four of five entries meant business — which is
+ * not a picker, it is a trap for the one moment a man is not reading carefully.
  */
-private val LOCKDOWN_LENGTHS = listOf(30, 60 * 60, 6 * 60 * 60, 24 * 60 * 60, 72 * 60 * 60)
+internal val LOCKDOWN_LENGTHS = listOf(60 * 60, 6 * 60 * 60, 24 * 60 * 60, 72 * 60 * 60)
 

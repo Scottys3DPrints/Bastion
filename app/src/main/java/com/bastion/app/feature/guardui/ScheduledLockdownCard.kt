@@ -86,8 +86,9 @@ fun ScheduledLockdownCard(settings: Settings, graph: BastionGraph) {
 
     SettingsGroup(
         title = "Nightly lockdown",
-        subtitle = "The same plan as the break-glass button, at a time you choose, " +
-            "without having to press anything. It cannot be called off once it starts.",
+        subtitle = "For the hours you already know are the hard ones. The same " +
+            "lockdown as the panic button, at a time you pick, without having to " +
+            "decide anything when it arrives. It cannot be called off once it starts.",
     ) {
         Row(
             Modifier.fillMaxWidth(),
@@ -106,7 +107,7 @@ fun ScheduledLockdownCard(settings: Settings, graph: BastionGraph) {
                         "${curfewDaysLine(settings)} at ${clockTime(settings)} for " +
                             Lockdown.describe(settings.scheduledLockdownSeconds)
                     } else {
-                        "Off — the button is the only way in"
+                        "Off — nothing happens on its own"
                     },
                     style = MaterialTheme.typography.labelSmall,
                     color = BastionColors.TextMuted,
@@ -224,20 +225,6 @@ fun ScheduledLockdownCard(settings: Settings, graph: BastionGraph) {
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
-            if (settings.scheduledLockdownSeconds < 60) {
-                Spacer(Modifier.height(Space.sm))
-                Text(
-                    // The same rehearsal length the button offers, for the same
-                    // reason: this cannot be called off, so the only safe way to
-                    // find out what it does to your phone is at a length that
-                    // costs nothing.
-                    "A rehearsal length — set the time a minute or two ahead and watch it " +
-                        "happen. Put it back to something real once you have.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = BastionColors.Amber,
-                )
-            }
-
             Spacer(Modifier.height(Space.md))
             Text(
                 nextRunLine(settings),
@@ -368,7 +355,7 @@ private fun planSummaryLine(settings: Settings): String = buildList {
  * has to end before the morning, or the first thing it costs is the alarm clock
  * he wakes up to and the second is the whole feature.
  */
-private val SCHEDULED_LENGTHS = listOf(30, 30 * 60, 60 * 60, 2 * 60 * 60, 8 * 60 * 60)
+internal val SCHEDULED_LENGTHS = listOf(30 * 60, 60 * 60, 2 * 60 * 60, 8 * 60 * 60)
 
 /** One switch in the curfew's own plan. */
 @Composable

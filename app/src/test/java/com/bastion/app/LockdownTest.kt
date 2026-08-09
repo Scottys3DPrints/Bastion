@@ -51,8 +51,17 @@ class LockdownTest {
     // message sent to a partner. If they ever disagreed, the app would be
     // asking a man to accept one thing and telling someone else another.
 
+    /**
+     * The tail of a countdown, not a length anyone can pick.
+     *
+     * Nothing under an hour is offered any more — a lockdown short enough to
+     * sit through protects nobody, and it sat in the picker looking like an
+     * ordinary choice. But every lockdown still passes through its last minute,
+     * and one that reads "0m" while it is still holding the phone looks broken
+     * rather than nearly over.
+     */
     @Test
-    fun `a rehearsal length is described in seconds`() {
+    fun `the last minute of a lockdown is counted in seconds`() {
         assertEquals("30 seconds", Lockdown.describe(30))
         assertEquals("30s", Lockdown.describeShort(30))
     }
@@ -73,7 +82,7 @@ class LockdownTest {
         assertEquals("3d", Lockdown.describeShort(72 * 3600))
     }
 
-    /** A 30-second lockdown must not report "0m" for its whole life. */
+    /** The final minute of any lockdown must not report "0m" while it still holds. */
     @Test
     fun `remaining time is available in seconds`() {
         val settings = Settings(
@@ -82,5 +91,46 @@ class LockdownTest {
         )
         assertEquals(0L, Lockdown.remainingMinutes(settings))
         assertTrue(Lockdown.remainingSeconds(settings) in 20..25)
+    }
+
+    /**
+     * No length short enough to be sat through is offered, and this is what
+     * keeps it that way.
+     *
+     * Both pickers used to open with 30 seconds so the plan could be rehearsed
+     * before being trusted with an evening — the plan cannot be called off, and
+     * the argument was that a man should be able to see what it does first.
+     * What it actually produced was a picker where one of five entries meant
+     * nothing, sitting first, in a control reached at the exact moment nobody
+     * is reading carefully.
+     *
+     * The floor is enforced on read as well, so a phone that had 30 selected
+     * under an older build does not keep it invisibly.
+     */
+    @Test
+    fun `no lockdown short enough to sit through can be chosen`() {
+        val button = com.bastion.app.feature.guardui.LOCKDOWN_LENGTHS
+        val nightly = com.bastion.app.feature.guardui.SCHEDULED_LENGTHS
+
+        assertEquals(
+            "these can be waited out where you stand",
+            emptyList<Int>(),
+            button.filter { it < Lockdown.MINIMUM_SECONDS },
+        )
+        assertEquals(
+            "these can be waited out where you stand",
+            emptyList<Int>(),
+            nightly.filter { it < Lockdown.MINIMUM_SCHEDULED_SECONDS },
+        )
+        assertEquals("chips must read left to right", button.sorted(), button)
+        assertEquals("chips must read left to right", nightly.sorted(), nightly)
+
+        // The nightly window ends before the morning; the button may take a day.
+        // If that ever inverted, the first thing a curfew would cost is the
+        // alarm clock a man wakes up to, and the second is the whole feature.
+        assertTrue(
+            "a nightly lockout must not be able to outlast the panic button",
+            nightly.max() < button.max(),
+        )
     }
 }

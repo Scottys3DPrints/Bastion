@@ -204,6 +204,17 @@ fun BastionTopBar(
 fun Section(
     label: String? = null,
     modifier: Modifier = Modifier,
+    /**
+     * One line under the heading saying what the group is *for*.
+     *
+     * A heading names a group; it does not explain why a man would open it.
+     * "How hard it is to undo" tells him what the controls below adjust and
+     * nothing about whether he wants them adjusted — and a screen full of
+     * headings like that reads as settings to skip past rather than decisions
+     * to make. The purpose belongs at the top, once, not repeated inside every
+     * card underneath.
+     */
+    description: String? = null,
     trailing: @Composable (() -> Unit)? = null,
     /**
      * The gap between things *inside* the section, which is not the gap between
@@ -232,6 +243,14 @@ fun Section(
             // Closer to its content than to the section above it. A heading
             // equidistant from both belongs to neither.
             Spacer(Modifier.height(Space.sm))
+        }
+        description?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
+            )
+            Spacer(Modifier.height(Space.md))
         }
         Column(
             Modifier.fillMaxWidth(),

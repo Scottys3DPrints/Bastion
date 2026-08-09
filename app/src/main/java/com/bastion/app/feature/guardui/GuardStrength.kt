@@ -57,9 +57,9 @@ import com.bastion.app.guard.vpn.BastionVpnService
 enum class GuardLayer(val label: String, val blurb: String) {
     FEED_GUARD("Feed blocking", "Closes Reels, Shorts and For You as they open"),
     CONTENT_FILTER("Website filter", "Blocks adult sites across your apps and browsers"),
-    PRIVATE_DNS("Extra website blocking", "Catches apps that get around the filter"),
+    PRIVATE_DNS("Extra website blocking", "Catches the apps that route around the filter"),
     SCREEN_LOCK("Screen lock", "Lets a panic lockdown lock your screen"),
-    GRAYSCALE("Dimming", "Takes the shine off guarded apps"),
+    GRAYSCALE("Dimming", "Drains the colour out of guarded apps"),
     NOTIFICATIONS("Alerts", "Tells you when a protection drops"),
 }
 

@@ -25,6 +25,25 @@ import com.bastion.app.guard.vpn.BastionVpnService
 object Lockdown {
 
     /**
+     * The shortest lockdown that can be chosen, and the floor a stored one is
+     * read through.
+     *
+     * Both lists once began with 30 seconds so the plan could be rehearsed
+     * before being trusted with an evening. Removing that option from the
+     * picker is not enough on its own: a phone that had it selected still has
+     * 30 on disk, and a setting that is too short to protect anyone *and* no
+     * longer visible is worse than one that is merely too short. So the floor
+     * is applied where the value is read, not only where it is offered.
+     *
+     * The nightly window's floor is lower than the button's, for the same
+     * reason its ceiling is: the button answers a crisis and may take a day,
+     * while a lockout that runs every night has to end before the morning.
+     */
+    const val MINIMUM_SECONDS = 60 * 60
+    const val MINIMUM_SCHEDULED_SECONDS = 30 * 60
+
+
+    /**
      * Running if EITHER clock still says so.
      *
      * The wall clock alone was a one-tap bypass: rolling the device date forward

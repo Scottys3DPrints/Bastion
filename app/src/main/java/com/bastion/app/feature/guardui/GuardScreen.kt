@@ -516,7 +516,11 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
             // one undifferentiated list — the complaint was that it all felt
             // like the same part. Naming what each group is for is most of the
             // fix; the shared surface behind each one does the rest.
-            Section("What is guarded", spacing = Space.lg) {
+            Section(
+                "What is guarded",
+                description = "The apps Bastion watches, and how much of each one it closes.",
+                spacing = Space.lg,
+            ) {
             GuardedAppsSection(
                 apps = guardedApps,
                 guardRunning = serviceRunning,
@@ -594,7 +598,11 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
             )
             }
 
-            Section("How hard it is to undo", spacing = Space.md) {
+            Section(
+                "How hard it is to undo",
+                description = "How much stands between you and switching your own protection off.",
+                spacing = Space.md,
+            ) {
 
             // --- Tamper resistance ---
             BastionCard(accent = BastionColors.Bronze) {
@@ -610,9 +618,21 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         SectionLabel("Make changes hard to undo")
                         Spacer(Modifier.height(Space.sm))
                         Text(
-                            "Turning protection OFF waits before it happens, so a " +
-                                "weak moment can't undo your setup in seconds. " +
-                                "Turning protection ON is always immediate.",
+                            // Purpose first, mechanism second. The old line
+                            // opened with "turning protection OFF waits before
+                            // it happens", which says what the switch does and
+                            // never says who it is for — so a man reads it and
+                            // decides whether it sounds annoying, when what he
+                            // should be deciding is whether he trusts himself
+                            // at midnight.
+                            "You set this up now, while you mean it. This is what stops " +
+                                "you taking it apart later, when you do not.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = BastionColors.TextMuted,
+                        )
+                        Spacer(Modifier.height(Space.sm))
+                        Text(
+                            "Removing any protection has to wait. Adding one is instant.",
                             style = MaterialTheme.typography.bodySmall,
                             color = BastionColors.TextMuted,
                         )
@@ -622,9 +642,9 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                             // point is knowing which one you are in before you
                             // change something.
                             if (settings.tamperLockEnabled)
-                                "On — off-switches wait ${com.bastion.app.data.repo.GuardRepository.Delay.describe(settings.coolingOffMinutes)}"
+                                "On — switching anything off waits ${com.bastion.app.data.repo.GuardRepository.Delay.describe(settings.coolingOffMinutes)}"
                             else
-                                "Off — changes happen right away",
+                                "Off — anything can be switched off in seconds",
                             style = MaterialTheme.typography.bodySmall,
                             color = if (settings.tamperLockEnabled) BastionColors.BronzeBright
                             else BastionColors.TextMuted,
@@ -672,10 +692,12 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 // is owed the exact terms.
                 com.bastion.app.core.design.Advanced(label = "How this is enforced") {
                     Text(
-                        "Guard itself can always be switched off in Android's settings. " +
-                            "Locked in, that puts a wall in front of you that needs the partner's " +
-                            "code or the wait — and Bastion keeps putting it back. Home still " +
-                            "leaves it unless the command below has been run. A wall, not a cage.",
+                        "Android never lets an app make itself unremovable, so Guard can " +
+                            "always be switched off in the phone's settings. What Bastion " +
+                            "does is put a wall on that screen and keep putting it back, so " +
+                            "switching off costs a deliberate few minutes and your partner's " +
+                            "code instead of one tap. A wall, not a cage — and the difference " +
+                            "is the honest part.",
                         style = MaterialTheme.typography.bodySmall,
                         color = BastionColors.TextMuted,
                     )
@@ -728,6 +750,19 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 }
 
                 Spacer(Modifier.height(Space.lg))
+                SectionLabel("How long the wait is")
+                Spacer(Modifier.height(Space.sm))
+                Text(
+                    // The reason is on screen because the number looks
+                    // gratuitous without it. Twelve hours reads as the app
+                    // being awkward until you notice it is the shortest wait
+                    // guaranteed to have a night's sleep inside it.
+                    "Long enough that you have to sleep on it, which is the whole " +
+                        "point — nobody wants the same thing at 1am and at breakfast.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextMuted,
+                )
+                Spacer(Modifier.height(Space.md))
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                     com.bastion.app.data.repo.GuardRepository.Delay.CHOICES.forEach { minutes ->
                         DelayChip(minutes, settings.coolingOffMinutes == minutes) {
@@ -744,20 +779,6 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         }
                     }
                 }
-                if (settings.coolingOffMinutes < com.bastion.app.data.repo.GuardRepository.Delay.TEST_ONLY_BELOW_MINUTES) {
-                    Spacer(Modifier.height(Space.sm))
-                    // Said plainly rather than left for him to work out. A delay
-                    // he can sit through in one go is a rehearsal of the
-                    // mechanism, not the mechanism — and an app that offered it
-                    // as an equal choice would be overstating itself.
-                    Text(
-                        "That is a test setting. A delay you can wait out in one sitting " +
-                            "proves the wall works; it will not stop you at 1am.",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = BastionColors.Amber,
-                    )
-                }
-
                 if (pendingChanges.isNotEmpty()) {
                     Spacer(Modifier.height(Space.lg))
                     SectionLabel("Waiting", color = BastionColors.Amber)
@@ -793,7 +814,11 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
             // without going looking; only its plan belongs here.
             }
 
-            Section("Extra protection", spacing = Space.md) {
+            Section(
+                "Extra protection",
+                description = "Everything that works alongside the app blocking.",
+                spacing = Space.md,
+            ) {
                 LockdownPlanCard(settings = settings, graph = graph)
 
                 // Directly beneath the plan it obeys. Putting the schedule on
@@ -1012,8 +1037,10 @@ private fun PrivateDnsCard() {
                     "while you're locked in, turning it off puts a wall in front of you."
                 live != null -> "On: $live. Bastion is watching it. If it goes off while " +
                     "you're locked in, you'll hit the same wall as when Guard goes off."
-                else -> "Set this as Private DNS. It filters below the app layer, where " +
-                    "Bastion can't reach — and once it's set, Bastion holds you to it."
+                else -> "Blocks adult sites across the whole phone, not just the apps " +
+                    "Bastion can see. Some apps route around the ordinary filter; " +
+                    "nothing routes around this. Set it once, and Bastion tells you " +
+                    "if it ever comes off."
             },
             style = MaterialTheme.typography.bodySmall,
             color = if (isOff) BastionColors.Amber else BastionColors.TextMuted,
@@ -1128,7 +1155,7 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
                 )
                 Spacer(Modifier.height(Space.xs))
                 Text(
-                    "A dimming veil over guarded apps",
+                    "Drains the colour out of guarded apps",
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
@@ -1147,7 +1174,9 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
             // setting, so the grant bought a change of wording and nothing
             // else. The veil is the real mechanism, and it is a nudge rather
             // than a wall.
-            "Takes the shine off a feed without hiding it. A nudge, not a wall.",
+            "Bright colour is most of what makes a feed pull at you. Take it away " +
+                "and the same feed is easier to put down. A nudge, not a wall — " +
+                "the app still opens.",
             style = MaterialTheme.typography.bodySmall,
             color = BastionColors.TextMuted,
         )

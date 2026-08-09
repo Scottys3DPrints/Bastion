@@ -29,13 +29,14 @@ data class Settings(
     /**
      * Weakening a guard waits this many minutes before it takes effect.
      *
-     * Minutes rather than hours because the shortest honest delay a man might
-     * want is not a whole hour — and because a five-minute setting exists so
-     * the wall and the unlock flow can actually be exercised without waiting
-     * out a real one. Stored under a new key; see [Settings.coolingOffMinutes]
-     * in SettingsStore.read for how an existing hours value is carried over.
+     * Never shorter than [GuardRepository.Delay.MINIMUM_MINUTES], which the
+     * read clamps to rather than trusting what is on disk — see there for why
+     * the floor is half a day. Kept in minutes because that is the unit the
+     * requests are written and matured in, not because anything this short is
+     * offered. Stored under a new key; see SettingsStore.read for how an
+     * existing hours value is carried over.
      */
-    val coolingOffMinutes: Int = 120,
+    val coolingOffMinutes: Int = 1440,
     val tamperLockEnabled: Boolean = false,
     val partnerLockEnabled: Boolean = false,
     /** Consecutive wrong partner-code entries; reset by a correct one. */
@@ -326,9 +327,17 @@ class SettingsStore(private val context: Context) {
             // than migrating it in place means a man who never touches the
             // setting keeps exactly the delay he had, and nobody's lock gets
             // quietly shortened by an upgrade.
-            coolingOffMinutes = p[Keys.COOLING_OFF_MINUTES]
-                ?: p[Keys.COOLING_OFF]?.let { it * 60 }
-                ?: 120,
+            // Clamped, not just defaulted. A phone set to five minutes under an
+            // older build still has five minutes on disk, and dropping that
+            // option from the picker would have left the setting live and no
+            // longer visible — too short to protect anyone and too hidden to
+            // notice. Raising a delay is a tightening and has always been
+            // allowed to take effect at once.
+            coolingOffMinutes = (
+                p[Keys.COOLING_OFF_MINUTES]
+                    ?: p[Keys.COOLING_OFF]?.let { it * 60 }
+                    ?: 1440
+                ).coerceAtLeast(com.bastion.app.data.repo.GuardRepository.Delay.MINIMUM_MINUTES),
             tamperLockEnabled = p[Keys.TAMPER_LOCK] ?: false,
             partnerLockEnabled = p[Keys.PARTNER_LOCK] ?: false,
             guardOffSince = p[Keys.GUARD_OFF_SINCE] ?: 0L,
@@ -357,9 +366,12 @@ class SettingsStore(private val context: Context) {
             // Falls back to the old hours key so an existing install keeps
             // the duration its owner chose rather than silently resetting to
             // the default the day this shipped.
-            lockdownSeconds = p[Keys.LOCKDOWN_SECONDS]
-                ?: p[Keys.LOCKDOWN_HOURS]?.times(60 * 60)
-                ?: (24 * 60 * 60),
+            // Clamped to the floor as well as defaulted; see Lockdown.
+            lockdownSeconds = (
+                p[Keys.LOCKDOWN_SECONDS]
+                    ?: p[Keys.LOCKDOWN_HOURS]?.times(60 * 60)
+                    ?: (24 * 60 * 60)
+                ).coerceAtLeast(com.bastion.app.guard.lockdown.Lockdown.MINIMUM_SECONDS),
             lockdownUntil = p[Keys.LOCKDOWN_UNTIL] ?: 0L,
             lockdownEndElapsed = p[Keys.LOCKDOWN_END_ELAPSED] ?: 0L,
             lockdownSpanSeconds = p[Keys.LOCKDOWN_SPAN] ?: 0,
@@ -370,7 +382,8 @@ class SettingsStore(private val context: Context) {
             scheduledLockdownEnabled = p[Keys.SCHEDULED_LOCKDOWN] ?: false,
             scheduledLockdownHour = p[Keys.SCHEDULED_LOCKDOWN_HOUR] ?: 22,
             scheduledLockdownMinute = p[Keys.SCHEDULED_LOCKDOWN_MINUTE] ?: 0,
-            scheduledLockdownSeconds = p[Keys.SCHEDULED_LOCKDOWN_SECONDS] ?: (60 * 60),
+            scheduledLockdownSeconds = (p[Keys.SCHEDULED_LOCKDOWN_SECONDS] ?: (60 * 60))
+                .coerceAtLeast(com.bastion.app.guard.lockdown.Lockdown.MINIMUM_SCHEDULED_SECONDS),
             scheduledLockdownLastRun = p[Keys.SCHEDULED_LOCKDOWN_LAST_RUN] ?: 0L,
             curfewDaysCsv = p[Keys.CURFEW_DAYS] ?: "",
             curfewLockScreen = p[Keys.CURFEW_LOCK_SCREEN] ?: true,

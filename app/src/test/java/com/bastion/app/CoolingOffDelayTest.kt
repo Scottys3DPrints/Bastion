@@ -39,9 +39,10 @@ class CoolingOffDelayTest {
 
     @Test
     fun `the short form fits a chip`() {
-        assertEquals("5m", GuardRepository.Delay.describeShort(5))
-        assertEquals("2h", GuardRepository.Delay.describeShort(120))
+        assertEquals("12h", GuardRepository.Delay.describeShort(720))
         assertEquals("24h", GuardRepository.Delay.describeShort(1440))
+        assertEquals("2d", GuardRepository.Delay.describeShort(2880))
+        assertEquals("7d", GuardRepository.Delay.describeShort(10080))
         // Never blank, whatever it is handed — a chip with no label is a chip
         // nobody can choose.
         GuardRepository.Delay.CHOICES.forEach {
@@ -50,14 +51,12 @@ class CoolingOffDelayTest {
     }
 
     /**
-     * The offered choices have to include the five-minute test setting and the
-     * two-hour default, or the migration below lands a man on a value he cannot
-     * see selected anywhere.
+     * The default has to be one of the offered choices, or a man opens the
+     * screen and sees no chip selected at all.
      */
     @Test
-    fun `the choices include the test setting and the default`() {
-        assertTrue(5 in GuardRepository.Delay.CHOICES)
-        assertTrue(120 in GuardRepository.Delay.CHOICES)
+    fun `the choices include the default and read left to right`() {
+        assertTrue(1440 in GuardRepository.Delay.CHOICES)
         assertEquals(
             "choices must be ascending so the chips read left to right",
             GuardRepository.Delay.CHOICES.sorted(),
@@ -66,17 +65,32 @@ class CoolingOffDelayTest {
     }
 
     /**
-     * Only the five-minute setting is below the honesty threshold.
+     * Nothing shorter than half a day is offered, and this is the test that
+     * keeps it that way.
      *
-     * The warning shown beneath the chips keys off this. If an hour ever fell
-     * under it, a man running a perfectly reasonable delay would be told his
-     * lock is a test setting, and the warning would stop meaning anything.
+     * The list used to open with five minutes so the lock could be exercised
+     * end to end without waiting. That was a convenience for whoever was
+     * testing and a hole for everybody else, because it sat in the picker
+     * looking like an ordinary choice. The floor is twelve hours because that
+     * is the shortest span guaranteed to contain a night's sleep, and sleep is
+     * what actually does the work here — a delay a man can sit through in one
+     * evening is a delay he will sit through, at the exact hour it was meant to
+     * stop him.
      */
     @Test
-    fun `only the test setting is flagged as too short to protect`() {
-        val flagged = GuardRepository.Delay.CHOICES
-            .filter { it < GuardRepository.Delay.TEST_ONLY_BELOW_MINUTES }
-        assertEquals(listOf(5), flagged)
+    fun `no delay short enough to wait out in one sitting is offered`() {
+        val tooShort = GuardRepository.Delay.CHOICES.filter { it < 720 }
+        assertEquals("these can be waited out in a single evening", emptyList<Int>(), tooShort)
+        assertEquals(720, GuardRepository.Delay.MINIMUM_MINUTES)
+    }
+
+    /** Every offered choice speaks itself in whole hours or whole days. */
+    @Test
+    fun `every choice reads as a round span`() {
+        GuardRepository.Delay.CHOICES.forEach {
+            val long = GuardRepository.Delay.describe(it)
+            assertTrue("$it reads as '$long'", long.endsWith("hours") || long.endsWith("days"))
+        }
     }
 
     /**
@@ -120,6 +134,7 @@ class CoolingOffDelayTest {
         fun legacyHours(minutes: Int) = ((minutes + 59) / 60).coerceAtLeast(1)
         assertEquals(1, legacyHours(5))
         assertEquals(1, legacyHours(60))
+        assertEquals(12, legacyHours(720))
         assertEquals(2, legacyHours(61))
         assertEquals(24, legacyHours(1440))
         GuardRepository.Delay.CHOICES.forEach {

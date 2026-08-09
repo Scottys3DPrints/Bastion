@@ -261,31 +261,51 @@ class GuardRepository(
          */
         fun describe(minutes: Int): String = when {
             minutes < 60 -> if (minutes == 1) "1 minute" else "$minutes minutes"
+            // Days only past a day. "24 hours" is the span a man recognises and
+            // "1 day" is the one he rounds off in his head to "tomorrow, some
+            // time" — and this number is the whole promise the lock makes.
+            minutes > 1440 && minutes % 1440 == 0 ->
+                (minutes / 1440).let { if (it == 1) "1 day" else "$it days" }
             minutes % 60 == 0 -> (minutes / 60).let { if (it == 1) "1 hour" else "$it hours" }
             else -> "${minutes / 60}h ${minutes % 60}m"
         }
 
-        /** The same thing, short enough for a chip: "5m", "2h", "24h". */
+        /** The same thing, short enough for a chip: "12h", "24h", "3d". */
         fun describeShort(minutes: Int): String = when {
             minutes < 60 -> "${minutes}m"
+            minutes > 1440 && minutes % 1440 == 0 -> "${minutes / 1440}d"
             minutes % 60 == 0 -> "${minutes / 60}h"
             else -> "${minutes / 60}h${minutes % 60}"
         }
 
         /**
-         * The choices offered, in minutes.
+         * The choices offered, in minutes: half a day, then a day, then longer.
          *
-         * Five minutes is here so the lock, the settings wall and the unlock
-         * flow can be exercised end to end without waiting out a real delay.
-         * It is labelled as a test setting on screen rather than presented as
-         * an equal option, because a delay a man can simply wait out in one
-         * sitting is not protection — the entire mechanism depends on the
-         * weak-moment self being unable to outlast it.
+         * Nothing shorter, and that is the whole design rather than a
+         * preference. This delay exists to be longer than a weak moment, and a
+         * weak moment can last an evening — anything a man can simply sit
+         * through in one go is a delay he will sit through, at the exact hour it
+         * was supposed to stop him. Twelve hours is the shortest span that
+         * guarantees sleep falls inside it, which is the thing actually doing
+         * the work: nobody stays in the same state of mind across a night.
+         *
+         * The list used to open with five minutes, so the lock could be
+         * exercised end to end without waiting. That was a real convenience for
+         * exactly one person — whoever was testing it — and a real hole for
+         * everybody else, because it sat in the picker looking like a choice.
          */
-        val CHOICES = listOf(5, 60, 120, 360, 1440)
+        val CHOICES = listOf(720, 1440, 2880, 4320, 10080)
 
-        /** Below this, the delay is a rehearsal rather than a guard. */
-        const val TEST_ONLY_BELOW_MINUTES = 60
+        /**
+         * The floor, applied on read as well as offered in the picker.
+         *
+         * A phone that was set to five minutes under an older build still has
+         * five minutes written to disk, and dropping the option from the list
+         * would leave that setting live and unreachable — the worst of both,
+         * since it is now invisible as well as too short. Raising it is a
+         * tightening, which this app has always allowed to happen immediately.
+         */
+        val MINIMUM_MINUTES = CHOICES.min()
     }
 
     suspend fun maturedChanges() = guardDao.maturedChanges(System.currentTimeMillis())

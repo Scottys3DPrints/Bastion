@@ -109,7 +109,7 @@ class ScheduledLockdownTest {
     }
 
     @Test
-    fun `a rehearsal length is over in seconds, not caught up an hour later`() {
+    fun `a short window is over in seconds, not caught up an hour later`() {
         assertEquals(20, ScheduledLockdown.catchUpSeconds(at(14, 22, 0).plusSeconds(10), 22, 0, 30))
         assertEquals(0, ScheduledLockdown.catchUpSeconds(at(14, 22, 1), 22, 0, 30))
     }
