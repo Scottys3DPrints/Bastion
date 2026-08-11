@@ -291,6 +291,59 @@ class GuardedScreensTest {
         )
     }
 
+    // --- the press itself, earlier than any screen ---------------------------
+
+    /**
+     * The signal that cannot miss, and the one every earlier attempt went
+     * around.
+     *
+     * A long press arrives as its own event carrying the label of the view
+     * pressed, so there is nothing to infer: no popup class to recognise, no
+     * container identifier to have heard of, no tree to search for a name that
+     * is also written under every other icon. The phone says which icon was
+     * held down.
+     *
+     * It is also the only test here that is language-independent by
+     * construction — the label compared against is Bastion's own, in whatever
+     * language the phone is running.
+     */
+    @Test
+    fun `a long press on bastion's icon is enough on its own`() {
+        assertTrue(GuardedScreens.isOurIcon(listOf("Bastion"), appName))
+        // Launchers decorate the description they hang on an icon.
+        assertTrue(GuardedScreens.isOurIcon(listOf("Bastion, 2 notifications"), appName))
+        assertTrue(GuardedScreens.isOurIcon(listOf("Bastion: 3 new"), appName))
+        // Case and padding are the launcher's business, not a reason to miss.
+        assertTrue(GuardedScreens.isOurIcon(listOf("  bastion  "), appName))
+        // And it only has to be one of the strings the event carried.
+        assertTrue(GuardedScreens.isOurIcon(listOf("Folder", "Bastion"), appName))
+    }
+
+    /**
+     * Every other icon on the home screen stays long-pressable, which is the
+     * failure that would actually cost something.
+     *
+     * A blocker that walls the launcher on any long press has taken the home
+     * screen away — and the separator requirement is what keeps an app that
+     * merely starts with the same word from being caught with it.
+     */
+    @Test
+    fun `a long press on any other icon is left alone`() {
+        assertFalse(GuardedScreens.isOurIcon(listOf("Instagram"), appName))
+        assertFalse(GuardedScreens.isOurIcon(listOf("Chrome", "Messages"), appName))
+        assertFalse(GuardedScreens.isOurIcon(listOf("Bastion Journal"), appName))
+        assertFalse(GuardedScreens.isOurIcon(listOf("Not Bastion"), appName))
+        assertFalse(GuardedScreens.isOurIcon(emptyList(), appName))
+        assertFalse(GuardedScreens.isOurIcon(listOf(""), appName))
+    }
+
+    /** With no label to compare against, this claims nothing. */
+    @Test
+    fun `an unknown app label never matches`() {
+        assertFalse(GuardedScreens.isOurIcon(listOf("Bastion"), ""))
+        assertFalse(GuardedScreens.isOurIcon(listOf("Bastion"), "   "))
+    }
+
     // --- the long-press menu, a screen earlier -------------------------------
 
     /**

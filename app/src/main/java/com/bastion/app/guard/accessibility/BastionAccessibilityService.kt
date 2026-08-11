@@ -150,6 +150,7 @@ class BastionAccessibilityService : AccessibilityService() {
                 guardSettingsScreen(pkg, foregroundClassName, foregroundClassName)
                 evaluate(pkg, force = true)
             }
+            AccessibilityEvent.TYPE_VIEW_LONG_CLICKED -> guardLongPress(pkg, event)
             AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
             AccessibilityEvent.TYPE_VIEW_SCROLLED -> {
                 // Also here, and this is what makes the wall arrive before the
@@ -240,6 +241,51 @@ class BastionAccessibilityService : AccessibilityService() {
         // Self-healing by construction: if a launch is refused, the next window
         // change tries again. There is no state to get wrong.
         com.bastion.app.guard.lockdown.LockdownWallActivity.raise(this)
+    }
+
+    /**
+     * The wall at the press itself, before any menu has finished opening.
+     *
+     * Everything else here infers that an uninstall is being started: a class
+     * name that looks like a popup, a container identifier a launcher might
+     * use, a name found somewhere in a tree. Every one of those is a guess
+     * about a launcher I cannot see, and each guess held on the phones it was
+     * written against and missed on this one — the wall kept arriving at the
+     * confirmation dialog, one screen too late, which is one screen too many.
+     *
+     * A long press is delivered as its own event and it carries the label of
+     * the view pressed. There is nothing to infer. The phone says which icon
+     * was held down, and if it was Bastion's, the wall goes up on the spot.
+     *
+     * The service had never subscribed to the event, so Android was not
+     * delivering it at all — the reason no amount of better matching helped.
+     *
+     * Long-pressing to move the icon or reach a shortcut walls too, and that is
+     * the ask rather than a side effect: the point of the press being enough is
+     * that nothing after it has to be reached to be stopped.
+     */
+    private fun guardLongPress(pkg: String, event: AccessibilityEvent) {
+        if (!settings.tamperLockEnabled &&
+            !com.bastion.app.guard.lockdown.Lockdown.isActive(settings)
+        ) return
+        if (!GuardedScreens.isLauncherApp(pkg)) return
+
+        // The event's own strings only. No tree is read and nothing is
+        // collected: what a man long-pressed is a single label, and reaching
+        // past it into the screen would be taking more than the question needs.
+        val pressed = buildList {
+            event.text.forEach { text -> text?.toString()?.let { add(it) } }
+            event.contentDescription?.toString()?.let { add(it) }
+        }
+        if (!GuardedScreens.isOurIcon(pressed, getString(com.bastion.app.R.string.app_name))) return
+
+        val now = System.currentTimeMillis()
+        if (now - lastSettingsWallAt < SETTINGS_WALL_COOLDOWN_MS) return
+        lastSettingsWallAt = now
+        com.bastion.app.guard.lockdown.SettingsWallActivity.raise(
+            this,
+            GuardedScreens.Guarded.UNINSTALL,
+        )
     }
 
     /**

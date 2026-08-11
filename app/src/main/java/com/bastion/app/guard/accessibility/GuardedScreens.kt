@@ -68,6 +68,37 @@ object GuardedScreens {
     )
 
     /**
+     * Whether the thing just long-pressed was Bastion's own icon.
+     *
+     * This is the signal every previous attempt should have used. A long press
+     * is delivered as its own event, and that event carries the label of the
+     * view pressed — so instead of inferring "a menu is probably open, and it
+     * is probably about Bastion" from class names and container identifiers
+     * that differ on every launcher, the phone simply says which icon was held
+     * down. Nothing is guessed and nothing is language-dependent: the label
+     * being compared against is Bastion's own, in whatever language the phone
+     * is running.
+     *
+     * It also arrives earlier than anything else could. The event fires on the
+     * press itself, before the menu has finished appearing, which is what "the
+     * wall is already there" actually requires.
+     *
+     * Prefixes are accepted because launchers decorate the description they
+     * attach to an icon — "Bastion, 2 notifications" is the same icon. The
+     * separator is required so that an app genuinely named "Bastion Journal"
+     * is still its own app.
+     */
+    fun isOurIcon(pressed: List<String>, appLabel: String): Boolean {
+        if (appLabel.isBlank()) return false
+        return pressed.any {
+            val text = it.trim()
+            text.equals(appLabel, ignoreCase = true) ||
+                text.startsWith("$appLabel,", ignoreCase = true) ||
+                text.startsWith("$appLabel:", ignoreCase = true)
+        }
+    }
+
+    /**
      * Whether a node is the long-press menu's container.
      *
      * Split out so the service can find that container in the tree and read
