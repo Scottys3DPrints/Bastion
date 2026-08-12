@@ -373,6 +373,40 @@ class BrowserFeedRuleTest {
         )
     }
 
+    /**
+     * A rule that no code path can reach is worse than a missing rule.
+     *
+     * The Google app's whole-site rule ships switched on, and for one release it
+     * could never fire: an unguarded app was matched against the universal set
+     * alone, and the universal set is paths only. The rule sat in the database,
+     * enabled, unreachable, and reported as working on the Guard screen — which
+     * is the one failure mode this app cannot afford, because it is
+     * indistinguishable from protection right up until it matters.
+     *
+     * This pins the invariant behind the fix: every app that ships its own
+     * rules must have at least one that the universal set does not already
+     * cover, or those rules are decoration.
+     */
+    @Test
+    fun `an app with its own rules brings something the universal set lacks`() {
+        val all = GuardRepository.builtInFeedRules()
+        val universal = all
+            .filter { it.packageName == GuardRepository.ANY_APP && it.enabled }
+            .map { it.matchValue }
+            .toSet()
+
+        all.filter { it.packageName in GuardRepository.IN_APP_BROWSERS }
+            .groupBy { it.packageName }
+            .forEach { (pkg, rules) ->
+                val own = rules.filter { it.enabled }.map { it.matchValue }.toSet()
+                assertTrue(
+                    "$pkg ships rules but every enabled one is already in the " +
+                        "universal set, so guarding it changes nothing",
+                    (own - universal).isNotEmpty(),
+                )
+            }
+    }
+
     // --- the shipped rules ---------------------------------------------------
 
     @Test

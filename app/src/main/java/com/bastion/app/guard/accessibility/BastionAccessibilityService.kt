@@ -739,7 +739,15 @@ class BastionAccessibilityService : AccessibilityService() {
      */
     private fun checkUniversalFeed(pkg: String) {
         if (pkg !in webCapableApps) return
-        val rules = rulesByPackage[GuardRepository.ANY_APP].orEmpty()
+        // The app's own rules when it has them, the universal set when it does
+        // not — the same fallback guarded apps get, and the reason this is not
+        // simply the universal list.
+        //
+        // The Google app has rules of its own precisely because its tab shows
+        // no path, so the only rule that can fire there is its whole-site one.
+        // Reading only the universal set here would have left that rule sitting
+        // in the database, switched on, unreachable, and reported as working.
+        val rules = rulesFor(pkg)
         if (rules.isEmpty()) return
         val root = rootInActiveWindow ?: return
 
