@@ -27,7 +27,19 @@ enum class Rank(
     fun displayName(faithMode: Boolean): String = if (faithMode) faithName else secularName
 
     companion object {
-        fun forPoints(points: Int): Rank = entries.last { points >= it.threshold }
+        /**
+         * The rank a point total earns.
+         *
+         * `lastOrNull`, not `last`. With `last` a negative total matched no
+         * entry and threw, taking the home screen down with it — the screen
+         * whose whole job is to tell a man he has not lost what he built.
+         * Nothing subtracts points today and nothing should, so this is a
+         * latent crash rather than a live one, but the cost of it being wrong
+         * is the app failing at its single most important moment and the cost
+         * of guarding it is one word.
+         */
+        fun forPoints(points: Int): Rank =
+            entries.lastOrNull { points >= it.threshold } ?: RECRUIT
 
         fun next(rank: Rank): Rank? = entries.getOrNull(rank.ordinal + 1)
 

@@ -88,9 +88,21 @@ class JourneyRepository(
             progressDao.badgeCount(),
             settings.settings,
             dayTicks,
-            journeyDao.earliestUrgeDay(),
-        ) { lessons, badges, s, today, earliestUrge ->
-            Aux(lessons, badges, s, today, earliestUrge)
+            combine(
+                journeyDao.earliestUrgeDay(),
+                // Every day ticked off in every challenge, finished or not.
+                // Counted from the stored CSV rather than from a completion
+                // flag, because the points are for the days walked and a
+                // challenge abandoned on day nineteen still cost nineteen days
+                // of doing the thing.
+                progressDao.allChallenges().map { rows ->
+                    rows.sumOf { row ->
+                        row.completedDaysCsv.split(',').count { it.isNotBlank() }
+                    }
+                },
+            ) { earliestUrge, challengeDays -> earliestUrge to challengeDays },
+        ) { lessons, badges, s, today, urgeAndChallenges ->
+            Aux(lessons, badges, s, today, urgeAndChallenges.first, urgeAndChallenges.second)
         },
     ) { days, habitCompletions, checkIns, resisted, aux ->
         val (lessons, badges, s, today, earliestUrge) = aux
@@ -105,6 +117,7 @@ class JourneyRepository(
             lessons = lessons,
             badges = badges,
             panicCount = s.panicCount,
+            challengeDays = aux.challengeDays,
         )
     }
 
@@ -116,6 +129,8 @@ class JourneyRepository(
         val today: Long,
         /** Null until he has logged anything at all. */
         val earliestUrge: Long?,
+        /** Days ticked off across every challenge; see JourneyMath.derive. */
+        val challengeDays: Int,
     )
 
     /** Longest run of consecutive days that contained no slip. */

@@ -30,6 +30,16 @@ object JourneyMath {
         lessons: Int = 0,
         badges: Int = 0,
         panicCount: Int = 0,
+        /**
+         * Days ticked off inside a challenge, across every challenge taken.
+         *
+         * This argument did not exist and [RankPoints.CHALLENGE_DAY] was
+         * therefore dead: the constant said a challenge day was worth three
+         * points, the sum below never mentioned it, and a man could finish a
+         * thirty-day challenge and watch his rank not move. A reward the app
+         * advertises and does not pay is worse than one it never offered.
+         */
+        challengeDays: Int = 0,
     ): JourneyState {
         val installed = if (installedEpochDay > 0) installedEpochDay else today
 
@@ -79,7 +89,8 @@ object JourneyMath {
             resisted * RankPoints.URGE_RESISTED +
             lessons * RankPoints.LESSON_READ +
             slipCount * RankPoints.SLIP_LOGGED_HONESTLY +
-            panicCount * RankPoints.PANIC_SESSION_COMPLETED
+            panicCount * RankPoints.PANIC_SESSION_COMPLETED +
+            challengeDays * RankPoints.CHALLENGE_DAY
 
         return JourneyState(
             currentStreak = currentStreak,

@@ -90,12 +90,19 @@ fun WatchtowerScreen(
     // against a persisted tier so it fires once, on the crossing, and never
     // again on a recomposition or relaunch.
     var celebrating by remember { mutableStateOf<com.bastion.app.domain.Rank?>(null) }
+    var explainingRank by remember { mutableStateOf(false) }
     LaunchedEffect(state.rank, settings.lastSeenRankTier) {
         if (state.rank.tier > settings.lastSeenRankTier) {
             celebrating = state.rank
             graph.settings.setLastSeenRankTier(state.rank.tier)
         }
     }
+    if (explainingRank) {
+        com.bastion.app.core.design.BastionBottomSheet(onDismiss = { explainingRank = false }) {
+            RankSheet(points = state.points, rank = state.rank, faithMode = faithMode)
+        }
+    }
+
     celebrating?.let { rank ->
         RankUpCeremony(
             rank = rank,
@@ -176,6 +183,25 @@ fun WatchtowerScreen(
                 rankName = state.rank.displayName(faithMode),
                 rankTier = state.rank.tier,
                 progressToNext = state.progressToNextRank,
+                onClick = { explainingRank = true },
+            )
+            Spacer(Modifier.height(Space.sm))
+            // The arc's units, said out loud.
+            //
+            // Both of these were computed on every emission and rendered
+            // nowhere, so the medallion filled towards something it never
+            // named. A progress ring with no units invites a man to invent a
+            // rule for it, and the rule he invents is "days" — because days are
+            // the number underneath it. Then he slips, the streak goes to zero,
+            // the rank does not move, and the app looks broken at the exact
+            // moment it is doing the one thing it was built to do.
+            Text(
+                state.pointsToNextRank?.let { toNext ->
+                    val next = com.bastion.app.domain.Rank.next(state.rank)
+                    "${state.points} points · $toNext to ${next?.displayName(faithMode)}"
+                } ?: "${state.points} points · highest rank",
+                style = MaterialTheme.typography.bodySmall,
+                color = BastionColors.TextMuted,
             )
             Spacer(Modifier.height(Space.md))
             // One number, not a metric row. The rest live on Progress, which is
@@ -188,6 +214,16 @@ fun WatchtowerScreen(
             TextButton(onClick = onOpenProgress) {
                 Text(
                     "See your progress →",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = BastionColors.TextMuted,
+                )
+            }
+            // Right under the streak, because this is where the question gets
+            // asked: the streak is the number that falls, and the sentence a
+            // man needs at that moment is that the rank above it does not.
+            TextButton(onClick = { explainingRank = true }) {
+                Text(
+                    "What is my rank?",
                     style = MaterialTheme.typography.labelMedium,
                     color = BastionColors.TextMuted,
                 )

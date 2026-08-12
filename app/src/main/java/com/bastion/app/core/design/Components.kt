@@ -175,8 +175,21 @@ fun RankMedallion(
     progressToNext: Float,
     modifier: Modifier = Modifier,
     size: androidx.compose.ui.unit.Dp = 132.dp,
+    /**
+     * Optional, because the widget draws this too and has nowhere to send a
+     * tap. Where it is supplied, the medallion is the most natural thing on the
+     * screen to press when a man wants to know what it means.
+     */
+    onClick: (() -> Unit)? = null,
 ) {
-    Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = modifier
+            .size(size)
+            .then(
+                if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
         val transition = rememberInfiniteTransition(label = "medallion")
         val shimmer by transition.animateFloat(
             initialValue = 0f,
