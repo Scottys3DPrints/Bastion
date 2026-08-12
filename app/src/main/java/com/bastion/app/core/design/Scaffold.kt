@@ -345,6 +345,17 @@ fun BastionBottomSheet(
     ) {
         Column(
             Modifier
+                // Scrollable, because a sheet taller than the screen is not a
+                // rare case here — it is the logging flow, which is five steps
+                // with a day picker and twelve hour chips on the first one.
+                //
+                // Without this the overflow was simply unreachable: the sheet
+                // grew to the screen and stopped, and everything past the fold
+                // was gone. What sits at the bottom of these sheets is always
+                // the buttons, so the failure was never cosmetic — the flow
+                // could be opened and not finished, and the way out was to
+                // dismiss and lose the answers.
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = Space.gutter)
                 // Clears the gesture bar; sheets that stop at their own content
                 // put the last button under the system navigation.

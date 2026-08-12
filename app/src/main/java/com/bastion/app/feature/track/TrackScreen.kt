@@ -57,6 +57,7 @@ import com.bastion.app.core.design.BastionScaffold
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.BastionFilterChip
 import com.bastion.app.core.design.CalendarLegend
+import com.bastion.app.core.design.LinkButton
 import com.bastion.app.core.design.CalendarMonth
 import com.bastion.app.core.design.ChartColors
 import com.bastion.app.core.design.DawnBackground
@@ -364,8 +365,28 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
         val existing = remember(days, date) {
             days.firstOrNull { it.epochDay == date.toEpochDay() }
         }
+        // Whether he has asked to record something, as opposed to having tapped
+        // a square. Reset per day so leaving and reopening starts at looking.
+        var loggingSlip by remember(date) { mutableStateOf(false) }
+
         BastionBottomSheet(onDismiss = { editingDay = null }) {
-            if (existing?.status == DayStatus.SLIP) {
+            if (existing?.status != DayStatus.SLIP && !loggingSlip) {
+                // Looking at a day is not the same as confessing to it.
+                //
+                // Every tap on the calendar used to open the recovery flow, so
+                // touching a clean square — on purpose, or with a thumb on the
+                // way past — started five screens of questions about a slip that
+                // never happened. The calendar is the one place a man goes to
+                // look at what he has held, and it answered every look with an
+                // interrogation.
+                CleanDaySheet(
+                    date = date,
+                    beforeStart = state.startEpochDay > 0 &&
+                        date.toEpochDay() < state.startEpochDay,
+                    onLogSlip = { loggingSlip = true },
+                    onClose = { editingDay = null },
+                )
+            } else if (existing?.status == DayStatus.SLIP) {
                 DayLogSheet(
                     date = date,
                     note = existing.note,
@@ -410,6 +431,49 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
                     }
                 },
             )
+        }
+    }
+}
+
+/**
+ * A day he is only looking at.
+ *
+ * States it, offers the one thing he might have come to do, and otherwise gets
+ * out of the way. The slip route is deliberately the quieter of the two
+ * buttons: opening it is a decision, and a decision made by mis-tap is the
+ * failure this sheet exists to prevent.
+ */
+@Composable
+private fun CleanDaySheet(
+    date: LocalDate,
+    beforeStart: Boolean,
+    onLogSlip: () -> Unit,
+    onClose: () -> Unit,
+) {
+    val today = LocalDate.now()
+    Column {
+        Text(
+            when (date) {
+                today -> "Today"
+                today.minusDays(1) -> "Yesterday"
+                else -> date.format(DateTimeFormatter.ofPattern("EEEE d MMMM"))
+            },
+            style = MaterialTheme.typography.titleLarge,
+            color = BastionColors.TextPrimary,
+        )
+        Spacer(Modifier.height(Space.sm))
+        Text(
+            if (beforeStart) "Before you started. Nothing is counted for this day."
+            else "Held. Nothing was logged against this day.",
+            style = MaterialTheme.typography.bodySmall,
+            color = if (beforeStart) BastionColors.TextMuted else BastionColors.SageBright,
+        )
+
+        Spacer(Modifier.height(Space.lg))
+        PrimaryButton("Close", onClose, Modifier.fillMaxWidth())
+        Spacer(Modifier.height(Space.sm))
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            LinkButton("Record a slip for this day", BastionColors.Amber, onLogSlip)
         }
     }
 }
