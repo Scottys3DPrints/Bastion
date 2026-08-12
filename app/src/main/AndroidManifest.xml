@@ -51,6 +51,22 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent>
+        <!--
+          And whoever can open a web page, which is how "any browser" stopped
+          being a list I maintain. Asking the phone is the only way to cover the
+          browser nobody thought of, and that has been the failing case every
+          time: the one a man actually reaches for is the one not on the list.
+        -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="http" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
     </queries>
 
     <!--

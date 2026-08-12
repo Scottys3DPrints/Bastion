@@ -3,6 +3,7 @@ package com.bastion.app.guard.accessibility
 import android.accessibilityservice.AccessibilityService
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.provider.Settings
 import android.text.TextUtils
 import android.view.accessibility.AccessibilityEvent
@@ -59,6 +60,21 @@ class BastionAccessibilityService : AccessibilityService() {
      * blocking the tree walk to wait for a file.
      */
     @Volatile private var watchWords: List<String> = emptyList()
+
+    /**
+     * Every app on this phone that can open a web page.
+     *
+     * Asked of the package manager rather than listed by me, because listing
+     * them is the mistake this keeps making. Chrome, Firefox, Samsung Internet,
+     * the Google app, a reader, a shopping app with a built-in browser — the
+     * one that matters is always the one nobody thought to name, and the phone
+     * already knows the answer.
+     *
+     * Computed once when the service connects. Installing a new browser needs
+     * Guard restarted to be seen, which is a fair trade for not walking this
+     * list on every accessibility event.
+     */
+    @Volatile private var webCapableApps: Set<String> = emptySet()
 
     /**
      * The last settings seen, mirrored so [evaluate] stays synchronous.
@@ -135,6 +151,29 @@ class BastionAccessibilityService : AccessibilityService() {
         scope.launch {
             watchWords = runCatching { graph.guard.filterData().onScreen }.getOrDefault(emptyList())
         }
+        webCapableApps = findWebCapableApps()
+    }
+
+    /**
+     * Whoever the phone says can open `http://`, plus the web views that live
+     * inside another app and never register for it.
+     *
+     * Messenger does not advertise itself as a browser and opens links in a web
+     * view of its own; so do Facebook and Instagram. They are named explicitly
+     * because the package manager will not name them, and they are the ones a
+     * link most often arrives in.
+     */
+    private fun findWebCapableApps(): Set<String> {
+        val known = GuardRepository.IN_APP_BROWSERS + GuardRepository.REAL_BROWSERS
+        val resolved: Set<String> = runCatching {
+            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("http://example.com"))
+                .addCategory(Intent.CATEGORY_BROWSABLE)
+            packageManager
+                .queryIntentActivities(intent, PackageManager.MATCH_ALL)
+                .mapNotNull { info -> info.activityInfo?.packageName }
+                .toSet()
+        }.getOrDefault(emptySet())
+        return known + resolved
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -501,6 +540,23 @@ class BastionAccessibilityService : AccessibilityService() {
             // return would leave a translucent sheet over the home screen and
             // every other app, with no way to clear it but killing the service.
             shield.hideDimVeil()
+
+            // A browser does not have to be guarded for the feed rules to apply
+            // to it, and requiring that was the hidden condition that made
+            // "every browser is covered" untrue.
+            //
+            // Guarding an app is a statement about the app — close Instagram's
+            // feed, leave its messages — and nobody thinks of the Google app
+            // that way. He is not trying to limit the Google app. He is trying
+            // to stop reels, and reels reached it through a web view he never
+            // thought to name. Making him name it is the same enumeration
+            // problem one layer up, just better hidden.
+            //
+            // So the universal address rules run here on their own. They are
+            // safe to point at an app nobody chose because of what they require:
+            // a string that is an address rather than a sentence, sitting where
+            // an address bar sits, matching a path a man asked to have closed.
+            checkUniversalFeed(pkg)
             return
         }
 
@@ -672,6 +728,49 @@ class BastionAccessibilityService : AccessibilityService() {
      */
     private fun rulesFor(pkg: String): List<FeedRuleEntity> =
         rulesByPackage[pkg] ?: rulesByPackage[GuardRepository.ANY_APP].orEmpty()
+
+    /**
+     * The address rules, in an app nobody guarded.
+     *
+     * Only for apps the phone says can open a web page, which keeps the tree
+     * walk off every app a man opens all day. Everything else is the same
+     * machinery as [checkFeed] — the same two-scan streak, the same cooldown —
+     * because a false positive here costs exactly what it costs there.
+     */
+    private fun checkUniversalFeed(pkg: String) {
+        if (pkg !in webCapableApps) return
+        val rules = rulesByPackage[GuardRepository.ANY_APP].orEmpty()
+        if (rules.isEmpty()) return
+        val root = rootInActiveWindow ?: return
+
+        if (findMatch(root, rules) == null) {
+            feedHitStreak = 0
+            return
+        }
+        feedHitStreak++
+        if (feedHitStreak < REQUIRED_FEED_HITS) return
+        if (System.currentTimeMillis() - lastInterruptAt < INTERRUPT_COOLDOWN_MS) return
+        lastInterruptAt = System.currentTimeMillis()
+        feedHitStreak = 0
+
+        performGlobalAction(GLOBAL_ACTION_BACK)
+        shield.show(
+            title = "Not this.",
+            message = "That feed is closed wherever you open it. " +
+                "The rest of the page is still yours.",
+            primaryLabel = "Scroll something good",
+            onPrimary = {
+                shield.hide()
+                openFeed()
+            },
+            secondaryLabel = "I'm having an urge",
+            onSecondary = {
+                shield.hide()
+                openPanic()
+            },
+            autoDismissMillis = 8_000,
+        )
+    }
 
     /** The feed surgery: let the app run, close only the screen that hurts. */
     private fun checkFeed(pkg: String, app: GuardedAppEntity) {

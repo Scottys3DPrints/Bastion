@@ -189,6 +189,27 @@ class GuardRepository(
                 .forEach { guardDao.upsertRule(it.copy(enabled = true)) }
         }
 
+        // Facebook, closed in the Google app, for the reason it was closed in
+        // Messenger and after the same report arriving again.
+        //
+        // Its tab shows an origin and no path, so the path rules cannot fire
+        // there however well they are written — and shipping them switched on
+        // beside a site rule switched off would be shipping the appearance of
+        // protection. This is a default this app sets, not a decision a man
+        // made, and the switch on the Guard screen is his the moment he wants
+        // it back.
+        if (current.builtInRulesVersion < 9) {
+            val facebook = setOf("facebook.com", "fb.watch")
+            guardDao.feedRules().first()
+                .filter { it.builtIn && it.matchType == MatchType.URL }
+                .filter {
+                    it.packageName == "com.google.android.googlequicksearchbox" &&
+                        it.matchValue in facebook
+                }
+                .filter { !it.enabled }
+                .forEach { guardDao.upsertRule(it.copy(enabled = true)) }
+        }
+
         // Names, brought up to date. Nothing else about the row is touched.
         //
         // A rule keeps its id across generations, so a row already on the phone
@@ -491,9 +512,10 @@ class GuardRepository(
          * repairs the names, after a scroll gate came and went. 7 adds the
          * share-link domains and closes Facebook in Messenger, asked for
          * outright. 8 adds the rules that apply to any app at all, so a
-         * browser nobody listed is still covered.
+         * browser nobody listed is still covered. 9 adds the Google app,
+         * whose tab shows an origin and no path.
          */
-        const val BUILT_IN_RULES_VERSION = 8
+        const val BUILT_IN_RULES_VERSION = 9
 
         private fun browserFeedRules(): List<FeedRuleEntity> =
             BLOCKED_PATHS.map { (label, url) ->
@@ -569,6 +591,16 @@ class GuardRepository(
             "com.facebook.orca",
             "com.facebook.katana",
             "com.instagram.android",
+            // The Google app, and it belongs here for the same reason the other
+            // three do rather than because it is a social app.
+            //
+            // A link opened from search or from Discover lands in a tab whose
+            // bar shows the origin and nothing else — `facebook.com`, with no
+            // path after it — whether that tab is drawn by the Google app or
+            // handed to Chrome as a custom tab. A path rule has nothing to
+            // compare against and never will, so the site rule is the only rule
+            // that can fire, exactly as in Messenger.
+            "com.google.android.googlequicksearchbox",
         )
 
         /**
@@ -656,6 +688,7 @@ class GuardRepository(
          * sit alongside the view-id rules already covering their native feeds.
          */
         private val BROWSER_PACKAGES = listOf(
+            "com.google.android.googlequicksearchbox" to "Google app",
             "com.android.chrome" to "Chrome",
             "com.chrome.beta" to "Chrome",
             "org.mozilla.firefox" to "Firefox",

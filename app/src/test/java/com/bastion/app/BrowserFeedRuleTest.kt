@@ -296,6 +296,83 @@ class BrowserFeedRuleTest {
         assertTrue(FeedSurface.addressBarWidthCounts(realBrowser = true, webViewFound = true))
     }
 
+    // --- the browser nobody listed -------------------------------------------
+
+    /**
+     * The universal rules exist and are switched on, because they are what
+     * makes "any browser" true instead of "any browser I listed".
+     *
+     * The failing case has been the same every time: a man reaches for a
+     * browser nobody thought of — the Google app, a reader, whatever opened the
+     * link — and finds it uncovered. These rules belong to no package and apply
+     * to any app the phone says can open a web page.
+     */
+    @Test
+    fun `the universal rules ship and are on`() {
+        val universal = GuardRepository.builtInFeedRules()
+            .filter { it.packageName == GuardRepository.ANY_APP }
+        assertTrue("no universal rules ship at all", universal.isNotEmpty())
+        universal.forEach {
+            assertTrue("${it.matchValue} must ship on", it.enabled)
+            assertEquals("a universal rule can only be an address", MatchType.URL, it.matchType)
+        }
+        val values = universal.map { it.matchValue }.toSet()
+        listOf("facebook.com/reel", "instagram.com/reel", "youtube.com/shorts").forEach {
+            assertTrue("$it is not covered universally", it in values)
+        }
+    }
+
+    /**
+     * And the universal set names paths only.
+     *
+     * A whole-site rule applying to every app on the phone would close that
+     * site everywhere at once — in the browser, in the app, in a link a friend
+     * sent. That is a decision for one app at a time, never a default that
+     * arrives with an update.
+     */
+    @Test
+    fun `no universal rule closes a whole site`() {
+        val sites = GuardRepository.builtInFeedRules()
+            .filter { it.packageName == GuardRepository.ANY_APP }
+            // A rule that names a host and nothing after it covers the whole site.
+            .filter { !it.matchValue.contains('/') }
+        assertEquals("these would close a whole site everywhere", emptyList<String>(), sites.map { it.matchValue })
+    }
+
+    /**
+     * The Google app opens links in a tab that shows an origin and no path, so
+     * the site rule is the only one that can fire there — the same finding, and
+     * the same answer, as Messenger.
+     */
+    @Test
+    fun `the google app ships with facebook closed`() {
+        val google = GuardRepository.builtInFeedRules()
+            .filter { it.packageName == "com.google.android.googlequicksearchbox" }
+        assertTrue("the Google app has no rules at all", google.isNotEmpty())
+        assertTrue(
+            "the Google app must be treated as a web view, not a real browser",
+            "com.google.android.googlequicksearchbox" in GuardRepository.IN_APP_BROWSERS,
+        )
+        listOf("facebook.com", "fb.watch").forEach { value ->
+            val rule = google.firstOrNull { it.matchValue == value }
+            assertTrue("the Google app has no $value rule", rule != null)
+            assertTrue("the Google app's $value rule must ship on", rule!!.enabled)
+        }
+    }
+
+    /**
+     * The Google app is not a real browser for the purposes of the width guess.
+     *
+     * Its bar is not an omnibox, so guessing at one from "wide and near the
+     * top" is guessing about a layout nobody designed to be guessed at.
+     */
+    @Test
+    fun `the google app does not get the width guess for free`() {
+        assertFalse(
+            "com.google.android.googlequicksearchbox" in GuardRepository.REAL_BROWSERS
+        )
+    }
+
     // --- the shipped rules ---------------------------------------------------
 
     @Test
