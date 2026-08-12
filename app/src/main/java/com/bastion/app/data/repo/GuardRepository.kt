@@ -513,13 +513,30 @@ class GuardRepository(
          * share-link domains and closes Facebook in Messenger, asked for
          * outright. 8 adds the rules that apply to any app at all, so a
          * browser nobody listed is still covered. 9 adds the Google app,
-         * whose tab shows an origin and no path.
+         * whose tab shows an origin and no path. 10 covers the custom-tab
+         * window itself, which is where the Google app was actually rendering.
          */
-        const val BUILT_IN_RULES_VERSION = 9
+        const val BUILT_IN_RULES_VERSION = 10
 
         private fun browserFeedRules(): List<FeedRuleEntity> =
             BLOCKED_PATHS.map { (label, url) ->
                 rule(ANY_APP, "Any app · $label", MatchType.URL, url)
+            } +
+            BLOCKED_PATHS.map { (label, url) ->
+                rule(CUSTOM_TAB, "In-app link · $label", MatchType.URL, url)
+            } +
+            BLOCKED_SITES.map { (siteLabel, url) ->
+                // Facebook closed, the rest offered. The same trade already
+                // made for Messenger and for the Google app, in the window all
+                // three of them actually render in — and made once here rather
+                // than a fourth time per app.
+                rule(
+                    CUSTOM_TAB,
+                    "In-app link · $siteLabel",
+                    MatchType.URL,
+                    url,
+                    enabled = url in setOf("facebook.com", "fb.watch"),
+                )
             } +
             BROWSER_PACKAGES.flatMap { (pkg, name) ->
                 val inApp = pkg in IN_APP_BROWSERS
@@ -643,6 +660,31 @@ class GuardRepository(
          * app named below still means exactly what its own switches say.
          */
         const val ANY_APP = "*"
+
+        /**
+         * A link opened inside another app, rendered by the browser rather than
+         * by that app.
+         *
+         * This is the hole the Google app kept falling through, and it is not
+         * the Google app's hole. Tapping a result there hands the URL to Chrome
+         * as a *custom tab* — Chrome's process, Chrome's package, but a stripped
+         * window with a title and an origin where the omnibox would be. Every
+         * app on the phone that opens links this way lands in the same window:
+         * Gmail, a reader, a shopping app, the Google app.
+         *
+         * So it is matched on the window rather than on the package. Chrome's
+         * own rules are for Chrome proper, where a full address is on screen and
+         * a path rule can do the narrow thing; these are for the window where
+         * the path is not shown and never will be, and where a site rule is
+         * therefore the only rule that can fire.
+         *
+         * Not a real package name, and it cannot collide with one — no Android
+         * package may contain a colon.
+         */
+        const val CUSTOM_TAB = "window:customtab"
+
+        /** How the custom-tab group names itself, where no package resolves. */
+        const val CUSTOM_TAB_LABEL = "Links opened inside an app"
 
         /** How the sentinel names itself on screen, where no package can be resolved. */
         const val ANY_APP_LABEL = "Any other app"

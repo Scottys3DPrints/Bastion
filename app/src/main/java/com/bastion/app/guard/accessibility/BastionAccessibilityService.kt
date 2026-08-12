@@ -119,6 +119,15 @@ class BastionAccessibilityService : AccessibilityService() {
      */
     private var foregroundClassName: String? = null
 
+    /**
+     * Whether the window in front is a browser custom tab.
+     *
+     * Kept beside the class it is derived from because it has to survive
+     * content-changed events, which carry the class of the view that changed
+     * rather than of the window it changed in. See GuardedScreens.isCustomTab.
+     */
+    @Volatile private var inCustomTab = false
+
     /** Asked before every re-raise, so the wall never races the lock screen. */
     private val keyguard: android.app.KeyguardManager? by lazy {
         getSystemService(android.app.KeyguardManager::class.java)
@@ -197,6 +206,7 @@ class BastionAccessibilityService : AccessibilityService() {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 onForegroundChanged(pkg)
                 foregroundClassName = event.className?.toString()
+                inCustomTab = GuardedScreens.isCustomTab(foregroundClassName)
                 guardSettingsScreen(pkg, foregroundClassName, foregroundClassName)
                 evaluate(pkg, force = true)
             }
@@ -726,8 +736,22 @@ class BastionAccessibilityService : AccessibilityService() {
      * rules for gets the universal set instead, which is what makes "every
      * browser" true rather than "every browser I happened to list".
      */
-    private fun rulesFor(pkg: String): List<FeedRuleEntity> =
-        rulesByPackage[pkg] ?: rulesByPackage[GuardRepository.ANY_APP].orEmpty()
+    private fun rulesFor(pkg: String): List<FeedRuleEntity> {
+        // The window wins over the package when it is a custom tab.
+        //
+        // Chrome's own rules describe Chrome proper, where a full address is on
+        // screen and the narrow path rule is the right tool. A custom tab is
+        // the same package wearing a different window: a title and an origin,
+        // no path, ever. Matching it as Chrome meant matching a path against a
+        // string that could not contain one, which is the same failure as
+        // Messenger and had the same cause — asking the package what to do when
+        // the window is what changed.
+        if (inCustomTab) {
+            val tab = rulesByPackage[GuardRepository.CUSTOM_TAB].orEmpty()
+            if (tab.isNotEmpty()) return tab
+        }
+        return rulesByPackage[pkg] ?: rulesByPackage[GuardRepository.ANY_APP].orEmpty()
+    }
 
     /**
      * The address rules, in an app nobody guarded.
@@ -738,7 +762,7 @@ class BastionAccessibilityService : AccessibilityService() {
      * because a false positive here costs exactly what it costs there.
      */
     private fun checkUniversalFeed(pkg: String) {
-        if (pkg !in webCapableApps) return
+        if (!inCustomTab && pkg !in webCapableApps) return
         // The app's own rules when it has them, the universal set when it does
         // not — the same fallback guarded apps get, and the reason this is not
         // simply the universal list.

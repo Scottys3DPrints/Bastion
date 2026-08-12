@@ -71,7 +71,11 @@ class FeedRuleTest {
         // point rather than a bug: those show a domain and no path, so the path
         // rule has nothing to compare and the site rule is the only one that can
         // ever fire. Shadowing an unreachable rule costs nothing.
-        val inApp = GuardRepository.IN_APP_BROWSERS
+        // The custom-tab window belongs with the in-app browsers here for the
+        // one reason that matters: it shows an origin and no path, so a path
+        // rule has nothing to compare against and a whole-site rule is not a
+        // blunt instrument there — it is the only instrument.
+        val inApp = GuardRepository.IN_APP_BROWSERS + GuardRepository.CUSTOM_TAB
         rules.filter { it.enabled }
             .filterNot { it.packageName in inApp && !it.matchValue.contains('/') }
             .groupBy { it.packageName to it.matchType }.forEach { (key, forApp) ->
@@ -137,7 +141,7 @@ class FeedRuleTest {
         browsers.forEach { pkg ->
             val on = urlRules.filter { it.packageName == pkg && it.enabled }
             val sitesOn = on.filter { !it.matchValue.contains('/') }
-            if (pkg in GuardRepository.IN_APP_BROWSERS) {
+            if (pkg in GuardRepository.IN_APP_BROWSERS + GuardRepository.CUSTOM_TAB) {
                 assertTrue(
                     "$pkg is a web view with no path in its address bar, so a " +
                         "path rule can never fire there and it needs a whole-site " +

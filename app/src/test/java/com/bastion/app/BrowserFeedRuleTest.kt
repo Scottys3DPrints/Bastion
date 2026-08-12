@@ -3,6 +3,7 @@ package com.bastion.app
 import com.bastion.app.data.db.MatchType
 import com.bastion.app.data.repo.GuardRepository
 import com.bastion.app.guard.accessibility.FeedSurface
+import com.bastion.app.guard.accessibility.GuardedScreens
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -407,6 +408,90 @@ class BrowserFeedRuleTest {
             }
     }
 
+    // --- the window a link opens in ------------------------------------------
+
+    /**
+     * A custom tab is recognised by the window, never by the package.
+     *
+     * This is the hole the Google app kept falling through, and it was never
+     * the Google app's hole. Tapping a result there hands the URL to Chrome as
+     * a custom tab: Chrome's process, Chrome's package, but a stripped window
+     * with a title and an origin where the omnibox would be. Matching on the
+     * package said "this is Chrome", so the path rules ran — against a string
+     * that has never once contained a path.
+     *
+     * Every app that opens links this way lands in the same window, so none of
+     * them have to be listed. That is the whole point of asking the window.
+     */
+    @Test
+    fun `a custom tab is recognised by its window class`() {
+        assertTrue(
+            GuardedScreens.isCustomTab(
+                "org.chromium.chrome.browser.customtabs.CustomTabActivity"
+            )
+        )
+        assertTrue(
+            GuardedScreens.isCustomTab(
+                "com.google.android.apps.chrome.customtabs.CustomTabActivity"
+            )
+        )
+    }
+
+    /**
+     * And Chrome proper is not one, which is the half that costs something if
+     * it goes wrong.
+     *
+     * Chrome's own window shows a full address, so the narrow path rules are
+     * the right tool there and the whole-site rules stay off. If ordinary
+     * Chrome were ever mistaken for a custom tab, all of Facebook would close
+     * in the browser — the trade a man refused the first time he was offered
+     * it.
+     */
+    @Test
+    fun `ordinary browsing is not a custom tab`() {
+        assertFalse(GuardedScreens.isCustomTab("org.chromium.chrome.browser.ChromeTabbedActivity"))
+        assertFalse(GuardedScreens.isCustomTab("com.android.chrome.Main"))
+        assertFalse(GuardedScreens.isCustomTab("com.google.android.apps.chrome.Main"))
+        assertFalse(GuardedScreens.isCustomTab(null))
+        assertFalse(GuardedScreens.isCustomTab(""))
+    }
+
+    /**
+     * The custom-tab group carries whole-site rules, because that window will
+     * never show a path for a path rule to match.
+     */
+    @Test
+    fun `the custom-tab group closes facebook and offers the rest`() {
+        val tab = GuardRepository.builtInFeedRules()
+            .filter { it.packageName == GuardRepository.CUSTOM_TAB }
+        assertTrue("no custom-tab rules ship at all", tab.isNotEmpty())
+
+        val on = tab.filter { it.enabled }.map { it.matchValue }.toSet()
+        listOf("facebook.com", "fb.watch").forEach {
+            assertTrue("$it must close in a custom tab", it in on)
+        }
+        // The sites a man has not asked to lose are present and off.
+        val off = tab.filterNot { it.enabled }.map { it.matchValue }.toSet()
+        assertTrue("instagram.com should be offered, not imposed", "instagram.com" in off)
+    }
+
+    /**
+     * The sentinel cannot ever collide with a real app.
+     *
+     * It is looked up in the same map as package names, so if a package could
+     * be called this, one app on the phone would silently inherit every rule
+     * meant for a different window.
+     */
+    @Test
+    fun `the window sentinels are not legal package names`() {
+        listOf(GuardRepository.CUSTOM_TAB, GuardRepository.ANY_APP).forEach {
+            assertFalse(
+                "$it could be a real package name",
+                it.matches(Regex("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)+")),
+            )
+        }
+    }
+
     // --- the shipped rules ---------------------------------------------------
 
     @Test
@@ -470,13 +555,34 @@ class BrowserFeedRuleTest {
             .filter { it.matchValue in setOf("instagram.com", "facebook.com") }
         assertTrue("the whole-site rules should still exist", bySite.isNotEmpty())
 
-        val (inApp, real) = bySite.partition { it.packageName in GuardRepository.IN_APP_BROWSERS }
+        // Grouped by what the address bar shows rather than by what kind of
+        // thing owns it: the custom-tab window shows an origin and no path,
+        // exactly as the in-app browsers do.
+        val pathBlind = GuardRepository.IN_APP_BROWSERS + GuardRepository.CUSTOM_TAB
+        val (inApp, real) = bySite.partition { it.packageName in pathBlind }
         assertTrue("no in-app browser carries a whole-site rule", inApp.isNotEmpty())
-        inApp.forEach {
+
+        // At least one on per group, not all of them on.
+        //
+        // The stronger version of this test was written when the only
+        // path-blind groups were the three in-app browsers, where generation 5
+        // turned every site rule on at once. It reads as an invariant and is
+        // really a default: "the address bar can only satisfy a site rule" says
+        // that a group needs *a* site rule switched on to do anything, and says
+        // nothing about how many sites a man agreed to lose.
+        //
+        // The custom-tab window is where that distinction started to matter.
+        // Facebook is closed there because it was asked for; Instagram and
+        // TikTok are present and off, because closing every site a rule exists
+        // for in every in-app link window is a much larger thing than anyone
+        // asked for and would arrive as a surprise in an update.
+        //
+        // What still has to hold is that the group is not decoration.
+        inApp.groupBy { it.packageName }.forEach { (pkg, rules) ->
             assertTrue(
-                "${it.packageName}/${it.matchValue} must ship on — it is the only " +
-                    "rule that web view's address bar can ever satisfy",
-                it.enabled,
+                "$pkg has whole-site rules but every one is off, so nothing there " +
+                    "can ever fire — its address bar shows no path to match",
+                rules.any { it.enabled },
             )
         }
         real.forEach {

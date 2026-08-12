@@ -89,7 +89,9 @@ private val KNOWN_NAMES = mapOf(
  * renames itself is followed automatically.
  */
 internal fun appLabel(context: Context, pkg: String): String =
-    if (pkg == GuardRepository.ANY_APP) GuardRepository.ANY_APP_LABEL else runCatching {
+    if (pkg == GuardRepository.ANY_APP) GuardRepository.ANY_APP_LABEL
+    else if (pkg == GuardRepository.CUSTOM_TAB) GuardRepository.CUSTOM_TAB_LABEL
+    else runCatching {
         val pm = context.packageManager
         pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
     }.getOrNull()
@@ -100,7 +102,7 @@ internal fun isInstalled(context: Context, pkg: String): Boolean =
     // The sentinel is not an app and can never be found by the package manager,
     // so it has to be answered for directly — otherwise the group that covers
     // every browser is the one group the list hides.
-    pkg == GuardRepository.ANY_APP ||
+    pkg == GuardRepository.ANY_APP || pkg == GuardRepository.CUSTOM_TAB ||
         runCatching { context.packageManager.getApplicationInfo(pkg, 0); true }.getOrDefault(false)
 
 /**
@@ -375,8 +377,8 @@ internal sealed interface RuleState {
      */
     data object Fallback : RuleState {
         override val line =
-            "Applies to any guarded app with no rules of its own — including " +
-                "browsers not listed here."
+            "Applies where no other rule does — including browsers nobody " +
+                "listed, and links opened inside another app."
     }
     data object FallbackOff : RuleState {
         override val line = "Off — apps with no rules of their own block nothing."
@@ -432,7 +434,11 @@ fun FeedRulesSection(
             "\"${GuardRepository.ANY_APP_LABEL}\" is the fallback: it covers every " +
             "app that has no rules of its own, which is how a browser nobody " +
             "listed still gets blocked. An app listed below uses its own " +
-            "switches instead.",
+            "switches instead.\n\n" +
+            "\"${GuardRepository.CUSTOM_TAB_LABEL}\" is the window you land in when " +
+            "you tap a link inside another app — Google, Gmail, a reader. It " +
+            "shows the site but never the page, so only whole-site rules can " +
+            "work there.",
         style = MaterialTheme.typography.bodySmall,
         color = BastionColors.TextTertiary,
     )
@@ -476,7 +482,7 @@ fun FeedRulesSection(
                 pkg = pkg,
                 rules = groupRules,
                 label = appLabel(context, pkg),
-                state = if (pkg == GuardRepository.ANY_APP) {
+                state = if (pkg == GuardRepository.ANY_APP || pkg == GuardRepository.CUSTOM_TAB) {
                     if (groupRules.any { it.enabled }) RuleState.Fallback else RuleState.FallbackOff
                 } else ruleState(
                     guardRunning = guardRunning,
@@ -493,7 +499,11 @@ fun FeedRulesSection(
 
 /** Sort key that keeps the known apps in a stable, readable order. */
 private fun appLabelKey(pkg: String) =
-    if (pkg == GuardRepository.ANY_APP) "" else (KNOWN_NAMES[pkg] ?: pkg).lowercase()
+    when (pkg) {
+        GuardRepository.ANY_APP -> ""
+        GuardRepository.CUSTOM_TAB -> " "
+        else -> (KNOWN_NAMES[pkg] ?: pkg).lowercase()
+    }
 
 @Composable
 private fun FeedRuleGroup(

@@ -68,6 +68,23 @@ object GuardedScreens {
     )
 
     /**
+     * Whether the window in front is a custom tab.
+     *
+     * The browser's own class says so: every Chromium build names the activity
+     * `CustomTabActivity`, and the forks that matter keep the word. That is a
+     * far better question than "which app asked for this window", because the
+     * answer is the same for every app that opens links this way and none of
+     * them have to be listed.
+     *
+     * Deliberately not matched on the package. A custom tab runs in the
+     * browser's process, so the package says Chrome while the window is
+     * something Chrome would never show on its own — a title and an origin,
+     * with no path anywhere on it.
+     */
+    fun isCustomTab(className: String?): Boolean =
+        className != null && className.lowercase().contains("customtab")
+
+    /**
      * Whether a screen is about Bastion rather than merely near it.
      *
      * Exact first, because a title is usually its own node and exactness is the
