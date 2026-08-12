@@ -58,6 +58,7 @@ class GuardRepository(
             blocked = guardDao.enabledDomains().map { it.domain }.toSet(),
             allowed = guardDao.allowedDomains().map { it.domain }.toSet(),
             keywords = content.blocklist().keywords,
+            onScreen = content.blocklist().onScreen,
         ).also { cachedFilterData = it }
     }
 
@@ -72,6 +73,12 @@ class GuardRepository(
         val blocked: Set<String>,
         val allowed: Set<String>,
         val keywords: List<String>,
+        /**
+         * Title words, carried here because this is already the one place that
+         * reads the blocklist off disk and caches it. The VPN and the browser
+         * ignore the field; only the accessibility service asks for it.
+         */
+        val onScreen: List<String> = emptyList(),
     )
 
     /**
@@ -483,11 +490,15 @@ class GuardRepository(
          * browsers only, where the domain is all that is ever shown. 6 only
          * repairs the names, after a scroll gate came and went. 7 adds the
          * share-link domains and closes Facebook in Messenger, asked for
-         * outright.
+         * outright. 8 adds the rules that apply to any app at all, so a
+         * browser nobody listed is still covered.
          */
-        const val BUILT_IN_RULES_VERSION = 7
+        const val BUILT_IN_RULES_VERSION = 8
 
         private fun browserFeedRules(): List<FeedRuleEntity> =
+            BLOCKED_PATHS.map { (label, url) ->
+                rule(ANY_APP, "Any app · $label", MatchType.URL, url)
+            } +
             BROWSER_PACKAGES.flatMap { (pkg, name) ->
                 val inApp = pkg in IN_APP_BROWSERS
                 BLOCKED_PATHS.map { (label, url) ->
@@ -520,6 +531,40 @@ class GuardRepository(
          * The path rules ship on for these too, harmlessly: if one of them ever
          * does show a path, the narrower rule is there and matches first.
          */
+    /**
+         * The browsers whose address bar genuinely spans the screen.
+         *
+         * The width test guesses at an address bar from "wide, and near the
+         * top". In one of these that guess is sound — an omnibox is built that
+         * way. Anywhere else it is a guess about a layout nobody designed to be
+         * guessed at, and with address rules now applying to any guarded app,
+         * "anywhere else" includes apps full of things a man wrote. So outside
+         * this list the guess is withdrawn unless a web view is open; see
+         * FeedSurface.addressBarWidthCounts.
+         */
+        internal val REAL_BROWSERS = setOf(
+            "com.android.chrome",
+            "com.chrome.beta",
+            "com.chrome.dev",
+            "com.chrome.canary",
+            "org.mozilla.firefox",
+            "org.mozilla.firefox_beta",
+            "com.sec.android.app.sbrowser",
+            "com.brave.browser",
+            "com.microsoft.emmx",
+            "com.opera.browser",
+            "com.opera.mini.native",
+            "com.duckduckgo.mobile.android",
+            "com.vivaldi.browser",
+            "com.kiwibrowser.browser",
+            "org.torproject.torbrowser",
+            "com.ecosia.android",
+            "com.yandex.browser",
+            "com.UCMobile.intl",
+            "com.mi.globalbrowser",
+            "com.huawei.browser",
+        )
+
         internal val IN_APP_BROWSERS = setOf(
             "com.facebook.orca",
             "com.facebook.katana",
@@ -545,7 +590,30 @@ class GuardRepository(
             "Facebook reels" to "facebook.com/reel",
             "Facebook watch" to "facebook.com/watch",
             "YouTube Shorts" to "youtube.com/shorts",
+            "TikTok feed" to "tiktok.com/foryou",
+            "Snapchat Spotlight" to "snapchat.com/spotlight",
+            "Reddit videos" to "reddit.com/r/popular",
         )
+
+        /**
+         * The package that means "any app not named below".
+         *
+         * Every browser used to need its own row, which made the list a
+         * catalogue of the browsers I happened to think of. The one a man
+         * actually reaches for is always the one that was missed — the Google
+         * app opens links in a web view of its own, so does Gmail, so does
+         * every reader and every chat app, and a rule that covered Chrome and
+         * not those is a rule with a door beside it.
+         *
+         * So the browser list stops being the point. Guard any app in
+         * feed-only mode and these apply to it, unless that app has rules of
+         * its own — see rulesFor, which falls back rather than adding, so an
+         * app named below still means exactly what its own switches say.
+         */
+        const val ANY_APP = "*"
+
+        /** How the sentinel names itself on screen, where no package can be resolved. */
+        const val ANY_APP_LABEL = "Any other app"
 
         /**
          * The whole site, for when the path cannot be seen.

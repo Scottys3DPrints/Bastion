@@ -292,14 +292,20 @@ internal object FeedSurface {
      * get sent to people, and a wide link bubble near the top of a short
      * conversation would wall the conversation.
      *
-     * So inside an in-app browser the guess is withdrawn and only the web view
-     * counts. That is not a loss: a web view is the page, and a browser with no
-     * page open is a screen with no address on it to find. What it protects is
-     * the thing this app must never do — take away a man's messages because he
-     * was sent a link.
+     * So the guess is allowed in a real browser, where an omnibox genuinely
+     * does span the screen, and withdrawn everywhere else unless a web view is
+     * actually open. That is not a loss: a web view is the page, and an app
+     * with no page open is a screen with no address on it to find.
+     *
+     * The question used to be "is this one of three chat apps", which was the
+     * right answer to a smaller problem. Now that any guarded app can carry
+     * address rules, the list that matters is the one going the other way: the
+     * browsers whose bar is known to be full width. Anything not on it has to
+     * show a page before its geometry is believed, which is what keeps a
+     * blocker from taking away a man's messages because he was sent a link.
      */
-    fun addressBarWidthCounts(inAppBrowser: Boolean, webViewFound: Boolean): Boolean =
-        !inAppBrowser || webViewFound
+    fun addressBarWidthCounts(realBrowser: Boolean, webViewFound: Boolean): Boolean =
+        realBrowser || webViewFound
 
     /** The top fifth of the window. Enough for a toolbar under a status bar. */
     const val ADDRESS_BAR_BAND = 0.20

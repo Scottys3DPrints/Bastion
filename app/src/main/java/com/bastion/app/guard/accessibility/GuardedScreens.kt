@@ -68,6 +68,29 @@ object GuardedScreens {
     )
 
     /**
+     * Whether a screen is about Bastion rather than merely near it.
+     *
+     * Exact first, because a title is usually its own node and exactness is the
+     * strongest claim available. Whole-word containment second, because an
+     * uninstall dialog often writes the name into a sentence — "Do you want to
+     * uninstall Bastion?" — and refusing that would mean the confirmation
+     * screen never matched at all.
+     *
+     * Containment is only safe because of the boundary. Without it, a phone
+     * with any app whose name merely contained this one would carry a wall
+     * nobody could explain.
+     */
+    fun namesApp(texts: Set<String>, appLabel: String): Boolean {
+        if (appLabel.isBlank()) return false
+        if (texts.any { it.trim().equals(appLabel, ignoreCase = true) }) return true
+        val word = Regex(
+            "(^|[^\\p{L}\\p{N}])" + Regex.escape(appLabel) + "($|[^\\p{L}\\p{N}])",
+            RegexOption.IGNORE_CASE,
+        )
+        return texts.any { word.containsMatchIn(it) }
+    }
+
+    /**
      * Whether the thing just long-pressed was Bastion's own icon.
      *
      * This is the signal every previous attempt should have used. A long press
@@ -181,16 +204,22 @@ object GuardedScreens {
         // else and from both directions: the installer's own confirmation
         // dialog, and Bastion's page in Settings where the button lives.
         if (isInstallerApp(packageName)) {
-            // The class name has to say uninstall, and that is not fussiness.
+            // Two conditions, and for a long time there was only one.
             //
+            // The class name has to say uninstall, and that is not fussiness:
             // Bastion updates itself through a PackageInstaller session, which
-            // puts up a dialog from this same package, carrying this same app's
-            // name. Matching on the name alone would wall the update — trapping
-            // a locked-in man on a broken version with no way to fix it, where
-            // the only escape left is the uninstall this is trying to prevent.
-            // "Uninstall" appears in the class on AOSP and on every fork of it
-            // seen so far; "install" does not imply it.
-            if (cls.contains("uninstall")) return Guarded.UNINSTALL
+            // puts up a dialog from this same package carrying this same app's
+            // name. Matching the name alone would wall the update — trapping a
+            // locked-in man on a broken version whose only remaining escape is
+            // the uninstall this exists to prevent.
+            //
+            // And the dialog has to be about Bastion. That check was missing
+            // outright, so every uninstall confirmation on the phone raised the
+            // wall: removing a game a man no longer played meant being told he
+            // was trying to escape. A guard that fires on the wrong app is not
+            // a strict guard, it is a broken one, and it spends the credibility
+            // the real block depends on.
+            if (cls.contains("uninstall") && namesApp(texts, appLabel)) return Guarded.UNINSTALL
             return null
         }
 
@@ -211,8 +240,16 @@ object GuardedScreens {
             // for a confirmation screen the man had already reached.
             val popup = cls.contains("popup") || cls.contains("shortcut") ||
                 cls.contains("menu") || viewIds.any { it in LAUNCHER_POPUP_IDS }
+            // Exact only here, and never the loose word match used on a
+            // confirmation dialog. The caller hands in the menu's own subtree,
+            // and if it could not find one it hands in nothing — because the
+            // workspace underneath carries this app's name whichever icon was
+            // actually pressed, and reading it would wall every other app's
+            // menu. The long press itself is the primary catch now; see
+            // isOurIcon. This is the second net, and a second net that fires on
+            // the wrong app is worse than no second net.
             if (popup && appLabel.isNotBlank() &&
-                texts.any { it.equals(appLabel, ignoreCase = true) }
+                texts.any { it.trim().equals(appLabel, ignoreCase = true) }
             ) return Guarded.UNINSTALL
             return null
         }

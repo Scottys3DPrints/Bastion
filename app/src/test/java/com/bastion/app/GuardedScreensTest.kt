@@ -167,6 +167,7 @@ class GuardedScreensTest {
             detect(
                 pkg = "com.google.android.packageinstaller",
                 cls = "com.android.packageinstaller.UninstallerActivity",
+                texts = setOf("Bastion", "Do you want to uninstall this app?"),
             ),
         )
         assertEquals(
@@ -174,6 +175,68 @@ class GuardedScreensTest {
             detect(
                 pkg = "com.android.packageinstaller",
                 cls = "com.android.packageinstaller.UninstallAppProgress",
+                texts = setOf("Uninstalling Bastion"),
+            ),
+        )
+    }
+
+    /**
+     * And every other app on the phone can still be uninstalled.
+     *
+     * This check was missing outright: the installer branch asked only whether
+     * the class said "uninstall" and never which app the dialog was about, so
+     * removing a game a man no longer played told him he was trying to escape.
+     * A guard that fires on the wrong app is not a strict guard, it is a broken
+     * one, and it spends the credibility the real block depends on.
+     */
+    @Test
+    fun `uninstalling any other app is left alone`() {
+        assertNull(
+            detect(
+                pkg = "com.google.android.packageinstaller",
+                cls = "com.android.packageinstaller.UninstallerActivity",
+                texts = setOf("Instagram", "Do you want to uninstall this app?"),
+            )
+        )
+        assertNull(
+            detect(
+                pkg = "com.android.packageinstaller",
+                cls = "com.android.packageinstaller.UninstallAppProgress",
+                texts = setOf("Uninstalling Candy Crush Saga"),
+            )
+        )
+        // Nothing named at all is not a reason to fire either.
+        assertNull(
+            detect(
+                pkg = "com.android.packageinstaller",
+                cls = "com.android.packageinstaller.UninstallerActivity",
+            )
+        )
+    }
+
+    /**
+     * The name has to be a word, not a fragment.
+     *
+     * The dialog often writes the app into a sentence, so containment is
+     * allowed — but only at a word boundary. Without that, a phone carrying any
+     * app whose name merely contained this one would have a wall nobody could
+     * explain.
+     */
+    @Test
+    fun `a longer app name is not this app`() {
+        assertNull(
+            detect(
+                pkg = "com.android.packageinstaller",
+                cls = "com.android.packageinstaller.UninstallerActivity",
+                texts = setOf("Uninstalling Bastionware"),
+            )
+        )
+        assertEquals(
+            Guarded.UNINSTALL,
+            detect(
+                pkg = "com.android.packageinstaller",
+                cls = "com.android.packageinstaller.UninstallerActivity",
+                texts = setOf("Uninstall Bastion?"),
             ),
         )
     }

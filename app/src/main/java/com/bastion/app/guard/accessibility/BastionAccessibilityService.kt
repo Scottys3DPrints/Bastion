@@ -53,6 +53,14 @@ class BastionAccessibilityService : AccessibilityService() {
     @Volatile private var rulesByPackage: Map<String, List<FeedRuleEntity>> = emptyMap()
 
     /**
+     * The words that mark a video title as one to close, mirrored so the scan
+     * stays synchronous. Empty until the blocklist has been read, which means
+     * this guard simply does nothing on the first few events rather than
+     * blocking the tree walk to wait for a file.
+     */
+    @Volatile private var watchWords: List<String> = emptyList()
+
+    /**
      * The last settings seen, mirrored so [evaluate] stays synchronous.
      *
      * The whole object rather than a copied-out field: it used to keep only
@@ -123,6 +131,9 @@ class BastionAccessibilityService : AccessibilityService() {
         }
         scope.launch {
             graph.settings.settings.collect { settings = it }
+        }
+        scope.launch {
+            watchWords = runCatching { graph.guard.filterData().onScreen }.getOrDefault(emptyList())
         }
     }
 
@@ -348,7 +359,16 @@ class BastionAccessibilityService : AccessibilityService() {
             // Reading only inside the menu asks the question that was actually
             // meant: not "is Bastion somewhere behind this", but "is this menu
             // Bastion's".
-            val scope = if (GuardedScreens.isLauncherApp(pkg)) menuIn(root) else null
+            val onLauncher = GuardedScreens.isLauncherApp(pkg)
+            val scope = if (onLauncher) menuIn(root) else null
+            // No menu found on a launcher means the read is abandoned, not
+            // widened. Falling back to the whole tree here is what made the
+            // wall fire on other apps: the workspace carries Bastion's name
+            // under its icon whichever icon was actually pressed, so a
+            // whole-tree read answers "is Bastion on this screen" — always yes,
+            // on a home screen — when the question was whether this menu is
+            // Bastion's. The long press itself is the primary catch anyway.
+            if (onLauncher && scope == null) return
             collectIdentity(scope ?: root, ids, texts)
             if (scope != null) {
                 // The container's own identifier lives on the node itself, and
@@ -509,6 +529,13 @@ class BastionAccessibilityService : AccessibilityService() {
             BlockMode.FEED_ONLY -> checkFeed(pkg, guarded)
         }
 
+        // Whatever the mode says. Feed-only closes Shorts and leaves the watch
+        // page alone, which is the right shape for a feed rule and the wrong
+        // shape for this: a full-length video is not a feed, and it is where
+        // the thing a man is actually avoiding sits. The other modes close the
+        // app outright and never reach here anyway.
+        checkWatchTitles(pkg, guarded)
+
         // Reads the global setting, which is the one the UI actually writes.
         //
         // This asked `guarded.grayscale` — a per-app column with no writer
@@ -546,9 +573,109 @@ class BastionAccessibilityService : AccessibilityService() {
         )
     }
 
+    /**
+     * What is on the screen rather than which screen it is.
+     *
+     * Every other rule here names a container: the Reels viewer, the Shorts
+     * player, an address. That works because those screens are the problem
+     * whatever is playing on them. YouTube is the case it cannot reach — the
+     * watch page is the same page for a lecture and for the thing a man came
+     * here to stop, and no view id will ever tell them apart. Neither will a
+     * domain list, because youtube.com is not going on one.
+     *
+     * So this reads titles, and it is the only place in the app that reads what
+     * is written on a screen rather than how the screen is built. The limits
+     * are in TitleFilter and they are not incidental: video apps only, short
+     * strings only, compared against a list Bastion shipped, and nothing kept
+     * afterwards. A messaging app is never in the set this runs for.
+     *
+     * It is a net, not a wall, and the difference should be said plainly rather
+     * than discovered: it catches what a title admits to. A video that says
+     * nothing gets through, and an innocent one that happens to use a listed
+     * word gets closed. The shield lets go on its own after eight seconds and
+     * has a way out on it, because the cost of the second kind of mistake has
+     * to stay small enough to live with.
+     */
+    private fun checkWatchTitles(pkg: String, app: GuardedAppEntity) {
+        if (pkg !in WATCH_APPS) return
+        val words = watchWords
+        if (words.isEmpty()) return
+        val root = rootInActiveWindow ?: return
+
+        val hit = firstBadTitle(root, words) ?: return
+        if (System.currentTimeMillis() - lastInterruptAt < INTERRUPT_COOLDOWN_MS) return
+        lastInterruptAt = System.currentTimeMillis()
+
+        performGlobalAction(GLOBAL_ACTION_BACK)
+        shield.show(
+            title = "Not this one.",
+            // The word, not the title. Saying which word was caught lets a man
+            // judge the call himself; quoting the video back at him would put
+            // the thing he is walking away from on the screen he walked to.
+            message = "Closed on the word \"$hit\". The rest of ${app.label} is still yours.",
+            primaryLabel = "Scroll something good",
+            onPrimary = {
+                shield.hide()
+                openFeed()
+            },
+            secondaryLabel = "I'm having an urge",
+            onSecondary = {
+                shield.hide()
+                openPanic()
+            },
+            autoDismissMillis = 8_000,
+        )
+    }
+
+    /**
+     * The first listed word found in a title on screen, or null.
+     *
+     * Bounded like every other walk here. Content descriptions count as well as
+     * text: YouTube writes the title of a thumbnail into the description of the
+     * whole card, and on the watch page the player's own label often carries it
+     * when the visible title has been collapsed.
+     */
+    private fun firstBadTitle(root: AccessibilityNodeInfo, words: List<String>): String? {
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+        val borrowed = mutableListOf<AccessibilityNodeInfo>()
+        var visited = 0
+        try {
+            while (queue.isNotEmpty() && visited < MAX_NODES) {
+                val node = queue.removeFirst()
+                visited++
+                node.text?.toString()?.let { text ->
+                    TitleFilter.match(text, words)?.let { return it }
+                }
+                node.contentDescription?.toString()?.let { text ->
+                    TitleFilter.match(text, words)?.let { return it }
+                }
+                for (i in 0 until node.childCount) {
+                    node.getChild(i)?.let { queue.add(it); borrowed.add(it) }
+                }
+            }
+            return null
+        } finally {
+            recycleAll(borrowed)
+        }
+    }
+
+    /**
+     * The rules that apply to an app: its own, or the universal set.
+     *
+     * A fallback rather than a union, and that is the part worth stating. If an
+     * app has rules of its own then its switches on the Guard screen are the
+     * whole truth about it — turning one off turns it off, with no second copy
+     * of the same rule quietly still on under another name. An app nobody wrote
+     * rules for gets the universal set instead, which is what makes "every
+     * browser" true rather than "every browser I happened to list".
+     */
+    private fun rulesFor(pkg: String): List<FeedRuleEntity> =
+        rulesByPackage[pkg] ?: rulesByPackage[GuardRepository.ANY_APP].orEmpty()
+
     /** The feed surgery: let the app run, close only the screen that hurts. */
     private fun checkFeed(pkg: String, app: GuardedAppEntity) {
-        val rules = rulesByPackage[pkg] ?: return
+        val rules = rulesFor(pkg)
         if (rules.isEmpty()) return
         val root = rootInActiveWindow ?: return
 
@@ -611,10 +738,10 @@ class BastionAccessibilityService : AccessibilityService() {
         // has no web view and should not pay for a walk looking for one.
         val webViewTop =
             if (rules.any { it.matchType == MatchType.URL }) webViewTopIn(root) else 0
-        // See FeedSurface.addressBarWidthCounts. Inside a messaging app the
+        // See FeedSurface.addressBarWidthCounts. Outside a real browser the
         // width guess would fire on a link somebody sent.
         val widthCounts = FeedSurface.addressBarWidthCounts(
-            inAppBrowser = root.packageName?.toString() in GuardRepository.IN_APP_BROWSERS,
+            realBrowser = root.packageName?.toString() in GuardRepository.REAL_BROWSERS,
             webViewFound = webViewTop > 0,
         )
         val queue = ArrayDeque<AccessibilityNodeInfo>()
@@ -988,7 +1115,7 @@ class BastionAccessibilityService : AccessibilityService() {
         recycleAll(borrowed)
 
         val pkg = root.packageName?.toString().orEmpty()
-        val rules = rulesByPackage[pkg].orEmpty()
+        val rules = rulesFor(pkg)
 
         // The browser diagnosis, which exists because four attempts at the
         // in-app-browser path were made without ever seeing what the service
@@ -1203,6 +1330,20 @@ class BastionAccessibilityService : AccessibilityService() {
 
         private const val NOTIFICATION_GUARD_DOWN = 4401
         private const val HALF_HOUR = 30 * 60 * 1000L
+
+    /**
+     * Where titles are read, and nowhere else.
+     *
+     * A short, explicit list rather than "any guarded app", because the moment
+     * this could be pointed at a messaging app it would be reading messages —
+     * and no setting, however well labelled, is worth that being one toggle
+     * away. Adding to this list is a decision someone has to type out here.
+     */
+        private val WATCH_APPS = setOf(
+            "com.google.android.youtube",
+            "com.google.android.apps.youtube.creator",
+            "com.google.android.youtube.tv",
+        )
 
         private val SYSTEM_PACKAGES = setOf(
             "com.android.systemui",

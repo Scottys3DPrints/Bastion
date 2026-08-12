@@ -275,14 +275,14 @@ class BrowserFeedRuleTest {
      * away someone's messages.
      */
     @Test
-    fun `in a messaging app with no page open the width guess is withdrawn`() {
-        assertFalse(FeedSurface.addressBarWidthCounts(inAppBrowser = true, webViewFound = false))
+    fun `outside a real browser with no page open the width guess is withdrawn`() {
+        assertFalse(FeedSurface.addressBarWidthCounts(realBrowser = false, webViewFound = false))
     }
 
     /** With a page actually open, the in-app browser is a browser again. */
     @Test
-    fun `an open page restores the width guess`() {
-        assertTrue(FeedSurface.addressBarWidthCounts(inAppBrowser = true, webViewFound = true))
+    fun `an open page restores the width guess anywhere`() {
+        assertTrue(FeedSurface.addressBarWidthCounts(realBrowser = false, webViewFound = true))
     }
 
     /**
@@ -292,8 +292,8 @@ class BrowserFeedRuleTest {
      */
     @Test
     fun `a real browser keeps the width guess with or without a web view`() {
-        assertTrue(FeedSurface.addressBarWidthCounts(inAppBrowser = false, webViewFound = false))
-        assertTrue(FeedSurface.addressBarWidthCounts(inAppBrowser = false, webViewFound = true))
+        assertTrue(FeedSurface.addressBarWidthCounts(realBrowser = true, webViewFound = false))
+        assertTrue(FeedSurface.addressBarWidthCounts(realBrowser = true, webViewFound = true))
     }
 
     // --- the shipped rules ---------------------------------------------------

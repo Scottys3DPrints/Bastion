@@ -89,7 +89,7 @@ private val KNOWN_NAMES = mapOf(
  * renames itself is followed automatically.
  */
 internal fun appLabel(context: Context, pkg: String): String =
-    runCatching {
+    if (pkg == GuardRepository.ANY_APP) GuardRepository.ANY_APP_LABEL else runCatching {
         val pm = context.packageManager
         pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
     }.getOrNull()
@@ -97,7 +97,11 @@ internal fun appLabel(context: Context, pkg: String): String =
         ?: pkg.substringAfterLast('.').replaceFirstChar(Char::uppercase)
 
 internal fun isInstalled(context: Context, pkg: String): Boolean =
-    runCatching { context.packageManager.getApplicationInfo(pkg, 0); true }.getOrDefault(false)
+    // The sentinel is not an app and can never be found by the package manager,
+    // so it has to be answered for directly — otherwise the group that covers
+    // every browser is the one group the list hides.
+    pkg == GuardRepository.ANY_APP ||
+        runCatching { context.packageManager.getApplicationInfo(pkg, 0); true }.getOrDefault(false)
 
 /**
  * The launcher icon, as a Compose image.
@@ -362,6 +366,21 @@ internal sealed interface RuleState {
     data object GuardOff : RuleState {
         override val line = "Paused — Guard is switched off."
     }
+
+    /**
+     * The universal group, which belongs to no app and so cannot be in any of
+     * the states above. It is never "not guarded" — there is nothing to guard —
+     * and the honest line says what it does instead of borrowing a status that
+     * would send a man off to fix something that is not broken.
+     */
+    data object Fallback : RuleState {
+        override val line =
+            "Applies to any guarded app with no rules of its own — including " +
+                "browsers not listed here."
+    }
+    data object FallbackOff : RuleState {
+        override val line = "Off — apps with no rules of their own block nothing."
+    }
 }
 
 /**
@@ -409,7 +428,11 @@ fun FeedRulesSection(
     Text(
         "These only apply to apps you have set to \"Block only the endless feed\". " +
             "Each one names a screen inside an app — the Reels tab, the Shorts " +
-            "player — so the rest of the app keeps working.",
+            "player — so the rest of the app keeps working.\n\n" +
+            "\"${GuardRepository.ANY_APP_LABEL}\" is the fallback: it covers every " +
+            "app that has no rules of its own, which is how a browser nobody " +
+            "listed still gets blocked. An app listed below uses its own " +
+            "switches instead.",
         style = MaterialTheme.typography.bodySmall,
         color = BastionColors.TextTertiary,
     )
@@ -453,7 +476,9 @@ fun FeedRulesSection(
                 pkg = pkg,
                 rules = groupRules,
                 label = appLabel(context, pkg),
-                state = ruleState(
+                state = if (pkg == GuardRepository.ANY_APP) {
+                    if (groupRules.any { it.enabled }) RuleState.Fallback else RuleState.FallbackOff
+                } else ruleState(
                     guardRunning = guardRunning,
                     guardedMode = byMode[pkg],
                     anyRuleEnabled = groupRules.any { it.enabled },
@@ -467,7 +492,8 @@ fun FeedRulesSection(
 }
 
 /** Sort key that keeps the known apps in a stable, readable order. */
-private fun appLabelKey(pkg: String) = (KNOWN_NAMES[pkg] ?: pkg).lowercase()
+private fun appLabelKey(pkg: String) =
+    if (pkg == GuardRepository.ANY_APP) "" else (KNOWN_NAMES[pkg] ?: pkg).lowercase()
 
 @Composable
 private fun FeedRuleGroup(
@@ -496,7 +522,7 @@ private fun FeedRuleGroup(
                     state.line,
                     style = MaterialTheme.typography.bodySmall,
                     color = when (state) {
-                        is RuleState.Working -> BastionColors.SageBright
+                        is RuleState.Working, is RuleState.Fallback -> BastionColors.SageBright
                         is RuleState.NotGuarded, is RuleState.GuardOff -> BastionColors.Amber
                         else -> BastionColors.TextTertiary
                     },

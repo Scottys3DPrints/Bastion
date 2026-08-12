@@ -155,6 +155,15 @@ data class Blocklist(
     val allow: List<String> = emptyList(),
     /** Substrings that mark a domain as adult when no allow-list entry matches. */
     val keywords: List<String> = emptyList(),
+    /**
+     * Whole words that mark a *video title* as adult, inside video apps only.
+     *
+     * Separate from [keywords] because the matching is different in kind, not
+     * merely in tuning: a keyword is a substring of a hostname and a word here
+     * is a word. That is what lets bare "sex" live in this list and stay out of
+     * the other one, and it is the whole reason the two are not shared.
+     */
+    val onScreen: List<String> = emptyList(),
 )
 
 /**
