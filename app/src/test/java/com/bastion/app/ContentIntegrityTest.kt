@@ -401,6 +401,72 @@ class ContentIntegrityTest {
     }
 
     /**
+     * Every line names a real source, because none of them are the app's.
+     *
+     * The library used to be part harvest and part house writing — reframes,
+     * urge lines, affirmations, all composed here and attributed to nobody.
+     * They read fine and they were the weakest thing in the app: a man in a bad
+     * hour was being handed encouragement by the same software that was
+     * blocking him, dressed as wisdom.
+     *
+     * Everything now comes from someone. This is the test that keeps it that
+     * way, because the easy way to fill a gap in a future import is to write
+     * one more line and leave the attribution blank.
+     */
+    @Test
+    fun `nothing in the library is anonymous`() {
+        val unattributed = motivation.items.filter { it.attribution.isNullOrBlank() }
+        assertTrue(
+            "these name no source: " + unattributed.take(5).joinToString { it.id },
+            unattributed.isEmpty(),
+        )
+    }
+
+    /**
+     * The panic screen has enough to say, in both modes, without repeating.
+     *
+     * This is the moment the whole library exists for, and it is the one where
+     * a repeat is most expensive: a man who has come here three nights running
+     * and been handed the same sentence has learned that nothing is listening.
+     * The floor is deliberately far above what one night needs.
+     */
+    @Test
+    fun `the urge moment is deep in both modes`() {
+        listOf(true, false).forEach { faith ->
+            val pool = motivation.items.count {
+                it.verified && it.visibleIn(faith) && "urge" in it.moments
+            }
+            assertTrue(
+                "only $pool urge lines in ${if (faith) "faith" else "discipline"} mode",
+                pool >= 500,
+            )
+        }
+    }
+
+    /**
+     * And the standard works survived the rebuild.
+     *
+     * They were asked for outright, and the library they live in gets replaced
+     * wholesale from an outside file every time it grows. A wholesale replace
+     * is exactly how something quietly asked for goes missing — it does not
+     * fail, it simply is not there any more, and the only symptom is a man
+     * noticing months later that he never sees one.
+     */
+    @Test
+    fun `the rebuild did not drop the standard works`() {
+        val byVolume = motivation.items
+            .filter { it.type == "scripture" }
+            .groupBy { it.attribution }
+        listOf(
+            "The Book of Mormon",
+            "Doctrine and Covenants",
+            "The Pearl of Great Price",
+        ).forEach {
+            assertTrue("$it is gone from the library", byVolume[it].orEmpty().isNotEmpty())
+        }
+    }
+
+    /**
      * Lines that famous men did not say.
      *
      * Every one of these arrived in a library drop marked verified, because

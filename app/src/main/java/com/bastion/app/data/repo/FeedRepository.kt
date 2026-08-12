@@ -152,8 +152,19 @@ class FeedRepository(
      */
     private fun toneWeight(item: MotivationItem, hour: Int): Int {
         val lateNight = hour >= 22 || hour < 5
-        val steadying = item.type == "urge_line" || item.type == "reframe" || item.type == "prayer"
-        val aspirational = item.type == "affirmation" || item.type == "quote" || item.type == "story"
+        // Scripture is on the steadying side, and leaving it off was a silent
+        // regression when the library was rebuilt. The types it used to name —
+        // urge_line, reframe, affirmation — were the app's own writing, and
+        // they are gone; scripture is now the largest thing a man in Faith mode
+        // has at midnight. Unclassified, it scored zero at every hour, so the
+        // late-night feed lost almost everything it was meant to reach for.
+        //
+        // The retired names stay listed. They cost nothing and they keep this
+        // honest if an older library is ever loaded beside a newer build.
+        val steadying = item.type == "scripture" || item.type == "prayer" ||
+            item.type == "urge_line" || item.type == "reframe"
+        val aspirational = item.type == "quote" || item.type == "story" ||
+            item.type == "affirmation"
         return when {
             lateNight && steadying -> 2
             !lateNight && aspirational -> 1
