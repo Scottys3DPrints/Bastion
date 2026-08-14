@@ -75,7 +75,7 @@ class FeedRepository(
         val alreadySeenToday = feedDao.seenOn(today).map { it.itemId }
         val target = DAILY_PORTION + extra
 
-        val pool = candidates(settings, hour)
+        val pool = candidates(settings, hour, today)
         // Cards already served today come back in their original order, so
         // scrolling up shows what was there rather than reshuffling under the
         // thumb — a feed that rearranges itself while you read it is the
@@ -86,8 +86,13 @@ class FeedRepository(
         val seenEver = feedDao.seenIds().toSet()
         val fresh = pool.filter { it.id !in seenEver }
 
-        val chosen = served + fresh.take((target - served.size).coerceAtLeast(0))
-        val cards = interleave(chosen).map<MotivationItem, Card>(Card::Words).toMutableList()
+        // Mixed first, then cut. This was the other way round, and that is the
+        // whole reason a day could come out as nothing but scripture: the
+        // portion was sliced off the top of a sorted pool and only then
+        // interleaved, so if the top of the pool was one type, interleaving a
+        // handful of identical things achieved exactly nothing.
+        val chosen = served + FeedMix.interleave(fresh, hour).take((target - served.size).coerceAtLeast(0))
+        val cards = chosen.map<MotivationItem, Card>(Card::Words).toMutableList()
 
         progressCard()?.let { card ->
             // Roughly a third of the way in: far enough that the feed has
@@ -113,7 +118,10 @@ class FeedRepository(
 
     suspend fun hasRunDry(settings: Settings): Boolean {
         val seen = feedDao.seenIds().toSet()
-        return candidates(settings, java.time.LocalTime.now().hour).none { it.id !in seen }
+        // The day seed does not matter here: this asks whether anything is left
+        // at all, and reordering an empty set does not make it non-empty.
+        val today = java.time.LocalDate.now().toEpochDay()
+        return candidates(settings, java.time.LocalTime.now().hour, today).none { it.id !in seen }
     }
 
     // --- composition -------------------------------------------------------
@@ -127,78 +135,32 @@ class FeedRepository(
      * the day. A steadying line at 1am, something with more horizon in it at
      * eight in the morning.
      */
-    private suspend fun candidates(settings: Settings, hour: Int): List<MotivationItem> {
+    private suspend fun candidates(
+        settings: Settings,
+        hour: Int,
+        daySeed: Long,
+    ): List<MotivationItem> {
         val triggers = TriggerKeys.of(settings.triggers)
         val saved = settings.savedMotivation.toSet()
 
         return content.motivationFor(settings.faithMode)
             .filter { "library" in it.moments || "daily" in it.moments || "urge" in it.moments }
+            // Shuffled first, then stably weighted. Kotlin's sorts are stable,
+            // so the shuffle survives inside each band of equal weight — which
+            // is where two thousand items actually sit.
+            //
+            // The tiebreak used to be `id.hashCode().mod(7)`: seven buckets, and
+            // the same seven every day this app will ever run. Within a band the
+            // order was therefore fixed forever, and the only reason a second
+            // day looked different was that the first day's items had been
+            // marked as seen.
+            .sortedBy { FeedMix.shuffleKey(it.id, daySeed) }
             .sortedByDescending { item ->
                 var weight = 0
                 if (item.triggers.any(triggers::contains)) weight += 3
                 if (item.id in saved) weight += 2
-                weight += toneWeight(item, hour)
-                // A stable tiebreak per day, so the order is settled rather
-                // than shuffling every time the screen recomposes.
-                weight * 10 + (item.id.hashCode().mod(7))
+                weight
             }
-    }
-
-    /**
-     * Late at night wants steadying; the morning wants something to aim at.
-     *
-     * The hours are the same ones the dawn gradient already uses, so the words
-     * and the light agree about what time it is.
-     */
-    private fun toneWeight(item: MotivationItem, hour: Int): Int {
-        val lateNight = hour >= 22 || hour < 5
-        // Scripture is on the steadying side, and leaving it off was a silent
-        // regression when the library was rebuilt. The types it used to name —
-        // urge_line, reframe, affirmation — were the app's own writing, and
-        // they are gone; scripture is now the largest thing a man in Faith mode
-        // has at midnight. Unclassified, it scored zero at every hour, so the
-        // late-night feed lost almost everything it was meant to reach for.
-        //
-        // The retired names stay listed. They cost nothing and they keep this
-        // honest if an older library is ever loaded beside a newer build.
-        val steadying = item.type == "scripture" || item.type == "prayer" ||
-            item.type == "urge_line" || item.type == "reframe"
-        val aspirational = item.type == "quote" || item.type == "story" ||
-            item.type == "affirmation"
-        return when {
-            lateNight && steadying -> 2
-            !lateNight && aspirational -> 1
-            else -> 0
-        }
-    }
-
-    /**
-     * Spreads the types out so no two of a kind sit together.
-     *
-     * This is the only thing here borrowed from real feeds, and it is borrowed
-     * because it is the honest part: variety is what makes a stream feel alive.
-     * Round-robin across the types rather than a shuffle, so the rhythm is
-     * reliable rather than random.
-     */
-    private fun interleave(items: List<MotivationItem>): List<MotivationItem> {
-        val queues = items.groupBy { it.type }.mapValues { ArrayDeque(it.value) }
-        val order = queues.keys.toMutableList()
-        val out = ArrayList<MotivationItem>(items.size)
-
-        var index = 0
-        while (out.size < items.size && order.isNotEmpty()) {
-            val type = order[index % order.size]
-            val queue = queues[type]
-            if (queue.isNullOrEmpty()) {
-                order.remove(type)
-                if (order.isEmpty()) break
-                index %= order.size
-                continue
-            }
-            out.add(queue.removeFirst())
-            index++
-        }
-        return out
     }
 
     /** His own days, said plainly and without comparison. */
@@ -227,4 +189,98 @@ class FeedRepository(
          */
         const val DAILY_PORTION = 14
     }
+}
+
+/**
+ * How a day's portion is ordered, with nothing else in it.
+ *
+ * Pulled out of the repository because the bug it now carries a test for was
+ * invisible while it lived there: ordering was three private helpers tangled
+ * with a database, a clock and a settings object, so the only way to ask "is a
+ * portion ever all one type?" was to run the app for a day and look.
+ *
+ * Everything here is a pure function of a list, an hour and a day number.
+ */
+internal object FeedMix {
+
+    /**
+     * A per-day order that is settled rather than random.
+     *
+     * Deterministic, so scrolling up shows what was there and a recomposition
+     * does not rearrange the screen under a thumb — but different every day,
+     * which the old hash was not. Splitmix-style mixing because the input is a
+     * string hash and a day number, and simply adding those leaves long runs of
+     * neighbouring ids sorting together.
+     */
+    fun shuffleKey(id: String, daySeed: Long): Int {
+        var x = id.hashCode().toLong() * -0x61c8864680b583ebL + daySeed * -0x7ee3623a03d3c11L
+        x = x xor (x ushr 30)
+        x *= -0x40a7b892e31b1a47L
+        x = x xor (x ushr 27)
+        x *= -0x6b2fb644ecceee15L
+        return (x xor (x ushr 31)).toInt()
+    }
+
+    /**
+     * Late at night wants steadying; the morning wants something to aim at.
+     *
+     * The hours are the same ones the dawn gradient already uses, so the words
+     * and the light agree about what time it is.
+     */
+    fun leadsAtThisHour(type: String, hour: Int): Boolean {
+        val lateNight = hour >= 22 || hour < 5
+        // Scripture is on the steadying side, and leaving it off was a silent
+        // regression when the library was rebuilt. The types it used to name —
+        // urge_line, reframe, affirmation — were the app's own writing, and
+        // they are gone; scripture is now the largest thing a man in Faith mode
+        // has at midnight. Unclassified, it scored zero at every hour, so the
+        // late-night feed lost almost everything it was meant to reach for.
+        //
+        // The retired names stay listed. They cost nothing and they keep this
+        // honest if an older library is ever loaded beside a newer build.
+        val steadying = type == "scripture" || type == "prayer" ||
+            type == "urge_line" || type == "reframe"
+        val aspirational = type == "quote" || type == "story" ||
+            type == "affirmation"
+        return if (lateNight) steadying else aspirational
+    }
+
+    /**
+     * Spreads the types out so no two of a kind sit together.
+     *
+     * This is the only thing here borrowed from real feeds, and it is borrowed
+     * because it is the honest part: variety is what makes a stream feel alive.
+     * Round-robin across the types rather than a shuffle, so the rhythm is
+     * reliable rather than random.
+     */
+    fun interleave(items: List<MotivationItem>, hour: Int): List<MotivationItem> {
+        val queues = items.groupBy { it.type }.mapValues { ArrayDeque(it.value) }
+        // The hour decides which type goes first, not which type wins.
+        //
+        // It used to be a weight, and a weight is the wrong instrument: adding
+        // two points to every scripture puts all five hundred of them above all
+        // fifteen hundred quotes, so the hour did not colour the feed, it chose
+        // the feed. A man opening it at midnight got scripture and nothing else;
+        // at eight in the morning, quotes and nothing else. Leading the rotation
+        // keeps what the hour was for — steadying late, further-looking early —
+        // while every portion still holds both.
+        val order = queues.keys.sortedByDescending { leadsAtThisHour(it, hour) }.toMutableList()
+        val out = ArrayList<MotivationItem>(items.size)
+
+        var index = 0
+        while (out.size < items.size && order.isNotEmpty()) {
+            val type = order[index % order.size]
+            val queue = queues[type]
+            if (queue.isNullOrEmpty()) {
+                order.remove(type)
+                if (order.isEmpty()) break
+                index %= order.size
+                continue
+            }
+            out.add(queue.removeFirst())
+            index++
+        }
+        return out
+    }
+
 }
