@@ -66,8 +66,10 @@ class FeedRuleStateTest {
             RuleState.WholeAppBlocked,
             ruleState(guardRunning = true, guardedMode = BlockMode.FULL, anyRuleEnabled = true),
         )
-        // And that stays true whether or not the rules happen to be switched on,
-        // because the service never consults them in this mode.
+        // And that stays true whether or not the app rules are switched on: in
+        // this mode the app never opens, so a rule naming a screen inside it
+        // has nothing to describe. Address rules are the exception and get
+        // their own state — see the browser-rules case below.
         assertEquals(
             RuleState.WholeAppBlocked,
             ruleState(guardRunning = true, guardedMode = BlockMode.FULL, anyRuleEnabled = false),
@@ -122,6 +124,53 @@ class FeedRuleStateTest {
             RuleState.WholeAppBlocked, RuleState.GuardOff,
         ).forEach {
             assertTrue("${it::class.simpleName} has no explanation", it.line.isNotBlank())
+        }
+    }
+
+    /**
+     * Unless the group also reaches a browser, which a fully blocked app does
+     * not cover.
+     *
+     * "Not needed, the whole app is already blocked" was true while every rule
+     * named a screen inside an app. It stopped being true the moment a group
+     * also carried addresses: a man who blocked Instagram outright and was told
+     * these were unnecessary would have gone on opening instagram.com in
+     * Chrome, believing he had closed it.
+     */
+    @Test
+    fun `a fully blocked app still says what its browser rules do`() {
+        assertEquals(
+            RuleState.BrowserOnly,
+            ruleState(
+                guardRunning = true,
+                guardedMode = BlockMode.FULL,
+                anyRuleEnabled = true,
+                hasBrowserRules = true,
+            ),
+        )
+    }
+
+    /**
+     * And nothing describes itself as working for a service nobody guarded.
+     *
+     * This is the state behind the report that started this: Instagram reels
+     * closing on a phone where Instagram had never been added. Whatever the
+     * switches inside the group say, an unguarded service does nothing at all.
+     */
+    @Test
+    fun `an unguarded service is inert whatever its switches say`() {
+        listOf(true, false).forEach { rulesOn ->
+            listOf(true, false).forEach { browser ->
+                assertEquals(
+                    RuleState.NotGuarded,
+                    ruleState(
+                        guardRunning = true,
+                        guardedMode = null,
+                        anyRuleEnabled = rulesOn,
+                        hasBrowserRules = browser,
+                    ),
+                )
+            }
         }
     }
 }

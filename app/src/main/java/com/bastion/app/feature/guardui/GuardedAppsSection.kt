@@ -171,6 +171,17 @@ fun GuardedAppsSection(
         LinkButton("Add an app") { onAdd() }
     }
     Spacer(Modifier.height(Space.sm))
+    // Said once, at the top, because not saying it is what made the screen
+    // confusing: a man saw a list of Instagram rules and reasonably assumed
+    // they were in force. This is the list that decides. Nothing below it
+    // applies to an app that is not on it, in its own app or in a browser.
+    Text(
+        "The apps Bastion is allowed to touch. Nothing further down applies to " +
+            "an app that isn't on this list.",
+        style = MaterialTheme.typography.bodySmall,
+        color = BastionColors.TextTertiary,
+    )
+    Spacer(Modifier.height(Space.md))
 
     // The first broken link, named where it breaks. Every row below is inert
     // without the service, and the old screen showed them exactly as it showed
@@ -186,7 +197,8 @@ fun GuardedAppsSection(
 
     if (apps.isEmpty()) {
         Text(
-            "Nothing guarded yet. Instagram and YouTube are the usual first two.",
+            "Nothing guarded yet, so nothing is being blocked. Instagram and " +
+                "YouTube are the usual first two.",
             style = MaterialTheme.typography.bodyMedium,
             color = BastionColors.TextTertiary,
         )
@@ -349,16 +361,29 @@ internal sealed interface RuleState {
     val line: String
 
     data object Working : RuleState {
-        override val line = "Working — this feed closes when it appears."
+        override val line = "Working — closes wherever it appears."
     }
     data object AllOff : RuleState {
-        override val line = "Every rule here is off, so this feed opens normally."
+        override val line = "Every switch here is off, so this opens normally."
     }
     data object NotGuarded : RuleState {
-        override val line = "Does nothing yet — this app isn't guarded."
+        override val line = "Does nothing — this isn't in your guarded apps."
     }
     data object WholeAppBlocked : RuleState {
         override val line = "Not needed — the whole app is already blocked."
+    }
+
+    /**
+     * Blocked outright in its own app, still reachable in a browser.
+     *
+     * The old line for this said "not needed, the whole app is already
+     * blocked", which was true when every rule named a screen inside an app and
+     * became false the moment a group also carried addresses. A man who blocked
+     * Instagram outright and was told these rules were unnecessary would have
+     * gone on opening instagram.com in Chrome, believing he had closed it.
+     */
+    data object BrowserOnly : RuleState {
+        override val line = "The app is fully blocked. These close it in a browser too."
     }
     data object GuardOff : RuleState {
         override val line = "Paused — Guard is switched off."
@@ -378,11 +403,24 @@ internal fun ruleState(
     guardRunning: Boolean,
     guardedMode: BlockMode?,
     anyRuleEnabled: Boolean,
+    /** Whether the group has rules that fire in a browser, not only in the app. */
+    hasBrowserRules: Boolean = false,
 ): RuleState = when {
+    // Not guarded is the whole answer, and it is now the only one.
+    //
+    // A rule belongs to a service. If the service is not in the guarded list,
+    // nothing here fires anywhere — not in its app, not in a browser. That was
+    // true of the app rules and quietly untrue of the address ones, which is
+    // how Instagram reels came to be closed on a phone where Instagram had
+    // never been guarded.
     guardedMode == null -> RuleState.NotGuarded
-    guardedMode != BlockMode.FEED_ONLY -> RuleState.WholeAppBlocked
-    !anyRuleEnabled -> RuleState.AllOff
+    // Above the mode, because Guard being down stops every one of these and
+    // saying "the whole app is blocked" while nothing is running is a claim a
+    // man would only find out was wrong by testing it.
     !guardRunning -> RuleState.GuardOff
+    guardedMode != BlockMode.FEED_ONLY ->
+        if (hasBrowserRules) RuleState.BrowserOnly else RuleState.WholeAppBlocked
+    !anyRuleEnabled -> RuleState.AllOff
     else -> RuleState.Working
 }
 
@@ -409,10 +447,12 @@ fun FeedRulesSection(
     }
     Spacer(Modifier.height(Space.sm))
     Text(
-        "One group per site. \"In the app\" needs that app set to \"Block only " +
-            "the endless feed\"; \"in a browser\" works everywhere at once — " +
-            "Chrome, the Google app, a link opened inside another app — so " +
-            "there is nothing to switch on per browser.",
+        "One group per site, and only for sites in your guarded apps above — " +
+            "nothing here touches an app you haven't added.\n\n" +
+            "\"In the app\" needs that app set to \"Block only the endless " +
+            "feed\". \"In a browser\" covers every browser at once, including " +
+            "links opened inside other apps, so there is nothing to set up per " +
+            "browser.",
         style = MaterialTheme.typography.bodySmall,
         color = BastionColors.TextTertiary,
     )
@@ -467,6 +507,9 @@ fun FeedRulesSection(
                     guardRunning = guardRunning,
                     guardedMode = byMode[pkg],
                     anyRuleEnabled = groupRules.any { it.enabled },
+                    hasBrowserRules = groupRules.any {
+                        it.enabled && it.matchType != MatchType.VIEW_ID
+                    },
                 ),
                 onSetGroup = { onSetGroup(pkg, it) },
                 onSetRule = onSetRule,
@@ -507,7 +550,7 @@ private fun FeedRuleGroup(
                     state.line,
                     style = MaterialTheme.typography.bodySmall,
                     color = when (state) {
-                        is RuleState.Working -> BastionColors.SageBright
+                        is RuleState.Working, is RuleState.BrowserOnly -> BastionColors.SageBright
                         is RuleState.NotGuarded, is RuleState.GuardOff -> BastionColors.Amber
                         else -> BastionColors.TextTertiary
                     },

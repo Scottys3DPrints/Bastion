@@ -682,7 +682,10 @@ class BastionAccessibilityService : AccessibilityService() {
      * to stay small enough to live with.
      */
     private fun checkWatchTitles(pkg: String, label: String) {
-        if (!titleRuleOn) return
+        // Guarded first, exactly like every other rule. A switch inside
+        // YouTube's group says what to do about YouTube; it does not say to
+        // start watching a service nobody asked about.
+        if (!titleRuleOn || YOUTUBE !in guardedApps) return
         val words = watchWords
         if (words.isEmpty()) return
         val root = rootInActiveWindow ?: return
@@ -807,7 +810,29 @@ class BastionAccessibilityService : AccessibilityService() {
      * browser" true rather than "every browser I happened to list".
      */
     private fun rulesFor(pkg: String): List<FeedRuleEntity> =
-        rulesByPackage[pkg].orEmpty().filter { it.matchType == MatchType.VIEW_ID } + urlRules
+        rulesByPackage[pkg].orEmpty().filter { it.matchType == MatchType.VIEW_ID } + activeUrlRules()
+
+    /**
+     * Address rules for the services a man has actually guarded.
+     *
+     * The one question that decides whether Bastion touches something at all,
+     * and it had drifted into being asked in three places with three answers.
+     * Instagram's reels were being closed while Instagram was not in the
+     * guarded list — because address rules were applied to everyone and the
+     * app's own view-id rules leaked in alongside them, so opening Instagram
+     * was enough on its own.
+     *
+     * A rule belongs to a service. If the service is not guarded, the rule does
+     * nothing, anywhere: not in its app, not in a browser, not in a link opened
+     * inside another app. Guarded apps is the list of what Bastion is allowed
+     * to touch, and it is now the only thing that decides.
+     *
+     * Any mode counts, not just feed-only. A man who blocked Instagram outright
+     * has said more about instagram.com than one who asked for feeds to close,
+     * not less.
+     */
+    private fun activeUrlRules(): List<FeedRuleEntity> =
+        urlRules.filter { it.packageName in guardedApps }
 
     /**
      * The address rules, in an app nobody guarded.
@@ -819,15 +844,16 @@ class BastionAccessibilityService : AccessibilityService() {
      */
     private fun checkUniversalFeed(pkg: String) {
         if (pkg !in webCapableApps) return
-        // The app's own rules when it has them, the universal set when it does
-        // not — the same fallback guarded apps get, and the reason this is not
-        // simply the universal list.
+        // Addresses only, and this is the line that was crossed.
         //
-        // The Google app has rules of its own precisely because its tab shows
-        // no path, so the only rule that can fire there is its whole-site one.
-        // Reading only the universal set here would have left that rule sitting
-        // in the database, switched on, unreachable, and reported as working.
-        val rules = rulesFor(pkg)
+        // This runs for apps that are *not* guarded, so it is how a browser
+        // gets covered without being in the guarded list. It used to call
+        // rulesFor, which also hands back the foreground app's own view-id
+        // rules — and Instagram is in the web-capable set, because it opens
+        // links in a web view. So opening Instagram unguarded matched
+        // `clips_viewer` and closed the reels, on a phone where Instagram had
+        // never been added to anything.
+        val rules = activeUrlRules()
         if (rules.isEmpty()) return
         val root = rootInActiveWindow ?: return
 
@@ -1547,8 +1573,11 @@ class BastionAccessibilityService : AccessibilityService() {
      * and no setting, however well labelled, is worth that being one toggle
      * away. Adding to this list is a decision someone has to type out here.
      */
+        /** The service the title rule belongs to; see checkWatchTitles. */
+        private const val YOUTUBE = "com.google.android.youtube"
+
         private val WATCH_APPS = setOf(
-            "com.google.android.youtube",
+            YOUTUBE,
             "com.google.android.apps.youtube.creator",
             "com.google.android.youtube.tv",
         )

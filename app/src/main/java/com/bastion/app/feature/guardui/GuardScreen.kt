@@ -89,7 +89,24 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
     val guardedApps by graph.guard.guardedApps.collectAsStateWithLifecycle(initialValue = emptyList())
     val feedRules by graph.guard.feedRules.collectAsStateWithLifecycle(initialValue = emptyList())
     val pendingChanges by graph.guard.pendingChanges.collectAsStateWithLifecycle(initialValue = emptyList())
-    val serviceRunning by BastionAccessibilityService.isRunning.collectAsStateWithLifecycle()
+    // Two sources, and the system setting is the one that answers the question
+    // a man is actually asking.
+    //
+    // `isRunning` is a flag the service sets on itself when Android binds it,
+    // and it is false for as long as the app process has been alive without the
+    // service having been bound in it — which is every launch straight after an
+    // update. The screen therefore announced "Bastion Guard is off" over an
+    // accessibility service that was switched on and working, which is worse
+    // than an ordinary bug: the one screen whose job is telling a man whether
+    // he is protected was telling him he was not.
+    //
+    // Whether he switched it on in Android's settings is the durable fact, and
+    // the live flag only adds "and it is bound this second".
+    val liveService by BastionAccessibilityService.isRunning.collectAsStateWithLifecycle()
+    var enabledInSettings by remember {
+        mutableStateOf(BastionAccessibilityService.isEnabled(context))
+    }
+    val serviceRunning = liveService || enabledInSettings
     val filterRunning by BastionVpnService.isRunning.collectAsStateWithLifecycle()
     val blockedCount by BastionVpnService.blockedCount.collectAsStateWithLifecycle()
 
@@ -176,6 +193,9 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
     }
     var confirmStandDown by remember { mutableStateOf(false) }
     androidx.lifecycle.compose.LifecycleResumeEffect(serviceRunning) {
+        // Re-read on every resume: switching it off happens in Android's
+        // settings, which means leaving this screen and coming back to it.
+        enabledInSettings = BastionAccessibilityService.isEnabled(context)
         scope.launch {
             guardBreached = com.bastion.app.guard.GuardWatchdog.isBreached(context)
             breachedFor = com.bastion.app.guard.GuardWatchdog.describeDuration(
