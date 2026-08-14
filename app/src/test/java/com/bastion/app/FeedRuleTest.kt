@@ -34,11 +34,20 @@ class FeedRuleTest {
      */
     @Test
     fun `every built-in rule matches on a container or an address`() {
-        // URL is legitimate and is how the browser rules work; a label is not.
-        // The distinction this protects is signpost versus destination, and an
-        // address is a destination.
+        // The distinction this protects is signpost versus destination.
+        //
+        // TEXT and CONTENT_DESC are signposts: they matched the Reels and
+        // Shorts *tab buttons*, which sit in the navigation bar on every screen
+        // of the app, so the rule fired the moment the app opened. An address
+        // is a destination. A view id names one container on one screen.
+        //
+        // TITLE is allowed and is not a signpost either, though it is the only
+        // one that reads what is written. It does not match the rule's own
+        // value against a label — it compares short on-screen text to a shipped
+        // word list, on YouTube surfaces only, and the tab bar has no video
+        // titles in it. See TitleFilter for the limits that make that true.
         val offenders = rules.filter {
-            it.matchType != MatchType.VIEW_ID && it.matchType != MatchType.URL
+            it.matchType == MatchType.TEXT || it.matchType == MatchType.CONTENT_DESC
         }
         assertTrue(
             "These built-in rules match on a label rather than a container, which " +
@@ -62,22 +71,16 @@ class FeedRuleTest {
         // Among the rules that ship switched on, and within a match type.
         //
         // A view id and an address are compared against different things, so one
-        // cannot shadow the other. The whole-site browser rules are a deliberate
-        // superset of the path ones — facebook.com does contain facebook.com/reel
-        // — which is why they ship switched off in a real browser, where the path
-        // is visible and the narrow rule can do the work.
+        // cannot shadow the other.
         //
-        // Inside an in-app browser they ship on, and there the shadowing is the
-        // point rather than a bug: those show a domain and no path, so the path
-        // rule has nothing to compare and the site rule is the only one that can
-        // ever fire. Shadowing an unreachable rule costs nothing.
-        // The custom-tab window belongs with the in-app browsers here for the
-        // one reason that matters: it shows an origin and no path, so a path
-        // rule has nothing to compare against and a whole-site rule is not a
-        // blunt instrument there — it is the only instrument.
-        val inApp = GuardRepository.IN_APP_BROWSERS + GuardRepository.CUSTOM_TAB
+        // A whole-site rule is a deliberate superset of the path rules for the
+        // same service — facebook.com does contain facebook.com/reel — and
+        // where it ships on, that shadowing is the design. The windows those
+        // reels arrive in show an origin and no path, so the path rule has
+        // nothing to compare and the site rule is the only one that can fire.
+        // Shadowing an unreachable rule costs nothing.
         rules.filter { it.enabled }
-            .filterNot { it.packageName in inApp && !it.matchValue.contains('/') }
+            .filterNot { it.matchType == MatchType.URL && !it.matchValue.contains('/') }
             .groupBy { it.packageName to it.matchType }.forEach { (key, forApp) ->
             val pkg = key.first
             forApp.forEach { rule ->
@@ -115,50 +118,6 @@ class FeedRuleTest {
     @Test
     fun `rule ids are unique`() {
         assertEquals(rules.size, rules.map { it.id }.distinct().size)
-    }
-
-    /**
-     * A browser ships with a rule that its own address bar can satisfy.
-     *
-     * This is the invariant behind five failed attempts at Facebook reels in
-     * Messenger. A path rule needs a path on screen. Chrome shows one; the web
-     * view inside Messenger shows the domain alone, so every rule naming
-     * `/reel` was matched against something that never contained it. The fix is
-     * not a better matcher — it is shipping each browser the rule it can
-     * actually satisfy.
-     *
-     * So: in-app browsers get the site rule on, real browsers get the path
-     * rules and keep the site off. Both halves are asserted, because either one
-     * silently flipping is a browser that stops blocking or an app that gets
-     * closed entirely.
-     */
-    @Test
-    fun `every browser ships a rule its address bar can satisfy`() {
-        val urlRules = rules.filter { it.matchType == MatchType.URL }
-        val browsers = urlRules.map { it.packageName }.distinct()
-        assertTrue("No browser rules ship at all", browsers.isNotEmpty())
-
-        browsers.forEach { pkg ->
-            val on = urlRules.filter { it.packageName == pkg && it.enabled }
-            val sitesOn = on.filter { !it.matchValue.contains('/') }
-            if (pkg in GuardRepository.IN_APP_BROWSERS + GuardRepository.CUSTOM_TAB) {
-                assertTrue(
-                    "$pkg is a web view with no path in its address bar, so a " +
-                        "path rule can never fire there and it needs a whole-site " +
-                        "rule switched on. None is.",
-                    sitesOn.isNotEmpty(),
-                )
-            } else {
-                assertTrue(
-                    "$pkg shows a full address, so the path rules do the work and " +
-                        "the whole-site rules must stay off — on, they close the " +
-                        "entire site when the user asked for the feed: " +
-                        sitesOn.joinToString { it.matchValue },
-                    sitesOn.isEmpty(),
-                )
-                assertTrue("$pkg has no enabled path rule to block anything", on.isNotEmpty())
-            }
-        }
     }
 
     /**

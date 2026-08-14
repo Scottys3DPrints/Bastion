@@ -128,96 +128,49 @@ class GuardRepository(
         if (!current.guardSeeded) return
         if (current.builtInRulesVersion >= BUILT_IN_RULES_VERSION) return
 
-        val onDisk = guardDao.feedRules().first()
-        val existing = onDisk.map { it.id }.toSet()
+        val existing = guardDao.feedRules().first().map { it.id }.toSet()
         val added = builtInFeedRules().filterNot { it.id in existing }
         if (added.isNotEmpty()) guardDao.upsertRules(added)
 
-        // The one place this reaches back and changes something already there.
+        // Generation 11 deletes rather than disables, and that is the point.
         //
-        // Generation 3 shipped whole-site browser rules switched on, and that
-        // was the app's choice rather than the user's: it closed all of Facebook
-        // in a browser when what he wanted closed was the reels. Now that the
-        // path rules can fire, those are on and this correction turns the
-        // whole-site ones off — undoing a default this app set, not a decision a
-        // man made. He can switch them back on from the same screen, and they
-        // are the answer when a browser will not show a path.
-        if (current.builtInRulesVersion == 3) {
-            val retired = setOf("instagram.com", "facebook.com", "tiktok.com")
-            onDisk.filter { it.builtIn && it.matchType == MatchType.URL && it.matchValue in retired }
-                .filter { it.enabled }
-                .forEach { guardDao.upsertRule(it.copy(enabled = false)) }
-        }
-
-        // And the correction to that correction, for the in-app browsers only.
+        // Everything before it tried to answer "which app or window is this?" —
+        // a row per browser, then a row for any unlisted app, then a row for the
+        // window a link opens in. Five groups on the Guard screen for one
+        // decision, and the browser that mattered was always the one not on the
+        // list. Those rows are gone: a built-in rule that belongs to no service
+        // has nothing left to mean, and leaving them switched off would leave
+        // the confusion behind while removing the function.
         //
-        // Generation 4 switched every whole-site rule off on the reasoning that
-        // a path is narrower and kinder. That is true in Chrome and false in
-        // Messenger, which shows no path at all — so for those three the switch
-        // took away the only rule that could ever fire. Turning them back on is
-        // undoing my own default a second time rather than overriding a man's
-        // choice, and it is the last time this flips: after here the switch on
-        // the Guard screen is his.
-        if (current.builtInRulesVersion < 5) {
-            val sites = setOf("instagram.com", "facebook.com", "tiktok.com")
+        // Only built-in rows are touched. Anything captured with Learn Mode
+        // belongs to the man who captured it and is never swept up here.
+        if (current.builtInRulesVersion < 11) {
+            val services = builtInFeedRules().map { it.packageName }.toSet()
             guardDao.feedRules().first()
-                .filter { it.builtIn && it.matchType == MatchType.URL }
-                .filter { it.packageName in IN_APP_BROWSERS && it.matchValue in sites }
-                .filter { !it.enabled }
-                .forEach { guardDao.upsertRule(it.copy(enabled = true)) }
-        }
+                .filter { it.builtIn }
+                .filter { it.packageName !in services }
+                .forEach { guardDao.deleteRule(it.id) }
 
-        // Facebook, closed in Messenger, because that was asked for outright.
-        //
-        // Generation 5's note said the switch was his from then on, and this is
-        // not a walk-back of that — it is the switch being used. The ask was
-        // "have it be just blocking of Facebook in general for Messenger", made
-        // after seeing exactly what it costs, which is more informed consent
-        // than a default has any right to. Doing it here rather than leaving him
-        // to find the toggle is the difference between a decision honoured and a
-        // decision he has to implement himself.
-        //
-        // Messenger alone, and Facebook alone. The reels reach him through the
-        // chat window, and nothing was said about Instagram or about the other
-        // web views, so nothing else is touched.
-        if (current.builtInRulesVersion < 7) {
-            val facebook = setOf("facebook.com", "fb.watch")
+            // And the story rule, which was never a reels rule.
+            //
+            // Instagram named stories "reels" years before Reels existed, and
+            // named Reels "clips" when it shipped. So `reel_viewer` is the
+            // story viewer, and a rule labelled "Instagram Reels (viewer)" was
+            // throwing a man out of the app every time he opened a friend's
+            // story — feed-only guarding doing the exact thing it exists to
+            // prevent, under the name of the thing it was meant to catch.
             guardDao.feedRules().first()
-                .filter { it.builtIn && it.matchType == MatchType.URL }
-                .filter { it.packageName == "com.facebook.orca" && it.matchValue in facebook }
-                .filter { !it.enabled }
-                .forEach { guardDao.upsertRule(it.copy(enabled = true)) }
-        }
-
-        // Facebook, closed in the Google app, for the reason it was closed in
-        // Messenger and after the same report arriving again.
-        //
-        // Its tab shows an origin and no path, so the path rules cannot fire
-        // there however well they are written — and shipping them switched on
-        // beside a site rule switched off would be shipping the appearance of
-        // protection. This is a default this app sets, not a decision a man
-        // made, and the switch on the Guard screen is his the moment he wants
-        // it back.
-        if (current.builtInRulesVersion < 9) {
-            val facebook = setOf("facebook.com", "fb.watch")
-            guardDao.feedRules().first()
-                .filter { it.builtIn && it.matchType == MatchType.URL }
-                .filter {
-                    it.packageName == "com.google.android.googlequicksearchbox" &&
-                        it.matchValue in facebook
-                }
-                .filter { !it.enabled }
-                .forEach { guardDao.upsertRule(it.copy(enabled = true)) }
+                .filter { it.builtIn && it.matchType == MatchType.VIEW_ID }
+                .filter { it.packageName == "com.instagram.android" && it.matchValue == "reel_viewer" }
+                .forEach { guardDao.deleteRule(it.id) }
         }
 
         // Names, brought up to date. Nothing else about the row is touched.
         //
         // A rule keeps its id across generations, so a row already on the phone
-        // never picks up a rename. Generation 5 renamed the web-view site rules
-        // to "Scrolling Facebook" for a scroll gate that has since been taken
-        // back out, and a phone that took that release is still showing the
-        // name — which now describes behaviour the rule does not have. A wrong
-        // name on the one switch a man is deciding about is worse than no name.
+        // never picks up a rename — and generation 11 renamed every surviving
+        // one, because "Instagram Reels" and "Chrome · Instagram reels" became
+        // "Reels, in the app" and "Reels, in a browser" under a single heading.
         //
         // `enabled` comes from disk rather than from the built-in definition, so
         // this can never quietly switch anything on or off.
@@ -449,299 +402,133 @@ class GuardRepository(
          * stops firing, the user recaptures it in seconds instead of waiting for
          * a new build.
          */
+        /**
+         * One group per service, not one per app and one per browser.
+         *
+         * The old shape asked "which app is this?" and answered it twice: a
+         * view-id rule under Instagram, and a copy of every address rule under
+         * Chrome, under Firefox, under Messenger, under a sentinel for
+         * everything unlisted, under another for the window a link opens in.
+         * Five places to look for one decision, and the browser that mattered
+         * was always the one nobody had listed.
+         *
+         * A man does not think "block this in Chrome". He thinks "block
+         * Instagram reels", and he does not care which window they arrive in.
+         * So a service owns everything about itself: how its feed looks inside
+         * its own app, and what its address looks like anywhere at all. The
+         * address rules are not scoped to a browser because an address is not a
+         * property of a browser — see rulesFor, which applies them everywhere.
+         */
         fun builtInFeedRules(): List<FeedRuleEntity> = listOf(
-            // Only rules that identify the feed *viewer* itself.
+            // --- Instagram -------------------------------------------------
             //
-            // The tab buttons were matched here once, by content description
-            // ("Reels", "Shorts"). That was wrong in a way that only shows up on
-            // a real phone: those buttons live in the bottom navigation bar and
-            // are therefore present on every screen of the app, so the rule
-            // fired the moment Instagram opened and feed-only became a total
-            // block. A rule has to name the destination, never the signpost.
-            // Instagram Reels
-            rule("com.instagram.android", "Instagram Reels", MatchType.VIEW_ID, "clips_viewer"),
-            rule("com.instagram.android", "Instagram Reels (viewer)", MatchType.VIEW_ID, "reel_viewer"),
+            // `clips_viewer` is Reels. `reel_viewer` is *stories*, and that is
+            // not a typo in either direction: Instagram called stories "reels"
+            // years before the Reels product existed, and when Reels shipped it
+            // was named "clips" internally. So the rule labelled "Instagram
+            // Reels (viewer)" was closing the app every time a friend's story
+            // was opened — the exact failure feed-only guarding exists to
+            // avoid, wearing the name of the thing it was supposed to catch.
+            //
+            // Removed rather than renamed. There is no story rule to want here.
+            rule(INSTAGRAM, "Reels, in the app", MatchType.VIEW_ID, "clips_viewer"),
+            rule(INSTAGRAM, "Reels, in a browser", MatchType.URL, "instagram.com/reel"),
+            rule(INSTAGRAM, "All of Instagram, in a browser", MatchType.URL, "instagram.com", enabled = false),
 
-            // YouTube Shorts
-            rule("com.google.android.youtube", "YouTube Shorts", MatchType.VIEW_ID, "reel_recycler"),
-            rule("com.google.android.youtube", "YouTube Shorts (player)", MatchType.VIEW_ID, "reel_player_page_container"),
-            rule("com.google.android.youtube", "YouTube Shorts (root)", MatchType.VIEW_ID, "reel_watch_fragment_root"),
+            // --- YouTube ---------------------------------------------------
+            rule(YOUTUBE, "Shorts, in the app", MatchType.VIEW_ID, "reel_recycler"),
+            rule(YOUTUBE, "Shorts, in the app (player)", MatchType.VIEW_ID, "reel_player_page_container"),
+            rule(YOUTUBE, "Shorts, in the app (root)", MatchType.VIEW_ID, "reel_watch_fragment_root"),
+            rule(YOUTUBE, "Shorts, in a browser", MatchType.URL, "youtube.com/shorts"),
+            // The one rule in the app that reads what is written rather than
+            // how the screen is built. It carries no match value because the
+            // words are the shipped list; see TitleFilter.
+            rule(YOUTUBE, "Videos with explicit titles, app and browser", MatchType.TITLE, "adult"),
+            rule(YOUTUBE, "All of YouTube, in a browser", MatchType.URL, "youtube.com", enabled = false),
 
-            // TikTok — both the global and the regional package names
-            rule("com.zhiliaoapp.musically", "TikTok For You", MatchType.VIEW_ID, "feed_tab_view"),
-            rule("com.zhiliaoapp.musically", "TikTok For You (pager)", MatchType.VIEW_ID, "viewpager_container"),
-            rule("com.ss.android.ugc.trill", "TikTok For You", MatchType.VIEW_ID, "feed_tab_view"),
+            // --- TikTok ----------------------------------------------------
+            rule(TIKTOK, "For You, in the app", MatchType.VIEW_ID, "feed_tab_view"),
+            rule(TIKTOK, "For You, in the app (pager)", MatchType.VIEW_ID, "viewpager_container"),
+            rule(TIKTOK_LITE, "For You, in the app", MatchType.VIEW_ID, "feed_tab_view"),
+            rule(TIKTOK, "For You, in a browser", MatchType.URL, "tiktok.com/foryou"),
+            rule(TIKTOK, "Share links (vt.tiktok.com)", MatchType.URL, "vt.tiktok.com"),
+            rule(TIKTOK, "All of TikTok, in a browser", MatchType.URL, "tiktok.com", enabled = false),
 
-            // Facebook Reels
-            rule("com.facebook.katana", "Facebook Reels", MatchType.VIEW_ID, "video_home"),
+            // --- Facebook --------------------------------------------------
+            rule(FACEBOOK, "Reels, in the app", MatchType.VIEW_ID, "video_home"),
+            rule(FACEBOOK, "Reels, in a browser", MatchType.URL, "facebook.com/reel"),
+            rule(FACEBOOK, "Watch, in a browser", MatchType.URL, "facebook.com/watch"),
+            // Nobody sends facebook.com/reel/1234; Facebook rewrites it to an
+            // fb.watch link on the way out, and that is the door reels actually
+            // come through.
+            rule(FACEBOOK, "Share links (fb.watch)", MatchType.URL, "fb.watch"),
+            // On, and it is the one default here that costs something.
+            //
+            // Messenger's web view, a custom tab and the Google app's tab all
+            // show an origin with no path after it, so no path rule can ever
+            // fire in them — asked about eight times, answered eight ways, and
+            // this is the only answer that works. It now applies in a full
+            // browser too, which is wider than Messenger alone was. One switch,
+            // in the place a man would look for it.
+            rule(FACEBOOK, "All of Facebook, in a browser", MatchType.URL, "facebook.com"),
 
-            // Snapchat Spotlight
-            rule("com.snapchat.android", "Snapchat Spotlight", MatchType.VIEW_ID, "spotlight"),
+            // --- The rest --------------------------------------------------
+            rule(SNAPCHAT, "Spotlight, in the app", MatchType.VIEW_ID, "spotlight"),
+            rule(SNAPCHAT, "Spotlight, in a browser", MatchType.URL, "snapchat.com/spotlight"),
 
-            // X / Twitter video tab
-            rule("com.twitter.android", "X video feed", MatchType.VIEW_ID, "immersive_player"),
+            rule(X, "Video feed, in the app", MatchType.VIEW_ID, "immersive_player"),
 
-            // Reddit video feed
-            rule("com.reddit.frontpage", "Reddit video feed", MatchType.VIEW_ID, "video_container_view_pager"),
-        ) + browserFeedRules()
+            rule(REDDIT, "Video feed, in the app", MatchType.VIEW_ID, "video_container_view_pager"),
+            rule(REDDIT, "Popular, in a browser", MatchType.URL, "reddit.com/r/popular"),
+        )
 
-        /**
-         * The same feeds, reached through a browser instead of an app.
-         *
-         * Blocking Instagram's app and leaving instagram.com one tap away in
-         * Chrome is a door with no wall behind it, and the in-app browser
-         * Messenger opens when a friend sends a link is the same door again —
-         * arguably the likelier one, since it arrives unasked in the middle of a
-         * conversation.
-         *
-         * Generated rather than written out, because it is one destination list
-         * against one browser list and hand-writing the cross product is how one
-         * of them silently ends up missing a row. The feed-rules screen hides
-         * apps that are not installed, so a man sees only the browsers he has.
-         */
-        /**
-         * Bumped whenever a rule is added to the built-in set.
-         *
-         * 1 was the original app rules. 2 added the browser and in-app-browser
-         * URL rules, which existing installs would otherwise never have seen.
-         * 3 replaced those with host rules, because the path ones could not fire
-         * against a browser that does not display a path. 4 brought the paths
-         * back once the address bar was being found, and switched the
-         * whole-site rules off. 5 turned them back on for the in-app
-         * browsers only, where the domain is all that is ever shown. 6 only
-         * repairs the names, after a scroll gate came and went. 7 adds the
-         * share-link domains and closes Facebook in Messenger, asked for
-         * outright. 8 adds the rules that apply to any app at all, so a
-         * browser nobody listed is still covered. 9 adds the Google app,
-         * whose tab shows an origin and no path. 10 covers the custom-tab
-         * window itself, which is where the Google app was actually rendering.
-         */
-        const val BUILT_IN_RULES_VERSION = 10
-
-        private fun browserFeedRules(): List<FeedRuleEntity> =
-            BLOCKED_PATHS.map { (label, url) ->
-                rule(ANY_APP, "Any app · $label", MatchType.URL, url)
-            } +
-            BLOCKED_PATHS.map { (label, url) ->
-                rule(CUSTOM_TAB, "In-app link · $label", MatchType.URL, url)
-            } +
-            BLOCKED_SITES.map { (siteLabel, url) ->
-                // Facebook closed, the rest offered. The same trade already
-                // made for Messenger and for the Google app, in the window all
-                // three of them actually render in — and made once here rather
-                // than a fourth time per app.
-                rule(
-                    CUSTOM_TAB,
-                    "In-app link · $siteLabel",
-                    MatchType.URL,
-                    url,
-                    enabled = url in setOf("facebook.com", "fb.watch"),
-                )
-            } +
-            BROWSER_PACKAGES.flatMap { (pkg, name) ->
-                val inApp = pkg in IN_APP_BROWSERS
-                BLOCKED_PATHS.map { (label, url) ->
-                    rule(pkg, "$name · $label", MatchType.URL, url)
-                } + BLOCKED_SITES.map { (label, url) ->
-                    // On for the in-app browsers, off for the real ones, and the
-                    // split is what the browser can actually show rather than a
-                    // preference. See IN_APP_BROWSERS.
-                    rule(pkg, "$name · $label", MatchType.URL, url, enabled = inApp)
-                }
-            }
+        private const val INSTAGRAM = "com.instagram.android"
+        private const val YOUTUBE = "com.google.android.youtube"
+        private const val TIKTOK = "com.zhiliaoapp.musically"
+        private const val TIKTOK_LITE = "com.ss.android.ugc.trill"
+        private const val FACEBOOK = "com.facebook.katana"
+        private const val SNAPCHAT = "com.snapchat.android"
+        private const val X = "com.twitter.android"
+        private const val REDDIT = "com.reddit.frontpage"
 
         /**
-         * The web views that live inside another app, where only the site rule
-         * can work — and where it costs nothing.
+         * Bumped whenever the built-in set changes.
          *
-         * Two reports bracket this. With host rules, Messenger was recognised
-         * and Facebook closed. With path rules it stopped working entirely.
-         * Between them that says what no amount of reasoning from here could:
-         * the address these show is the domain alone, with no path to match
-         * against. A path rule has nothing to compare and never will.
+         * 1 was the original app rules. 2 added browser URL rules. 3 replaced
+         * them with host rules, 4 brought paths back, 5 turned the host rules
+         * on for in-app browsers, 6 repaired names, 7 closed Facebook in
+         * Messenger, 8 added a rule set for any app at all, 9 added the Google
+         * app, 10 added the custom-tab window.
          *
-         * Which makes the trade that was worth arguing about in Chrome
-         * disappear here. Closing facebook.com inside *Messenger's* link viewer
-         * costs a man nothing he cannot do in Messenger itself — his messages
-         * are the app he is already standing in. The reason to prefer a path
-         * was to keep web messaging open, and there is no web messaging to keep
-         * open inside a messaging app.
-         *
-         * The path rules ship on for these too, harmlessly: if one of them ever
-         * does show a path, the narrower rule is there and matches first.
+         * 11 throws most of that away. Eight generations of this were spent
+         * answering "which app or window is this?", and every one of them was
+         * beaten by a window nobody had listed. Rules now belong to the service
+         * they block and their addresses apply everywhere, so there is nothing
+         * left to enumerate — and the two sentinel groups that came out of the
+         * old shape are deleted rather than left switched off.
          */
-    /**
+        const val BUILT_IN_RULES_VERSION = 11
+
+        /**
          * The browsers whose address bar genuinely spans the screen.
          *
-         * The width test guesses at an address bar from "wide, and near the
-         * top". In one of these that guess is sound — an omnibox is built that
-         * way. Anywhere else it is a guess about a layout nobody designed to be
-         * guessed at, and with address rules now applying to any guarded app,
-         * "anywhere else" includes apps full of things a man wrote. So outside
-         * this list the guess is withdrawn unless a web view is open; see
-         * FeedSurface.addressBarWidthCounts.
+         * Nothing to do with which rules apply — those apply everywhere now.
+         * This is only about the width test, which guesses at an address bar
+         * from "wide, and near the top". In one of these that guess is sound:
+         * an omnibox is built that way. Anywhere else it is a guess about a
+         * layout nobody designed to be guessed at, and address rules now reach
+         * apps full of things a man wrote, so outside this list the guess is
+         * withdrawn unless a web view is open. See FeedSurface.addressBarWidthCounts.
          */
         internal val REAL_BROWSERS = setOf(
-            "com.android.chrome",
-            "com.chrome.beta",
-            "com.chrome.dev",
-            "com.chrome.canary",
-            "org.mozilla.firefox",
-            "org.mozilla.firefox_beta",
-            "com.sec.android.app.sbrowser",
-            "com.brave.browser",
-            "com.microsoft.emmx",
-            "com.opera.browser",
-            "com.opera.mini.native",
-            "com.duckduckgo.mobile.android",
-            "com.vivaldi.browser",
-            "com.kiwibrowser.browser",
-            "org.torproject.torbrowser",
-            "com.ecosia.android",
-            "com.yandex.browser",
-            "com.UCMobile.intl",
-            "com.mi.globalbrowser",
-            "com.huawei.browser",
-        )
-
-        internal val IN_APP_BROWSERS = setOf(
-            "com.facebook.orca",
-            "com.facebook.katana",
-            "com.instagram.android",
-            // The Google app, and it belongs here for the same reason the other
-            // three do rather than because it is a social app.
-            //
-            // A link opened from search or from Discover lands in a tab whose
-            // bar shows the origin and nothing else — `facebook.com`, with no
-            // path after it — whether that tab is drawn by the Google app or
-            // handed to Chrome as a custom tab. A path rule has nothing to
-            // compare against and never will, so the site rule is the only rule
-            // that can fire, exactly as in Messenger.
-            "com.google.android.googlequicksearchbox",
-        )
-
-        /**
-         * The feeds themselves, by path.
-         *
-         * These went out as host rules for one release because a path rule
-         * could never fire — the address bar was not being found at all, so
-         * nothing was matched against and the host was the only thing that
-         * could work. Once the bar was located properly the path came back
-         * within reach, and the path is what a man actually wants closed:
-         * "recognises Facebook but not Facebook reels" is a blocker that has
-         * taken his messages away to stop him watching videos.
-         *
-         * Path rules match by prefix along the path, so /reel covers /reel/<id>
-         * and /reels alike — Facebook writes the same feed both ways.
-         */
-        private val BLOCKED_PATHS = listOf(
-            "Instagram reels" to "instagram.com/reel",
-            "Facebook reels" to "facebook.com/reel",
-            "Facebook watch" to "facebook.com/watch",
-            "YouTube Shorts" to "youtube.com/shorts",
-            "TikTok feed" to "tiktok.com/foryou",
-            "Snapchat Spotlight" to "snapchat.com/spotlight",
-            "Reddit videos" to "reddit.com/r/popular",
-        )
-
-        /**
-         * The package that means "any app not named below".
-         *
-         * Every browser used to need its own row, which made the list a
-         * catalogue of the browsers I happened to think of. The one a man
-         * actually reaches for is always the one that was missed — the Google
-         * app opens links in a web view of its own, so does Gmail, so does
-         * every reader and every chat app, and a rule that covered Chrome and
-         * not those is a rule with a door beside it.
-         *
-         * So the browser list stops being the point. Guard any app in
-         * feed-only mode and these apply to it, unless that app has rules of
-         * its own — see rulesFor, which falls back rather than adding, so an
-         * app named below still means exactly what its own switches say.
-         */
-        const val ANY_APP = "*"
-
-        /**
-         * A link opened inside another app, rendered by the browser rather than
-         * by that app.
-         *
-         * This is the hole the Google app kept falling through, and it is not
-         * the Google app's hole. Tapping a result there hands the URL to Chrome
-         * as a *custom tab* — Chrome's process, Chrome's package, but a stripped
-         * window with a title and an origin where the omnibox would be. Every
-         * app on the phone that opens links this way lands in the same window:
-         * Gmail, a reader, a shopping app, the Google app.
-         *
-         * So it is matched on the window rather than on the package. Chrome's
-         * own rules are for Chrome proper, where a full address is on screen and
-         * a path rule can do the narrow thing; these are for the window where
-         * the path is not shown and never will be, and where a site rule is
-         * therefore the only rule that can fire.
-         *
-         * Not a real package name, and it cannot collide with one — no Android
-         * package may contain a colon.
-         */
-        const val CUSTOM_TAB = "window:customtab"
-
-        /** How the custom-tab group names itself, where no package resolves. */
-        const val CUSTOM_TAB_LABEL = "Links opened inside an app"
-
-        /** How the sentinel names itself on screen, where no package can be resolved. */
-        const val ANY_APP_LABEL = "Any other app"
-
-        /**
-         * The whole site, for when the path cannot be seen.
-         *
-         * Some browsers show only the domain, and against those a path rule has
-         * nothing to compare. These are the fallback for that, and they ship
-         * switched off: closing Facebook entirely is a bigger hammer than most
-         * men want, and it should be chosen rather than discovered. TikTok is
-         * here rather than above because the whole site is the feed — there is
-         * no rest-of-the-site to protect.
-         */
-        /**
-         * Whole sites, for the browsers where a path cannot be seen.
-         *
-         * Subdomains come along for free — see FeedSurface.urlMatches, which
-         * matches down the host rather than along it — so `web.facebook.com` and
-         * `mbasic.facebook.com` need no rules of their own.
-         *
-         * The short-link domains do, because they are different sites. A reel
-         * shared into a chat usually arrives as an `fb.watch` link, and that is
-         * the single likeliest way a Facebook feed reaches a man who has just
-         * asked for Facebook to be closed in Messenger. Blocking facebook.com
-         * and leaving fb.watch open would be closing the front door of a
-         * building with two.
-         */
-        private val BLOCKED_SITES = listOf(
-            "All of Instagram" to "instagram.com",
-            "All of Facebook" to "facebook.com",
-            "Facebook share links" to "fb.watch",
-            "All of TikTok" to "tiktok.com",
-            "TikTok share links" to "vt.tiktok.com",
-        )
-
-        /**
-         * Browsers, and the apps that carry one inside them.
-         *
-         * Messenger, Facebook and Instagram all open links in a web view of
-         * their own rather than handing off to a browser, so they need the URL
-         * rules as much as Chrome does — and for Facebook and Instagram those
-         * sit alongside the view-id rules already covering their native feeds.
-         */
-        private val BROWSER_PACKAGES = listOf(
-            "com.google.android.googlequicksearchbox" to "Google app",
-            "com.android.chrome" to "Chrome",
-            "com.chrome.beta" to "Chrome",
-            "org.mozilla.firefox" to "Firefox",
-            "com.sec.android.app.sbrowser" to "Samsung Internet",
-            "com.brave.browser" to "Brave",
-            "com.microsoft.emmx" to "Edge",
-            "com.opera.browser" to "Opera",
-            "com.duckduckgo.mobile.android" to "DuckDuckGo",
-            "com.facebook.orca" to "Messenger",
-            "com.facebook.katana" to "Facebook",
-            "com.instagram.android" to "Instagram",
+            "com.android.chrome", "com.chrome.beta", "com.chrome.dev",
+            "com.chrome.canary", "org.mozilla.firefox", "org.mozilla.firefox_beta",
+            "com.sec.android.app.sbrowser", "com.brave.browser", "com.microsoft.emmx",
+            "com.opera.browser", "com.opera.mini.native",
+            "com.duckduckgo.mobile.android", "com.vivaldi.browser",
+            "com.kiwibrowser.browser", "org.torproject.torbrowser",
+            "com.ecosia.android", "com.yandex.browser", "com.UCMobile.intl",
+            "com.mi.globalbrowser", "com.huawei.browser",
         )
 
         private fun rule(

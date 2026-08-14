@@ -124,9 +124,23 @@ class BastionAccessibilityService : AccessibilityService() {
      *
      * Kept beside the class it is derived from because it has to survive
      * content-changed events, which carry the class of the view that changed
-     * rather than of the window it changed in. See GuardedScreens.isCustomTab.
+     * rather than of the window it changed in. See the window-state branch above.
      */
-    @Volatile private var inCustomTab = false
+    /**
+     * Every enabled address rule, from every service, kept flat.
+     *
+     * Address rules are not scoped to an app and never should have been. A URL
+     * is the same URL in Chrome, in the Google app's tab, in the window a link
+     * opens inside another app — and eight generations of rules were spent
+     * discovering that the browser which matters is always the one nobody
+     * listed. So there is no list any more: these apply wherever an address bar
+     * is found, and what keeps that safe is what an address bar has to look
+     * like rather than whose app it is in.
+     */
+    @Volatile private var urlRules: List<FeedRuleEntity> = emptyList()
+
+    /** Whether a title rule is switched on; see [checkWatchTitles]. */
+    @Volatile private var titleRuleOn = false
 
     /** Asked before every re-raise, so the wall never races the lock screen. */
     private val keyguard: android.app.KeyguardManager? by lazy {
@@ -151,7 +165,10 @@ class BastionAccessibilityService : AccessibilityService() {
         }
         scope.launch {
             graph.guard.feedRules.collect { rules ->
-                rulesByPackage = rules.filter { it.enabled }.groupBy { it.packageName }
+                val on = rules.filter { it.enabled }
+                rulesByPackage = on.groupBy { it.packageName }
+                urlRules = on.filter { it.matchType == MatchType.URL }
+                titleRuleOn = on.any { it.matchType == MatchType.TITLE }
             }
         }
         scope.launch {
@@ -173,7 +190,7 @@ class BastionAccessibilityService : AccessibilityService() {
      * link most often arrives in.
      */
     private fun findWebCapableApps(): Set<String> {
-        val known = GuardRepository.IN_APP_BROWSERS + GuardRepository.REAL_BROWSERS
+        val known = GuardRepository.REAL_BROWSERS
         val resolved: Set<String> = runCatching {
             val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("http://example.com"))
                 .addCategory(Intent.CATEGORY_BROWSABLE)
@@ -182,7 +199,7 @@ class BastionAccessibilityService : AccessibilityService() {
                 .mapNotNull { info -> info.activityInfo?.packageName }
                 .toSet()
         }.getOrDefault(emptySet())
-        return known + resolved
+        return known + resolved + IN_APP_WEB_VIEWS
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -206,7 +223,6 @@ class BastionAccessibilityService : AccessibilityService() {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 onForegroundChanged(pkg)
                 foregroundClassName = event.className?.toString()
-                inCustomTab = GuardedScreens.isCustomTab(foregroundClassName)
                 guardSettingsScreen(pkg, foregroundClassName, foregroundClassName)
                 evaluate(pkg, force = true)
             }
@@ -567,6 +583,9 @@ class BastionAccessibilityService : AccessibilityService() {
             // a string that is an address rather than a sentence, sitting where
             // an address bar sits, matching a path a man asked to have closed.
             checkUniversalFeed(pkg)
+            // Unguarded too, because a browser is where a man watches YouTube
+            // without ever having guarded anything.
+            checkWatchTitles(pkg, "this page")
             return
         }
 
@@ -600,7 +619,7 @@ class BastionAccessibilityService : AccessibilityService() {
         // shape for this: a full-length video is not a feed, and it is where
         // the thing a man is actually avoiding sits. The other modes close the
         // app outright and never reach here anyway.
-        checkWatchTitles(pkg, guarded)
+        checkWatchTitles(pkg, guarded.label)
 
         // Reads the global setting, which is the one the UI actually writes.
         //
@@ -662,11 +681,20 @@ class BastionAccessibilityService : AccessibilityService() {
      * has a way out on it, because the cost of the second kind of mistake has
      * to stay small enough to live with.
      */
-    private fun checkWatchTitles(pkg: String, app: GuardedAppEntity) {
-        if (pkg !in WATCH_APPS) return
+    private fun checkWatchTitles(pkg: String, label: String) {
+        if (!titleRuleOn) return
         val words = watchWords
         if (words.isEmpty()) return
         val root = rootInActiveWindow ?: return
+        // YouTube's own app, or a browser standing on YouTube.
+        //
+        // The app-only version answered half the question: the same video, the
+        // same title, opened from a search result in a browser, went straight
+        // past. What makes this safe to run outside the app is the same thing
+        // that makes it safe inside it — it only reads where YouTube is what is
+        // on screen, and "on screen" is decided by an address bar saying so,
+        // not by a guess.
+        if (pkg !in WATCH_APPS && !showsYouTube(root)) return
 
         val hit = firstBadTitle(root, words) ?: return
         if (System.currentTimeMillis() - lastInterruptAt < INTERRUPT_COOLDOWN_MS) return
@@ -678,7 +706,7 @@ class BastionAccessibilityService : AccessibilityService() {
             // The word, not the title. Saying which word was caught lets a man
             // judge the call himself; quoting the video back at him would put
             // the thing he is walking away from on the screen he walked to.
-            message = "Closed on the word \"$hit\". The rest of ${app.label} is still yours.",
+            message = "Closed on the word \"$hit\". The rest of $label is still yours.",
             primaryLabel = "Scroll something good",
             onPrimary = {
                 shield.hide()
@@ -691,6 +719,48 @@ class BastionAccessibilityService : AccessibilityService() {
             },
             autoDismissMillis = 8_000,
         )
+    }
+
+    /**
+     * Whether the address on screen says this is YouTube.
+     *
+     * Reuses the address-bar test the feed rules already depend on rather than
+     * inventing a second one, so a browser that hides its path — a custom tab, a
+     * web view inside another app — still answers this correctly: the host is
+     * the part those always show, and the host is all this asks about.
+     *
+     * This is the whole boundary for reading titles in a browser. Without it,
+     * "read short text and compare it to a word list" would be running on every
+     * page a man opens, which is not what was agreed and not what is needed.
+     */
+    private fun showsYouTube(root: AccessibilityNodeInfo): Boolean {
+        val window = windowBoundsOf(root)
+        val webViewTop = webViewTopIn(root)
+        val widthCounts = FeedSurface.addressBarWidthCounts(
+            realBrowser = root.packageName?.toString() in GuardRepository.REAL_BROWSERS,
+            webViewFound = webViewTop > 0,
+        )
+        val queue = ArrayDeque<AccessibilityNodeInfo>()
+        queue.add(root)
+        val borrowed = mutableListOf<AccessibilityNodeInfo>()
+        var visited = 0
+        try {
+            while (queue.isNotEmpty() && visited < MAX_NODES) {
+                val node = queue.removeFirst()
+                visited++
+                val id = node.viewIdResourceName?.substringAfterLast('/')
+                if (isAddressBarNode(node, id, window, webViewTop, widthCounts)) {
+                    val text = node.text?.toString()
+                    if (text != null && FeedSurface.urlMatches(text, "youtube.com")) return true
+                }
+                for (i in 0 until node.childCount) {
+                    node.getChild(i)?.let { queue.add(it); borrowed.add(it) }
+                }
+            }
+            return false
+        } finally {
+            recycleAll(borrowed)
+        }
     }
 
     /**
@@ -736,22 +806,8 @@ class BastionAccessibilityService : AccessibilityService() {
      * rules for gets the universal set instead, which is what makes "every
      * browser" true rather than "every browser I happened to list".
      */
-    private fun rulesFor(pkg: String): List<FeedRuleEntity> {
-        // The window wins over the package when it is a custom tab.
-        //
-        // Chrome's own rules describe Chrome proper, where a full address is on
-        // screen and the narrow path rule is the right tool. A custom tab is
-        // the same package wearing a different window: a title and an origin,
-        // no path, ever. Matching it as Chrome meant matching a path against a
-        // string that could not contain one, which is the same failure as
-        // Messenger and had the same cause — asking the package what to do when
-        // the window is what changed.
-        if (inCustomTab) {
-            val tab = rulesByPackage[GuardRepository.CUSTOM_TAB].orEmpty()
-            if (tab.isNotEmpty()) return tab
-        }
-        return rulesByPackage[pkg] ?: rulesByPackage[GuardRepository.ANY_APP].orEmpty()
-    }
+    private fun rulesFor(pkg: String): List<FeedRuleEntity> =
+        rulesByPackage[pkg].orEmpty().filter { it.matchType == MatchType.VIEW_ID } + urlRules
 
     /**
      * The address rules, in an app nobody guarded.
@@ -762,7 +818,7 @@ class BastionAccessibilityService : AccessibilityService() {
      * because a false positive here costs exactly what it costs there.
      */
     private fun checkUniversalFeed(pkg: String) {
-        if (!inCustomTab && pkg !in webCapableApps) return
+        if (pkg !in webCapableApps) return
         // The app's own rules when it has them, the universal set when it does
         // not — the same fallback guarded apps get, and the reason this is not
         // simply the universal list.
@@ -938,6 +994,13 @@ class BastionAccessibilityService : AccessibilityService() {
                         // video element inside a web view with none of the
                         // identifiers an app exposes. The gate is on the address
                         // bar instead: see isAddressBarNode.
+                        // Never here. A title rule reads what is written on
+                        // the screen rather than how the screen is built, so it
+                        // is answered by checkWatchTitles, on the surfaces where
+                        // reading a title is something this app is allowed to
+                        // do. Matching it in the general walk would turn every
+                        // guarded app into one that reads its own text.
+                        MatchType.TITLE -> false
                         MatchType.URL ->
                             isAddressBarNode(node, idSegment, window, webViewTop, widthCounts) &&
                                 node.text?.toString()
@@ -1461,6 +1524,20 @@ class BastionAccessibilityService : AccessibilityService() {
 
         private const val NOTIFICATION_GUARD_DOWN = 4401
         private const val HALF_HOUR = 30 * 60 * 1000L
+
+        /**
+         * The web views that live inside another app and never register as a
+         * browser, so the package manager will not name them.
+         *
+         * Only used to decide where it is worth walking the tree at all. What
+         * rules apply is no longer a per-app question.
+         */
+        private val IN_APP_WEB_VIEWS = setOf(
+            "com.facebook.orca",
+            "com.facebook.katana",
+            "com.instagram.android",
+            "com.google.android.googlequicksearchbox",
+        )
 
     /**
      * Where titles are read, and nowhere else.

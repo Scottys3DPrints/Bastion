@@ -281,7 +281,18 @@ data class GuardedAppEntity(
  * Stored by name, so adding this value needs no migration: existing rows keep
  * the values they were written with.
  */
-enum class MatchType { VIEW_ID, TEXT, CONTENT_DESC, URL }
+/**
+ * How a rule decides it is looking at the screen it names.
+ *
+ * TITLE is the odd one and is deliberately narrow: it matches short on-screen
+ * text against the shipped word list rather than against the rule's own value,
+ * and it exists because a YouTube watch page is the same page for a lecture and
+ * for the thing a man came here to stop. No view id separates those two, and
+ * youtube.com is never going on a domain list. See TitleFilter for the limits.
+ *
+ * Stored by name (BastionConverters), so adding a value needs no migration.
+ */
+enum class MatchType { VIEW_ID, TEXT, CONTENT_DESC, URL, TITLE }
 
 /**
  * A rule that identifies one specific screen inside another app — the Reels

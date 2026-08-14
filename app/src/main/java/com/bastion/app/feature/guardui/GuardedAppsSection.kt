@@ -46,6 +46,7 @@ import com.bastion.app.core.design.LinkButton
 import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.core.design.Space
 import com.bastion.app.data.db.BlockMode
+import com.bastion.app.data.db.MatchType
 import com.bastion.app.data.db.FeedRuleEntity
 import com.bastion.app.data.db.GuardedAppEntity
 import com.bastion.app.data.repo.GuardRepository
@@ -89,9 +90,7 @@ private val KNOWN_NAMES = mapOf(
  * renames itself is followed automatically.
  */
 internal fun appLabel(context: Context, pkg: String): String =
-    if (pkg == GuardRepository.ANY_APP) GuardRepository.ANY_APP_LABEL
-    else if (pkg == GuardRepository.CUSTOM_TAB) GuardRepository.CUSTOM_TAB_LABEL
-    else runCatching {
+    runCatching {
         val pm = context.packageManager
         pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString()
     }.getOrNull()
@@ -99,11 +98,7 @@ internal fun appLabel(context: Context, pkg: String): String =
         ?: pkg.substringAfterLast('.').replaceFirstChar(Char::uppercase)
 
 internal fun isInstalled(context: Context, pkg: String): Boolean =
-    // The sentinel is not an app and can never be found by the package manager,
-    // so it has to be answered for directly — otherwise the group that covers
-    // every browser is the one group the list hides.
-    pkg == GuardRepository.ANY_APP || pkg == GuardRepository.CUSTOM_TAB ||
-        runCatching { context.packageManager.getApplicationInfo(pkg, 0); true }.getOrDefault(false)
+    runCatching { context.packageManager.getApplicationInfo(pkg, 0); true }.getOrDefault(false)
 
 /**
  * The launcher icon, as a Compose image.
@@ -369,20 +364,6 @@ internal sealed interface RuleState {
         override val line = "Paused — Guard is switched off."
     }
 
-    /**
-     * The universal group, which belongs to no app and so cannot be in any of
-     * the states above. It is never "not guarded" — there is nothing to guard —
-     * and the honest line says what it does instead of borrowing a status that
-     * would send a man off to fix something that is not broken.
-     */
-    data object Fallback : RuleState {
-        override val line =
-            "Applies where no other rule does — including browsers nobody " +
-                "listed, and links opened inside another app."
-    }
-    data object FallbackOff : RuleState {
-        override val line = "Off — apps with no rules of their own block nothing."
-    }
 }
 
 /**
@@ -428,17 +409,10 @@ fun FeedRulesSection(
     }
     Spacer(Modifier.height(Space.sm))
     Text(
-        "These only apply to apps you have set to \"Block only the endless feed\". " +
-            "Each one names a screen inside an app — the Reels tab, the Shorts " +
-            "player — so the rest of the app keeps working.\n\n" +
-            "\"${GuardRepository.ANY_APP_LABEL}\" is the fallback: it covers every " +
-            "app that has no rules of its own, which is how a browser nobody " +
-            "listed still gets blocked. An app listed below uses its own " +
-            "switches instead.\n\n" +
-            "\"${GuardRepository.CUSTOM_TAB_LABEL}\" is the window you land in when " +
-            "you tap a link inside another app — Google, Gmail, a reader. It " +
-            "shows the site but never the page, so only whole-site rules can " +
-            "work there.",
+        "One group per site. \"In the app\" needs that app set to \"Block only " +
+            "the endless feed\"; \"in a browser\" works everywhere at once — " +
+            "Chrome, the Google app, a link opened inside another app — so " +
+            "there is nothing to switch on per browser.",
         style = MaterialTheme.typography.bodySmall,
         color = BastionColors.TextTertiary,
     )
@@ -456,7 +430,14 @@ fun FeedRulesSection(
     // them later brings its row back already configured.
     val groups = remember(rules, context) {
         rules.groupBy { it.packageName }
-            .filterKeys { isInstalled(context, it) }
+            // Shown when the app is installed, or when the group has an address
+            // rule — those apply in a browser whether or not the app is here,
+            // and hiding the group would hide the only switch that controls
+            // them. Instagram uninstalled is exactly when instagram.com matters.
+            .filterKeys { pkg ->
+                isInstalled(context, pkg) ||
+                    rules.any { it.packageName == pkg && it.matchType != MatchType.VIEW_ID }
+            }
             .toList()
             .sortedBy { appLabelKey(it.first) }
     }
@@ -482,9 +463,7 @@ fun FeedRulesSection(
                 pkg = pkg,
                 rules = groupRules,
                 label = appLabel(context, pkg),
-                state = if (pkg == GuardRepository.ANY_APP || pkg == GuardRepository.CUSTOM_TAB) {
-                    if (groupRules.any { it.enabled }) RuleState.Fallback else RuleState.FallbackOff
-                } else ruleState(
+                state = ruleState(
                     guardRunning = guardRunning,
                     guardedMode = byMode[pkg],
                     anyRuleEnabled = groupRules.any { it.enabled },
@@ -499,11 +478,7 @@ fun FeedRulesSection(
 
 /** Sort key that keeps the known apps in a stable, readable order. */
 private fun appLabelKey(pkg: String) =
-    when (pkg) {
-        GuardRepository.ANY_APP -> ""
-        GuardRepository.CUSTOM_TAB -> " "
-        else -> (KNOWN_NAMES[pkg] ?: pkg).lowercase()
-    }
+    (KNOWN_NAMES[pkg] ?: pkg).lowercase()
 
 @Composable
 private fun FeedRuleGroup(
@@ -532,7 +507,7 @@ private fun FeedRuleGroup(
                     state.line,
                     style = MaterialTheme.typography.bodySmall,
                     color = when (state) {
-                        is RuleState.Working, is RuleState.Fallback -> BastionColors.SageBright
+                        is RuleState.Working -> BastionColors.SageBright
                         is RuleState.NotGuarded, is RuleState.GuardOff -> BastionColors.Amber
                         else -> BastionColors.TextTertiary
                     },

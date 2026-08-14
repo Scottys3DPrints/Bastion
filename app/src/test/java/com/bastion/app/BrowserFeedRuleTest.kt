@@ -168,21 +168,6 @@ class BrowserFeedRuleTest {
         assertTrue("vt.tiktok.com should ship as a rule", "vt.tiktok.com" in shipped)
     }
 
-    /**
-     * And Messenger arrives with Facebook closed, which is what was asked for
-     * after seeing what it costs.
-     */
-    @Test
-    fun `messenger ships with facebook closed`() {
-        val messenger = GuardRepository.builtInFeedRules()
-            .filter { it.packageName == "com.facebook.orca" && it.matchType == MatchType.URL }
-        listOf("facebook.com", "fb.watch").forEach { value ->
-            val rule = messenger.firstOrNull { it.matchValue == value }
-            assertTrue("Messenger has no $value rule at all", rule != null)
-            assertTrue("Messenger's $value rule must ship on", rule!!.enabled)
-        }
-    }
-
     // --- the address bar, when the browser does not name it ------------------
 
     @Test
@@ -308,219 +293,10 @@ class BrowserFeedRuleTest {
      * link — and finds it uncovered. These rules belong to no package and apply
      * to any app the phone says can open a web page.
      */
-    @Test
-    fun `the universal rules ship and are on`() {
-        val universal = GuardRepository.builtInFeedRules()
-            .filter { it.packageName == GuardRepository.ANY_APP }
-        assertTrue("no universal rules ship at all", universal.isNotEmpty())
-        universal.forEach {
-            assertTrue("${it.matchValue} must ship on", it.enabled)
-            assertEquals("a universal rule can only be an address", MatchType.URL, it.matchType)
-        }
-        val values = universal.map { it.matchValue }.toSet()
-        listOf("facebook.com/reel", "instagram.com/reel", "youtube.com/shorts").forEach {
-            assertTrue("$it is not covered universally", it in values)
-        }
-    }
-
-    /**
-     * And the universal set names paths only.
-     *
-     * A whole-site rule applying to every app on the phone would close that
-     * site everywhere at once — in the browser, in the app, in a link a friend
-     * sent. That is a decision for one app at a time, never a default that
-     * arrives with an update.
-     */
-    @Test
-    fun `no universal rule closes a whole site`() {
-        val sites = GuardRepository.builtInFeedRules()
-            .filter { it.packageName == GuardRepository.ANY_APP }
-            // A rule that names a host and nothing after it covers the whole site.
-            .filter { !it.matchValue.contains('/') }
-        assertEquals("these would close a whole site everywhere", emptyList<String>(), sites.map { it.matchValue })
-    }
-
-    /**
-     * The Google app opens links in a tab that shows an origin and no path, so
-     * the site rule is the only one that can fire there — the same finding, and
-     * the same answer, as Messenger.
-     */
-    @Test
-    fun `the google app ships with facebook closed`() {
-        val google = GuardRepository.builtInFeedRules()
-            .filter { it.packageName == "com.google.android.googlequicksearchbox" }
-        assertTrue("the Google app has no rules at all", google.isNotEmpty())
-        assertTrue(
-            "the Google app must be treated as a web view, not a real browser",
-            "com.google.android.googlequicksearchbox" in GuardRepository.IN_APP_BROWSERS,
-        )
-        listOf("facebook.com", "fb.watch").forEach { value ->
-            val rule = google.firstOrNull { it.matchValue == value }
-            assertTrue("the Google app has no $value rule", rule != null)
-            assertTrue("the Google app's $value rule must ship on", rule!!.enabled)
-        }
-    }
-
-    /**
-     * The Google app is not a real browser for the purposes of the width guess.
-     *
-     * Its bar is not an omnibox, so guessing at one from "wide and near the
-     * top" is guessing about a layout nobody designed to be guessed at.
-     */
-    @Test
-    fun `the google app does not get the width guess for free`() {
-        assertFalse(
-            "com.google.android.googlequicksearchbox" in GuardRepository.REAL_BROWSERS
-        )
-    }
-
-    /**
-     * A rule that no code path can reach is worse than a missing rule.
-     *
-     * The Google app's whole-site rule ships switched on, and for one release it
-     * could never fire: an unguarded app was matched against the universal set
-     * alone, and the universal set is paths only. The rule sat in the database,
-     * enabled, unreachable, and reported as working on the Guard screen — which
-     * is the one failure mode this app cannot afford, because it is
-     * indistinguishable from protection right up until it matters.
-     *
-     * This pins the invariant behind the fix: every app that ships its own
-     * rules must have at least one that the universal set does not already
-     * cover, or those rules are decoration.
-     */
-    @Test
-    fun `an app with its own rules brings something the universal set lacks`() {
-        val all = GuardRepository.builtInFeedRules()
-        val universal = all
-            .filter { it.packageName == GuardRepository.ANY_APP && it.enabled }
-            .map { it.matchValue }
-            .toSet()
-
-        all.filter { it.packageName in GuardRepository.IN_APP_BROWSERS }
-            .groupBy { it.packageName }
-            .forEach { (pkg, rules) ->
-                val own = rules.filter { it.enabled }.map { it.matchValue }.toSet()
-                assertTrue(
-                    "$pkg ships rules but every enabled one is already in the " +
-                        "universal set, so guarding it changes nothing",
-                    (own - universal).isNotEmpty(),
-                )
-            }
-    }
-
     // --- the window a link opens in ------------------------------------------
-
-    /**
-     * A custom tab is recognised by the window, never by the package.
-     *
-     * This is the hole the Google app kept falling through, and it was never
-     * the Google app's hole. Tapping a result there hands the URL to Chrome as
-     * a custom tab: Chrome's process, Chrome's package, but a stripped window
-     * with a title and an origin where the omnibox would be. Matching on the
-     * package said "this is Chrome", so the path rules ran — against a string
-     * that has never once contained a path.
-     *
-     * Every app that opens links this way lands in the same window, so none of
-     * them have to be listed. That is the whole point of asking the window.
-     */
-    @Test
-    fun `a custom tab is recognised by its window class`() {
-        assertTrue(
-            GuardedScreens.isCustomTab(
-                "org.chromium.chrome.browser.customtabs.CustomTabActivity"
-            )
-        )
-        assertTrue(
-            GuardedScreens.isCustomTab(
-                "com.google.android.apps.chrome.customtabs.CustomTabActivity"
-            )
-        )
-    }
-
-    /**
-     * And Chrome proper is not one, which is the half that costs something if
-     * it goes wrong.
-     *
-     * Chrome's own window shows a full address, so the narrow path rules are
-     * the right tool there and the whole-site rules stay off. If ordinary
-     * Chrome were ever mistaken for a custom tab, all of Facebook would close
-     * in the browser — the trade a man refused the first time he was offered
-     * it.
-     */
-    @Test
-    fun `ordinary browsing is not a custom tab`() {
-        assertFalse(GuardedScreens.isCustomTab("org.chromium.chrome.browser.ChromeTabbedActivity"))
-        assertFalse(GuardedScreens.isCustomTab("com.android.chrome.Main"))
-        assertFalse(GuardedScreens.isCustomTab("com.google.android.apps.chrome.Main"))
-        assertFalse(GuardedScreens.isCustomTab(null))
-        assertFalse(GuardedScreens.isCustomTab(""))
-    }
-
-    /**
-     * The custom-tab group carries whole-site rules, because that window will
-     * never show a path for a path rule to match.
-     */
-    @Test
-    fun `the custom-tab group closes facebook and offers the rest`() {
-        val tab = GuardRepository.builtInFeedRules()
-            .filter { it.packageName == GuardRepository.CUSTOM_TAB }
-        assertTrue("no custom-tab rules ship at all", tab.isNotEmpty())
-
-        val on = tab.filter { it.enabled }.map { it.matchValue }.toSet()
-        listOf("facebook.com", "fb.watch").forEach {
-            assertTrue("$it must close in a custom tab", it in on)
-        }
-        // The sites a man has not asked to lose are present and off.
-        val off = tab.filterNot { it.enabled }.map { it.matchValue }.toSet()
-        assertTrue("instagram.com should be offered, not imposed", "instagram.com" in off)
-    }
-
-    /**
-     * The sentinel cannot ever collide with a real app.
-     *
-     * It is looked up in the same map as package names, so if a package could
-     * be called this, one app on the phone would silently inherit every rule
-     * meant for a different window.
-     */
-    @Test
-    fun `the window sentinels are not legal package names`() {
-        listOf(GuardRepository.CUSTOM_TAB, GuardRepository.ANY_APP).forEach {
-            assertFalse(
-                "$it could be a real package name",
-                it.matches(Regex("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)+")),
-            )
-        }
-    }
 
     // --- the shipped rules ---------------------------------------------------
 
-    @Test
-    fun `browsers and in-app browsers both get url rules`() {
-        val urlRules = GuardRepository.builtInFeedRules().filter { it.matchType == MatchType.URL }
-        val packages = urlRules.map { it.packageName }.toSet()
-        listOf(
-            "com.android.chrome",
-            "org.mozilla.firefox",
-            "com.sec.android.app.sbrowser",
-            // The three that open links in a web view of their own rather than
-            // handing off to a browser. Messenger is the one the user asked for.
-            "com.facebook.orca",
-            "com.facebook.katana",
-            "com.instagram.android",
-        ).forEach {
-            assertTrue("no browser rules for $it", it in packages)
-        }
-    }
-
-    /**
-     * The reels, not the whole site.
-     *
-     * Reported from a phone: Messenger was recognising facebook.com and closing
-     * all of it, when what wanted closing was the reels. Blocking a man's
-     * messages to stop him watching videos is the wrong trade, and it was only
-     * made because a path rule could not fire while the address bar was going
-     * unfound. Now that it is found, the path is back.
-     */
     @Test
     fun `the reel paths ship switched on`() {
         val on = GuardRepository.builtInFeedRules()
@@ -547,52 +323,6 @@ class BrowserFeedRuleTest {
      * something that cannot contain it; and closing facebook.com there takes
      * nothing away, because the messaging this app exists to protect is the app
      * the user is already standing in.
-     */
-    @Test
-    fun `the whole-site rules ship off in browsers and on in web views`() {
-        val bySite = GuardRepository.builtInFeedRules()
-            .filter { it.matchType == MatchType.URL }
-            .filter { it.matchValue in setOf("instagram.com", "facebook.com") }
-        assertTrue("the whole-site rules should still exist", bySite.isNotEmpty())
-
-        // Grouped by what the address bar shows rather than by what kind of
-        // thing owns it: the custom-tab window shows an origin and no path,
-        // exactly as the in-app browsers do.
-        val pathBlind = GuardRepository.IN_APP_BROWSERS + GuardRepository.CUSTOM_TAB
-        val (inApp, real) = bySite.partition { it.packageName in pathBlind }
-        assertTrue("no in-app browser carries a whole-site rule", inApp.isNotEmpty())
-
-        // At least one on per group, not all of them on.
-        //
-        // The stronger version of this test was written when the only
-        // path-blind groups were the three in-app browsers, where generation 5
-        // turned every site rule on at once. It reads as an invariant and is
-        // really a default: "the address bar can only satisfy a site rule" says
-        // that a group needs *a* site rule switched on to do anything, and says
-        // nothing about how many sites a man agreed to lose.
-        //
-        // The custom-tab window is where that distinction started to matter.
-        // Facebook is closed there because it was asked for; Instagram and
-        // TikTok are present and off, because closing every site a rule exists
-        // for in every in-app link window is a much larger thing than anyone
-        // asked for and would arrive as a surprise in an update.
-        //
-        // What still has to hold is that the group is not decoration.
-        inApp.groupBy { it.packageName }.forEach { (pkg, rules) ->
-            assertTrue(
-                "$pkg has whole-site rules but every one is off, so nothing there " +
-                    "can ever fire — its address bar shows no path to match",
-                rules.any { it.enabled },
-            )
-        }
-        real.forEach {
-            assertFalse("${it.packageName}/${it.matchValue} must ship off", it.enabled)
-        }
-    }
-
-    /**
-     * Facebook writes the same feed as /reel/<id> and as /reels, so a rule
-     * naming /reel has to catch both or it misses half of what it is for.
      */
     @Test
     fun `a path rule matches the longer spellings of the same feed`() {
@@ -660,20 +390,6 @@ class BrowserFeedRuleTest {
 
     /** Ids stay unique once the cross product is generated, or upserts collide. */
     @Test
-    fun `generated rules keep unique ids`() {
-        val rules = GuardRepository.builtInFeedRules()
-        assertEquals(rules.size, rules.map { it.id }.distinct().size)
-    }
-
-    /**
-     * A lookalike host must still not match, which is the protection that
-     * survives the move from paths to hosts.
-     *
-     * Blocking the whole site in a browser is now deliberate — see above for
-     * why a path cannot be relied on there — so the guard that matters is no
-     * longer "is there a path" but "is this actually that site".
-     */
-    @Test
     fun `a host rule does not catch a different site`() {
         assertFalse(FeedSurface.urlMatches("notinstagram.com", "instagram.com"))
         assertFalse(FeedSurface.urlMatches("instagram.com.evil.co/x", "instagram.com"))
@@ -681,17 +397,173 @@ class BrowserFeedRuleTest {
     }
 
     /**
-     * YouTube keeps its path, and that is a stated limit rather than an
-     * oversight: youtube.com in a browser is genuinely used for things that are
-     * not Shorts, so the rule fires when the path is visible and does nothing
-     * when the browser hides it.
+     * YouTube is matched by path, and its whole-site rule ships off.
+     *
+     * Shorts is a place inside YouTube, not the whole of it, and a man who
+     * blocked the whole site to stop scrolling Shorts has lost every lecture
+     * and repair video with it. The bare host rule exists — it is the only
+     * thing that can fire in a window showing no path — but it is his to switch
+     * on rather than a default.
      */
     @Test
-    fun `youtube is still matched by path`() {
-        val values = GuardRepository.builtInFeedRules()
-            .filter { it.matchType == MatchType.URL }
-            .map { it.matchValue }
-        assertTrue("youtube.com/shorts" in values)
-        assertFalse("a bare youtube.com rule would close the whole site", "youtube.com" in values)
+    fun `youtube is matched by path and not closed outright`() {
+        assertTrue(FeedSurface.urlMatches("youtube.com/shorts/abc", "youtube.com/shorts"))
+        assertFalse(FeedSurface.urlMatches("youtube.com/watch?v=abc", "youtube.com/shorts"))
+
+        val site = GuardRepository.builtInFeedRules()
+            .filter { it.matchType == MatchType.URL && it.matchValue == "youtube.com" }
+        assertTrue("the whole-site rule should exist as an option", site.isNotEmpty())
+        site.forEach { assertFalse("youtube.com must ship off", it.enabled) }
     }
+    // --- one group per service -----------------------------------------------
+
+    /**
+     * Rules belong to the service they block, and to nothing else.
+     *
+     * Eight generations were spent answering "which app or window is this?" — a
+     * copy of every address rule under Chrome, under Firefox, under Messenger,
+     * under a sentinel for unlisted apps, under another for the window a link
+     * opens in. Five groups for one decision, and the browser that mattered was
+     * always the one not on the list.
+     *
+     * This is what replaced it: a rule sits under the service it blocks, and
+     * the address rules apply everywhere on their own. A package here that is
+     * not a service means the old shape is growing back.
+     */
+    @Test
+    fun `every rule belongs to a real service`() {
+        val services = setOf(
+            "com.instagram.android",
+            "com.google.android.youtube",
+            "com.zhiliaoapp.musically",
+            "com.ss.android.ugc.trill",
+            "com.facebook.katana",
+            "com.snapchat.android",
+            "com.twitter.android",
+            "com.reddit.frontpage",
+        )
+        val strays = GuardRepository.builtInFeedRules()
+            .map { it.packageName }
+            .distinct()
+            .filterNot { it in services }
+        assertEquals("these are not services", emptyList<String>(), strays)
+    }
+
+    /**
+     * And no browser or sentinel owns rules any more.
+     *
+     * Spelled out rather than derived, because the failure this catches is
+     * somebody adding "just one" browser row back when a phone turns up that
+     * seems uncovered — which is how the last shape grew, one reasonable row at
+     * a time.
+     */
+    @Test
+    fun `no browser or sentinel owns rules`() {
+        val packages = GuardRepository.builtInFeedRules().map { it.packageName }.toSet()
+        listOf(
+            "com.android.chrome", "org.mozilla.firefox", "com.sec.android.app.sbrowser",
+            "com.facebook.orca", "com.google.android.googlequicksearchbox",
+            "*", "window:customtab",
+        ).forEach { assertFalse("$it still owns rules", it in packages) }
+    }
+
+    /**
+     * Instagram's story viewer is not its reels viewer, and Instagram's own
+     * naming is a trap laid for exactly this mistake.
+     *
+     * It called stories "reels" years before the Reels product existed, and
+     * named Reels "clips" when it shipped. So `reel_viewer` is the *story*
+     * viewer — and the rule that named it, labelled "Instagram Reels (viewer)",
+     * threw a man out of the app every time he opened a friend's story.
+     * Feed-only guarding doing the precise thing it exists to prevent, wearing
+     * the name of the thing it was meant to catch.
+     */
+    @Test
+    fun `no instagram rule matches the story viewer`() {
+        val ids = GuardRepository.builtInFeedRules()
+            .filter { it.packageName == "com.instagram.android" }
+            .filter { it.matchType == MatchType.VIEW_ID }
+            .map { it.matchValue }
+        assertTrue("clips_viewer is Reels and must stay", "clips_viewer" in ids)
+        assertFalse("reel_viewer is the story viewer", "reel_viewer" in ids)
+        // And no surviving rule may reach a story id by the prefix boundary.
+        ids.forEach {
+            assertFalse("'$it' reaches the story viewer", FeedSurface.idMatches("reel_viewer", it))
+            assertFalse(
+                "'$it' reaches a story sub-view",
+                FeedSurface.idMatches("reel_viewer_media_container", it),
+            )
+        }
+    }
+
+    /**
+     * YouTube carries the title rule, and it is the only service that does.
+     *
+     * It is the one place a rule reads what is written rather than how the
+     * screen is built, and the reason is narrow: the watch page is the same
+     * page for a lecture and for the thing a man came to stop. A title rule
+     * under a messaging service would mean this had been pointed somewhere it
+     * must never go.
+     */
+    @Test
+    fun `only youtube reads titles`() {
+        val titleRules = GuardRepository.builtInFeedRules()
+            .filter { it.matchType == MatchType.TITLE }
+        assertTrue("YouTube has no title rule", titleRules.isNotEmpty())
+        titleRules.forEach {
+            assertEquals(
+                "a title rule outside YouTube reads text it has no business reading",
+                "com.google.android.youtube",
+                it.packageName,
+            )
+            assertTrue("the title rule must ship on", it.enabled)
+        }
+    }
+
+    /** Each service reachable in a browser is covered under its own heading. */
+    @Test
+    fun `each service covers itself in a browser`() {
+        val byService = GuardRepository.builtInFeedRules()
+            .filter { it.matchType == MatchType.URL }
+            .groupBy { it.packageName }
+        mapOf(
+            "com.instagram.android" to "instagram.com",
+            "com.google.android.youtube" to "youtube.com",
+            "com.facebook.katana" to "facebook.com",
+            "com.zhiliaoapp.musically" to "tiktok.com",
+        ).forEach { (pkg, host) ->
+            val values = byService[pkg].orEmpty().map { it.matchValue }
+            assertTrue("$pkg has no address rule naming $host", values.any { it.startsWith(host) })
+        }
+    }
+
+    /**
+     * The whole-site rules stay off, except Facebook's.
+     *
+     * A site rule closes a service outright in every browser, which is bigger
+     * than a man asked for and belongs behind a switch. Facebook's is on
+     * because the windows its reels arrive in — a chat's web view, a custom
+     * tab, the Google app's tab — show an origin and no path, so no path rule
+     * can fire in them. That was asked about until it was the only answer left.
+     */
+    @Test
+    fun `only facebook ships closed site-wide`() {
+        val on = GuardRepository.builtInFeedRules()
+            .filter { it.matchType == MatchType.URL && !it.matchValue.contains('/') }
+            .filter { it.enabled }
+            .map { it.matchValue }
+            .toSet()
+        assertTrue("facebook.com must ship on", "facebook.com" in on)
+        listOf("instagram.com", "youtube.com", "tiktok.com").forEach {
+            assertFalse("$it must ship off — it closes the whole site", it in on)
+        }
+    }
+
+    /** Ids must stay unique now that every service owns its own rows. */
+    @Test
+    fun `rule ids stay unique across services`() {
+        val ids = GuardRepository.builtInFeedRules().map { it.id }
+        assertEquals("duplicate ids collide on upsert", ids.size, ids.toSet().size)
+    }
+
 }
