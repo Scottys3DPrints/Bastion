@@ -118,6 +118,27 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
         com.bastion.app.data.repo.GuardRepository.Delay.describe(it.coolingOffMinutes)
     }
 
+    // One app, one row, everything about it in one place.
+    //
+    // The join used to happen in a man's head: a list of guarded apps here, a
+    // list of feed rules there, and the relationship between them written in a
+    // sentence above one of them. Doing it in code is the whole restructure —
+    // there is no second list to keep in sync with the first, because there is
+    // no second list.
+    val protectedApps = remember(guardedApps, feedRules, context) {
+        guardedApps.map { app ->
+            ProtectedApp(
+                packageName = app.packageName,
+                label = appLabel(context, app.packageName),
+                guarded = app,
+                rules = feedRules.filter { it.packageName == app.packageName },
+            )
+        }.sortedBy { it.label.lowercase() }
+    }
+
+    /** Which app's sheet is open, by package. */
+    var openApp by remember { mutableStateOf<String?>(null) }
+
     var showAppPicker by remember { mutableStateOf(false) }
     var showLearnMode by remember { mutableStateOf(false) }
 
@@ -545,87 +566,18 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
             // like the same part. Naming what each group is for is most of the
             // fix; the shared surface behind each one does the rest.
             Section(
-                "What is guarded",
-                description = "The apps Bastion watches, and how much of each one it closes.",
+                "What's blocked",
+                description = "One card per app. Everything about that app is inside it.",
                 spacing = Space.lg,
             ) {
-            GuardedAppsSection(
-                apps = guardedApps,
-                guardRunning = serviceRunning,
-                onAdd = { showAppPicker = true },
-                onModeChange = { app, mode ->
-                    // Loosening waits and is confirmed; tightening is instant and
-                    // needs no ceremony. Relaxing a mode is the same kind of
-                    // decision as removing the guard altogether, so it gets the
-                    // same dialog.
-                    if (mode.isWeakerThan(app.mode)) {
-                        confirmRelax = app to mode
-                    } else {
-                        scope.launch {
-                            graph.guard.upsertApp(
-                                app.copy(mode = mode, updatedAt = System.currentTimeMillis())
-                            )
-                        }
-                    }
-                },
-                onRemove = { confirmUnguard = it },
-                onTurnGuardOn = { BastionAccessibilityService.openSettings(context) },
-                lockedInDelay = lockedInDelay,
-            )
-
-            FeedRulesSection(
-                rules = feedRules,
-                guardedApps = guardedApps,
-                guardRunning = serviceRunning,
-                onSetGroup = { pkg, enabled ->
-                    scope.launch {
-                        val group = feedRules.filter { it.packageName == pkg }
-                        if (enabled) {
-                            group.filterNot { it.enabled }
-                                .forEach { graph.guard.upsertRule(it.copy(enabled = true)) }
-                        } else if (!settings.tamperLockEnabled) {
-                            group.filter { it.enabled }
-                                .forEach { graph.guard.upsertRule(it.copy(enabled = false)) }
-                        } else {
-                            // One request for the group rather than one per rule,
-                            // so the waiting list says "Instagram" instead of
-                            // listing four matchers a man never chose separately.
-                            graph.guard.requestWeakening(
-                                "Stop closing feeds in ${appLabel(context, pkg)}",
-                                payload = "rulegroup:$pkg",
-                            )
-                        }
-                    }
-                },
-                onSetRule = { rule, enabled ->
-                    scope.launch {
-                        if (enabled) graph.guard.upsertRule(rule.copy(enabled = true))
-                        else if (!settings.tamperLockEnabled) {
-                            graph.guard.upsertRule(rule.copy(enabled = false))
-                        } else graph.guard.requestWeakening(
-                            "Disable rule ${rule.label}",
-                            payload = "rule:${rule.id}:off",
-                        )
-                    }
-                },
-                onGuardApp = { pkg ->
-                    // Guarding straight from the broken link, in the mode that
-                    // makes these rules do something. Sending him to the other
-                    // section to work it out is most of the way to him not
-                    // bothering.
-                    scope.launch {
-                        graph.guard.upsertApp(
-                            com.bastion.app.data.db.GuardedAppEntity(
-                                packageName = pkg,
-                                label = appLabel(context, pkg),
-                                mode = BlockMode.FEED_ONLY,
-                            )
-                        )
-                    }
-                },
-                onLearn = { showLearnMode = true },
-                lockedInDelay = lockedInDelay,
-            )
+                ProtectionSection(
+                    apps = protectedApps,
+                    guardRunning = serviceRunning,
+                    lockedInDelay = lockedInDelay,
+                    onAdd = { showAppPicker = true },
+                    onOpen = { openApp = it.packageName },
+                    onTurnGuardOn = { BastionAccessibilityService.openSettings(context) },
+                )
             }
 
             Section(
@@ -885,6 +837,67 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                         weakenOrQueue("Turn off the dimming", "grayscale:off") {
                             graph.settings.setGrayscale(false)
                         }
+                    },
+                )
+            }
+        }
+    }
+
+    openApp?.let { pkg ->
+        val app = protectedApps.firstOrNull { it.packageName == pkg }
+        if (app == null) {
+            openApp = null
+        } else {
+            BastionBottomSheet(onDismiss = { openApp = null }) {
+                AppProtectionSheet(
+                    app = app,
+                    lockedInDelay = lockedInDelay,
+                    onSetLevel = { level ->
+                        val mode = level.toMode()
+                        val current = app.guarded
+                        when {
+                            mode == null -> confirmUnguard = current
+                            current == null -> Unit
+                            mode.isWeakerThan(current.mode) -> confirmRelax = current to mode
+                            else -> scope.launch {
+                                // The whole point of the restructure, in four
+                                // lines: choosing a level sets everything that
+                                // level needs. Feed-only used to mean "the mode
+                                // is set and now go and find the other list",
+                                // and a man who did not know about the other
+                                // list had a switch wired to nothing.
+                                graph.guard.upsertApp(
+                                    current.copy(
+                                        mode = mode,
+                                        updatedAt = System.currentTimeMillis(),
+                                    )
+                                )
+                                if (mode == BlockMode.FEED_ONLY) {
+                                    app.rules.filterNot { it.enabled }.forEach {
+                                        graph.guard.upsertRule(it.copy(enabled = true))
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    onSetRule = { rule, enabled ->
+                        scope.launch {
+                            if (enabled) graph.guard.upsertRule(rule.copy(enabled = true))
+                            else if (!settings.tamperLockEnabled) {
+                                graph.guard.upsertRule(rule.copy(enabled = false))
+                            } else graph.guard.requestWeakening(
+                                "Stop closing ${rule.label} in ${app.label}",
+                                payload = "rule:${rule.id}:off",
+                            )
+                        }
+                    },
+                    onRemove = {
+                        confirmUnguard = app.guarded
+                        openApp = null
+                    },
+                    onLearn = {
+                        openApp = null
+                        showLearnMode = true
                     },
                 )
             }
