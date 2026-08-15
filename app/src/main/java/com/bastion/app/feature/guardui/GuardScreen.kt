@@ -59,6 +59,7 @@ import com.bastion.app.core.design.BastionCard
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.ChoiceRow
 import com.bastion.app.core.design.LinkButton
+import com.bastion.app.core.design.LockedInNote
 import com.bastion.app.core.design.BastionBottomSheet
 import com.bastion.app.core.design.BastionRow
 import com.bastion.app.core.design.BastionScaffold
@@ -109,6 +110,13 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
     val serviceRunning = liveService || enabledInSettings
     val filterRunning by BastionVpnService.isRunning.collectAsStateWithLifecycle()
     val blockedCount by BastionVpnService.blockedCount.collectAsStateWithLifecycle()
+
+    // Worded once and handed down, so every note on the screen quotes the same
+    // number as the lock card itself. Null when the lock is off, which is what
+    // makes the notes disappear rather than say "0 minutes".
+    val lockedInDelay = settings.takeIf { it.tamperLockEnabled }?.let {
+        com.bastion.app.data.repo.GuardRepository.Delay.describe(it.coolingOffMinutes)
+    }
 
     var showAppPicker by remember { mutableStateOf(false) }
     var showLearnMode by remember { mutableStateOf(false) }
@@ -562,6 +570,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 },
                 onRemove = { confirmUnguard = it },
                 onTurnGuardOn = { BastionAccessibilityService.openSettings(context) },
+                lockedInDelay = lockedInDelay,
             )
 
             FeedRulesSection(
@@ -615,6 +624,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                     }
                 },
                 onLearn = { showLearnMode = true },
+                lockedInDelay = lockedInDelay,
             )
             }
 
@@ -669,6 +679,15 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                             color = if (settings.tamperLockEnabled) BastionColors.BronzeBright
                             else BastionColors.TextMuted,
                         )
+                        // Including this switch. It is the one control where a
+                        // man is most likely to assume he is the exception —
+                        // the lock is his, so surely he can just take it off —
+                        // and the answer is no, at the same price as everything
+                        // it protects.
+                        lockedInDelay?.let {
+                            Spacer(Modifier.height(Space.xs))
+                            LockedInNote(it, what = "turning this lock off")
+                        }
                     }
                     Switch(
                         checked = settings.tamperLockEnabled,
@@ -782,6 +801,10 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                     color = BastionColors.TextMuted,
                 )
+                lockedInDelay?.let {
+                    Spacer(Modifier.height(Space.sm))
+                    LockedInNote(it, what = "shortening the wait")
+                }
                 Spacer(Modifier.height(Space.md))
                 Row(horizontalArrangement = Arrangement.spacedBy(Space.sm)) {
                     com.bastion.app.data.repo.GuardRepository.Delay.CHOICES.forEach { minutes ->
@@ -849,7 +872,21 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
 
                 PrivateDnsCard()
 
-                GrayscaleCard(settings = settings, graph = graph)
+                GrayscaleCard(
+                    settings = settings,
+                    graph = graph,
+                    lockedInDelay = lockedInDelay,
+                    // Switching it *off* is a weakening like any other, and it
+                    // was the one protection on this screen that ignored the
+                    // lock entirely — the card above promised "removing any
+                    // protection has to wait" while this one wrote straight
+                    // through. Switching it on stays immediate, as everywhere.
+                    onDisable = {
+                        weakenOrQueue("Turn off the dimming", "grayscale:off") {
+                            graph.settings.setGrayscale(false)
+                        }
+                    },
+                )
             }
         }
     }
@@ -1158,7 +1195,12 @@ private fun PrivateDnsCard() {
 private const val PRIVATE_DNS_HOST = "family.cloudflare-dns.com"
 
 @Composable
-private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
+private fun GrayscaleCard(
+    settings: Settings,
+    graph: BastionGraph,
+    lockedInDelay: String?,
+    onDisable: () -> Unit,
+) {
     val scope = rememberCoroutineScope()
 
     Column(Modifier.fillMaxWidth()) {
@@ -1182,7 +1224,10 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
             }
             Switch(
                 checked = settings.grayscaleEnabled,
-                onCheckedChange = { scope.launch { graph.settings.setGrayscale(it) } },
+                onCheckedChange = { wanted ->
+                    if (wanted) scope.launch { graph.settings.setGrayscale(true) }
+                    else onDisable()
+                },
                 colors = switchColors(),
             )
         }
@@ -1200,6 +1245,12 @@ private fun GrayscaleCard(settings: Settings, graph: BastionGraph) {
             style = MaterialTheme.typography.bodySmall,
             color = BastionColors.TextMuted,
         )
+        if (settings.grayscaleEnabled) {
+            lockedInDelay?.let {
+                Spacer(Modifier.height(Space.sm))
+                LockedInNote(it)
+            }
+        }
     }
 }
 

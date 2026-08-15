@@ -141,4 +141,34 @@ class CoolingOffDelayTest {
             assertTrue("legacy hours must never be zero", legacyHours(it) >= 1)
         }
     }
+
+    /**
+     * Every payload the screen can queue is one the repository knows how to
+     * apply.
+     *
+     * A queued weakening that matures and does nothing is the worst outcome the
+     * lock has: a man waits the full twelve hours, comes back, finds the switch
+     * still on, and concludes the whole mechanism is theatre. It is a silent
+     * failure — nothing throws, nothing logs, the request is simply marked
+     * applied — so nothing catches it except a list checked against a list.
+     *
+     * Dimming is why this exists. It was switched off instantly while the card
+     * above it promised that removing any protection has to wait; routing it
+     * through the queue without teaching the queue about it would have traded a
+     * visible hole for an invisible one.
+     */
+    @Test
+    fun `every queued weakening has somewhere to land`() {
+        // The prefixes GuardScreen and the watchdog actually enqueue.
+        val queued = listOf(
+            "app", "remove", "rule", "rulegroup", "domain",
+            "cooloff", "cooloffm", "unlock", "vpn", "grayscale",
+        )
+        val source = java.io.File(
+            "src/main/java/com/bastion/app/data/repo/GuardRepository.kt"
+        ).readText()
+        val applied = Regex("\"([a-z]+)\" ->").findAll(source).map { it.groupValues[1] }.toSet()
+        val orphans = queued.filterNot { it in applied }
+        assertEquals("these queue but never apply", emptyList<String>(), orphans)
+    }
 }

@@ -376,6 +376,13 @@ class GuardRepository(
                     settings.setVpnEnabled(false)
                     stopFilter = true
                 }
+                // Dimming used to write straight through, ignoring the lock the
+                // card above it advertised. Now it queues like everything else,
+                // which means it also has to be applied when the wait is served
+                // — a delay that expires and does nothing is worse than no delay
+                // at all, because a man waits it out and concludes the whole
+                // mechanism is theatre.
+                "grayscale" -> settings.setGrayscale(false)
                 // "I'm done with Private DNS", once the wait has been served.
                 com.bastion.app.guard.GuardWatchdog.PAYLOAD_STAND_DOWN_DNS -> {
                     settings.setDnsIntendedOn(false)

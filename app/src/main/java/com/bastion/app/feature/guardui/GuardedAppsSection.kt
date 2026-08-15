@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import com.bastion.app.core.design.BastionColors
 import com.bastion.app.core.design.LinkButton
+import com.bastion.app.core.design.LockedInNote
 import com.bastion.app.core.design.SectionLabel
 import com.bastion.app.core.design.Space
 import com.bastion.app.data.db.BlockMode
@@ -161,6 +162,8 @@ fun GuardedAppsSection(
     onModeChange: (GuardedAppEntity, BlockMode) -> Unit,
     onRemove: (GuardedAppEntity) -> Unit,
     onTurnGuardOn: () -> Unit,
+    /** Worded delay while the lock is on; null when it is off. */
+    lockedInDelay: String? = null,
 ) {
     Row(
         Modifier.fillMaxWidth(),
@@ -217,6 +220,7 @@ fun GuardedAppsSection(
                 app = app,
                 onModeChange = { onModeChange(app, it) },
                 onRemove = { onRemove(app) },
+                lockedInDelay = lockedInDelay,
             )
         }
     }
@@ -227,6 +231,7 @@ private fun GuardedAppRow(
     app: GuardedAppEntity,
     onModeChange: (BlockMode) -> Unit,
     onRemove: () -> Unit,
+    lockedInDelay: String?,
 ) {
     var open by remember(app.packageName) { mutableStateOf(false) }
 
@@ -282,6 +287,13 @@ private fun GuardedAppRow(
                         onSelect = { if (app.mode != mode) onModeChange(mode) },
                     )
                     Spacer(Modifier.height(Space.sm))
+                }
+                lockedInDelay?.let {
+                    LockedInNote(
+                        it,
+                        what = "relaxing this, or stopping it,",
+                        modifier = Modifier.padding(bottom = Space.sm),
+                    )
                 }
                 LinkButton("Stop guarding ${app.label}", BastionColors.TextTertiary, onRemove)
             }
@@ -433,6 +445,8 @@ fun FeedRulesSection(
     onSetRule: (FeedRuleEntity, Boolean) -> Unit,
     onGuardApp: (pkg: String) -> Unit,
     onLearn: () -> Unit,
+    /** Worded delay while the lock is on; null when it is off. */
+    lockedInDelay: String? = null,
 ) {
     val context = LocalContext.current
     val byMode = remember(guardedApps) { guardedApps.associate { it.packageName to it.mode } }
@@ -514,6 +528,7 @@ fun FeedRulesSection(
                 onSetGroup = { onSetGroup(pkg, it) },
                 onSetRule = onSetRule,
                 onGuardApp = { onGuardApp(pkg) },
+                lockedInDelay = lockedInDelay,
             )
         }
     }
@@ -532,6 +547,7 @@ private fun FeedRuleGroup(
     onSetGroup: (Boolean) -> Unit,
     onSetRule: (FeedRuleEntity, Boolean) -> Unit,
     onGuardApp: () -> Unit,
+    lockedInDelay: String?,
 ) {
     var open by remember(pkg) { mutableStateOf(false) }
     val enabledCount = rules.count { it.enabled }
@@ -574,6 +590,14 @@ private fun FeedRuleGroup(
         if (state is RuleState.NotGuarded) {
             Spacer(Modifier.height(Space.sm))
             LinkButton("Guard $label so these work", BastionColors.BronzeBright, onGuardApp)
+        }
+
+        // Only where switching something off would actually wait: a group with
+        // nothing on has nothing to take away, and a note there would be a
+        // price quoted for something that is not for sale.
+        if (lockedInDelay != null && enabledCount > 0) {
+            Spacer(Modifier.height(Space.xs))
+            LockedInNote(lockedInDelay, what = "switching any of these off")
         }
 
         Spacer(Modifier.height(Space.xs))

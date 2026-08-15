@@ -261,6 +261,38 @@ fun Section(
 }
 
 /**
+ * What switching this particular thing off will cost, next to the switch.
+ *
+ * The cooling-off card already says the rule in general — "removing any
+ * protection has to wait" — and general is exactly the wrong place for it. A
+ * man reads that once during setup, and meets the consequence weeks later at
+ * the one control he happens to be reaching for, with no warning attached to
+ * the thing under his thumb. He flips it, nothing appears to happen, and the
+ * app looks broken at the moment it is working hardest.
+ *
+ * So the price is printed where the decision is made. Only where it is true:
+ * anything that still switches off immediately says nothing, because a note
+ * that is right four times out of five is worse than none at all.
+ *
+ * @param delay already worded — "24 hours", "12 hours" — because the formatter
+ *   lives beside the rules that use it and this file must not reach into the
+ *   data layer to find it.
+ */
+@Composable
+fun LockedInNote(
+    delay: String,
+    modifier: Modifier = Modifier,
+    what: String = "Switching this off",
+) {
+    Text(
+        "Locked in — $what takes $delay.",
+        style = MaterialTheme.typography.labelSmall,
+        color = BastionColors.BronzeBright,
+        modifier = modifier,
+    )
+}
+
+/**
  * One list row, used for every repeated thing: guarded apps, feed rules,
  * habits, benefits, check-ins, settings entries.
  *
