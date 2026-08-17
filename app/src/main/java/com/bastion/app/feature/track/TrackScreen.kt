@@ -191,7 +191,7 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
                         )
                     }
                     Text(
-                        month.format(DateTimeFormatter.ofPattern("MMM yyyy")),
+                        month.format(com.bastion.app.core.AppDates.pattern("MMM yyyy")),
                         style = MaterialTheme.typography.labelMedium,
                         color = BastionColors.TextSecondary,
                     )
@@ -456,7 +456,7 @@ private fun CleanDaySheet(
             when (date) {
                 today -> "Today"
                 today.minusDays(1) -> "Yesterday"
-                else -> date.format(DateTimeFormatter.ofPattern("EEEE d MMMM"))
+                else -> date.format(com.bastion.app.core.AppDates.pattern("EEEE d MMMM"))
             },
             style = MaterialTheme.typography.titleLarge,
             color = BastionColors.TextPrimary,
@@ -502,7 +502,7 @@ private fun DayLogSheet(
             when (date) {
                 today -> "Today"
                 today.minusDays(1) -> "Yesterday"
-                else -> date.format(DateTimeFormatter.ofPattern("EEEE d MMMM"))
+                else -> date.format(com.bastion.app.core.AppDates.pattern("EEEE d MMMM"))
             },
             style = MaterialTheme.typography.titleLarge,
             color = BastionColors.TextPrimary,
@@ -807,7 +807,7 @@ private fun RecoveryFlow(
                     Spacer(Modifier.height(Space.xs))
                     Text(
                         "Recording " + if (it == LocalDate.now().minusDays(1)) "yesterday"
-                        else it.format(DateTimeFormatter.ofPattern("EEEE d MMMM")),
+                        else it.format(com.bastion.app.core.AppDates.pattern("EEEE d MMMM")),
                         style = MaterialTheme.typography.labelMedium,
                         color = BastionColors.TextMuted,
                     )

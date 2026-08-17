@@ -291,9 +291,9 @@ private fun HistoryList(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    "${date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())} " +
+                    "${date.dayOfWeek.getDisplayName(TextStyle.SHORT, com.bastion.app.core.AppDates.LOCALE)} " +
                         "${date.dayOfMonth} " +
-                        date.month.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                        date.month.getDisplayName(TextStyle.SHORT, com.bastion.app.core.AppDates.LOCALE),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (day == today) BastionColors.TextPrimary else BastionColors.TextSecondary,
                     modifier = Modifier.weight(1f),

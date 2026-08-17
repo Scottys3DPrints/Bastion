@@ -291,7 +291,7 @@ private fun DateStrip(today: Long, selected: Long, onSelect: (Long) -> Unit) {
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()),
+                    date.dayOfWeek.getDisplayName(TextStyle.NARROW, com.bastion.app.core.AppDates.LOCALE),
                     style = MaterialTheme.typography.labelSmall,
                     color = BastionColors.TextTertiary,
                 )

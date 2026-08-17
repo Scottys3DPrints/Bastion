@@ -99,7 +99,7 @@ object Analytics {
         val quietest = DayOfWeek.entries.minByOrNull { byDay[it] ?: 0 } ?: return null
         val busiest = DayOfWeek.entries.maxByOrNull { byDay[it] ?: 0 } ?: return null
         if (busiest == quietest) return null
-        val name = quietest.getDisplayName(TextStyle.FULL, Locale.getDefault())
+        val name = quietest.getDisplayName(TextStyle.FULL, com.bastion.app.core.AppDates.LOCALE)
         return Insight(
             headline = "${name}s are your strongest day",
             defence = null,

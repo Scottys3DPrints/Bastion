@@ -100,6 +100,16 @@ data class Settings(
      */
     val lastSeenRankTier: Int = 1,
     /**
+     * The build that was running last time the app opened.
+     *
+     * Kept only to answer one question honestly: when Guard is found switched
+     * off, did a man switch it off, or did an update take it? Android revokes
+     * an accessibility service when its APK is replaced, and Bastion updates
+     * itself in place — so every single update silently drops the guard, and
+     * the wall that catches it was blaming the wrong person.
+     */
+    val lastSeenVersionCode: Int = 0,
+    /**
      * Whether the user has ever had Bastion Guard switched on.
      *
      * The service cannot report its own death — once it is disabled in system
@@ -288,6 +298,7 @@ class SettingsStore(private val context: Context) {
         val LAST_URGE_ITEM = stringPreferencesKey("last_urge_item")
         val SAVED_MOTIVATION = stringPreferencesKey("saved_motivation")
         val LAST_SEEN_RANK = intPreferencesKey("last_seen_rank_tier")
+        val LAST_SEEN_VERSION = intPreferencesKey("last_seen_version_code")
         val GUARD_INTENDED_ON = booleanPreferencesKey("guard_intended_on")
         val GUARD_OFF_NOTIFIED = longPreferencesKey("guard_off_notified_at")
         val LOCKDOWN_HOURS = intPreferencesKey("lockdown_hours")
@@ -361,6 +372,7 @@ class SettingsStore(private val context: Context) {
             lastUrgeItemId = p[Keys.LAST_URGE_ITEM] ?: "",
             savedMotivation = p[Keys.SAVED_MOTIVATION].decodeTriggers(),
             lastSeenRankTier = p[Keys.LAST_SEEN_RANK] ?: 1,
+            lastSeenVersionCode = p[Keys.LAST_SEEN_VERSION] ?: 0,
             guardIntendedOn = p[Keys.GUARD_INTENDED_ON] ?: false,
             guardOffNotifiedAt = p[Keys.GUARD_OFF_NOTIFIED] ?: 0L,
             // Falls back to the old hours key so an existing install keeps
@@ -451,6 +463,9 @@ class SettingsStore(private val context: Context) {
         prefs[Keys.SAVED_MOTIVATION] = Json.encodeToString(next)
     }
     suspend fun setLastSeenRankTier(value: Int) = edit { it[Keys.LAST_SEEN_RANK] = value }
+
+    suspend fun setLastSeenVersionCode(value: Int) =
+        edit { it[Keys.LAST_SEEN_VERSION] = value }
     suspend fun setGuardIntendedOn(value: Boolean) = edit { it[Keys.GUARD_INTENDED_ON] = value }
     suspend fun setGuardOffNotifiedAt(value: Long) = edit { it[Keys.GUARD_OFF_NOTIFIED] = value }
     suspend fun setLockdownSeconds(value: Int) = edit { it[Keys.LOCKDOWN_SECONDS] = value }

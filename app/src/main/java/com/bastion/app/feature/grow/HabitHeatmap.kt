@@ -424,7 +424,7 @@ private fun RangeNavigator(
 ) {
     val first = LocalDate.ofEpochDay(days.first())
     val last = LocalDate.ofEpochDay(days.last())
-    fun month(d: LocalDate) = d.month.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+    fun month(d: LocalDate) = d.month.getDisplayName(TextStyle.SHORT, com.bastion.app.core.AppDates.LOCALE)
     val label = buildString {
         append(month(first)).append(' ').append(first.dayOfMonth)
         append(" – ")

@@ -306,7 +306,7 @@ private fun WhenStep(entry: LogEntry, onChange: (LogEntry) -> Unit) {
             when (date) {
                 today -> "Today"
                 today.minusDays(1) -> "Yesterday"
-                else -> date.format(DateTimeFormatter.ofPattern("EEE d"))
+                else -> date.format(com.bastion.app.core.AppDates.pattern("EEE d"))
             }
         },
         selected = { it == entry.date },
@@ -330,7 +330,7 @@ private fun WhenStep(entry: LogEntry, onChange: (LogEntry) -> Unit) {
             when (hour) {
                 0 -> "Midnight"
                 12 -> "Midday"
-                else -> LocalTime.of(hour, 0).format(DateTimeFormatter.ofPattern("h a"))
+                else -> LocalTime.of(hour, 0).format(com.bastion.app.core.AppDates.pattern("h a"))
             }
         },
         // An hour of today that has not arrived is shown and refused, rather

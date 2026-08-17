@@ -88,9 +88,9 @@ object LogMoment {
         val day = when (date) {
             now.toLocalDate() -> "Today"
             now.toLocalDate().minusDays(1) -> "Yesterday"
-            else -> date.format(DateTimeFormatter.ofPattern("EEEE d MMM"))
+            else -> date.format(com.bastion.app.core.AppDates.pattern("EEEE d MMM"))
         }
-        val clock = time.format(DateTimeFormatter.ofPattern("h a"))
+        val clock = time.format(com.bastion.app.core.AppDates.pattern("h a"))
         return "$day at $clock · ${ago(LocalDateTime.of(date, time), now)}"
     }
 

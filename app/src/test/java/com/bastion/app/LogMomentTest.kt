@@ -155,7 +155,11 @@ class LogMomentTest {
             lunchtime,
         )
         assertTrue(line, line.contains("Yesterday"))
-        assertTrue(line, line.contains("10 PM"))
+        // Case-insensitive: the meridiem's case belongs to the locale data, not
+        // to us. Modern CLDR renders British English as "10 pm" where it once
+        // gave "10 PM", and pinning the case here would mean the test failing
+        // on a library update while the screen was perfectly correct.
+        assertTrue(line, line.contains("10 pm", ignoreCase = true))
         assertTrue(line, line.contains("ago"))
     }
 }

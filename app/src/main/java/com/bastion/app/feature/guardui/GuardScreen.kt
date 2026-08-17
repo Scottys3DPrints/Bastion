@@ -203,7 +203,13 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
         }
     }
 
-    LaunchedEffect(Unit) { graph.guard.seedIfEmpty(); graph.guard.syncBuiltInRules() }
+    LaunchedEffect(Unit) {
+        graph.guard.seedIfEmpty()
+        graph.guard.syncBuiltInRules()
+        // Noted after the wall has had its chance to read the old value, so an
+        // update is only ever reported once.
+        graph.settings.setLastSeenVersionCode(com.bastion.app.BuildConfig.VERSION_CODE)
+    }
 
     // Reads the breach; recording the intent happens app-wide in MainActivity,
     // because it must not depend on this screen being the one in front.
@@ -565,11 +571,12 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
             // one undifferentiated list — the complaint was that it all felt
             // like the same part. Naming what each group is for is most of the
             // fix; the shared surface behind each one does the rest.
-            Section(
-                "What's blocked",
-                description = "One card per app. Everything about that app is inside it.",
-                spacing = Space.lg,
-            ) {
+            // No heading here: ProtectionSection carries its own, and it has to,
+            // because the "Add an app" link belongs on the same line as the
+            // title. Two headings shipped for one section and the screen opened
+            // with "WHAT'S BLOCKED" twice, one above the other, each with its
+            // own description.
+            Section(spacing = Space.lg) {
                 ProtectionSection(
                     apps = protectedApps,
                     guardRunning = serviceRunning,

@@ -517,8 +517,8 @@ private fun checkInDate(epochDay: Long): String {
     return when (LocalDate.now().toEpochDay() - epochDay) {
         0L -> "Today"
         1L -> "Yesterday"
-        in 2L..6L -> date.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault())
-        else -> date.format(DateTimeFormatter.ofPattern("d MMM"))
+        in 2L..6L -> date.dayOfWeek.getDisplayName(TextStyle.FULL, com.bastion.app.core.AppDates.LOCALE)
+        else -> date.format(com.bastion.app.core.AppDates.pattern("d MMM"))
     }
 }
 

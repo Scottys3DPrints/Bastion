@@ -142,14 +142,24 @@ private fun GuardDownScreen(layer: String, onResolved: () -> Unit) {
         }
     }
 
+    var lastSeenVersion by remember { mutableStateOf(0) }
+
     androidx.compose.runtime.LaunchedEffect(Unit) {
         hasPartnerCode = graph.social.hasPasscode()
         coolingOffMinutes = graph.settings.current().coolingOffMinutes
         hostname = graph.settings.current().dnsHostname
         waitMillis = graph.passcodeGate.waitMillis()
+        lastSeenVersion = graph.settings.current().lastSeenVersionCode
     }
 
     val isDns = layer == com.bastion.app.guard.GuardWatchdog.LAYER_DNS
+
+    // An update ran since this app last opened, and the guard is down. The two
+    // together are the signature of Android revoking the service on install
+    // rather than of a man switching it off.
+    val droppedByUpdate = !isDns &&
+        lastSeenVersion != 0 &&
+        lastSeenVersion != com.bastion.app.BuildConfig.VERSION_CODE
 
     // Closes itself the instant the layer is back, so the honest way out needs
     // no confirmation step at all.
@@ -186,13 +196,28 @@ private fun GuardDownScreen(layer: String, onResolved: () -> Unit) {
             )
             Spacer(Modifier.height(Space.md))
             Text(
-                if (isDns) {
-                    "You asked to be made to work for this. Set it back to " +
-                        (hostname.ifBlank { "your provider's hostname" }) +
-                        ". Leaving it off costs the partner's code, or the wait."
-                } else {
-                    "You asked to be made to work for this. Turning it back on is one tap. " +
-                        "Leaving it off costs the partner's code, or the wait."
+                when {
+                    isDns ->
+                        "You asked to be made to work for this. Set it back to " +
+                            (hostname.ifBlank { "your provider's hostname" }) +
+                            ". Leaving it off costs the partner's code, or the wait."
+                    // Blaming the right party.
+                    //
+                    // Android revokes an accessibility service when its APK is
+                    // replaced, and Bastion updates itself in place — so every
+                    // update drops the guard, silently, and this screen met a
+                    // man with "you asked to be made to work for this" about a
+                    // thing he had not done. Being accused of quitting by the
+                    // app you just updated to keep going is the kind of wrong
+                    // that makes someone stop trusting the rest of it.
+                    droppedByUpdate ->
+                        "The update to this version switched it off — Android does " +
+                            "that to every accessibility service when an app is " +
+                            "replaced, and there is nothing Bastion can do to stop " +
+                            "it. One tap puts it back."
+                    else ->
+                        "You asked to be made to work for this. Turning it back on is one tap. " +
+                            "Leaving it off costs the partner's code, or the wait."
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = BastionColors.TextSecondary,

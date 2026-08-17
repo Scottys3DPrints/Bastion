@@ -259,6 +259,17 @@ private fun AppCard(
  * sheet can never disagree about whether something is working.
  */
 internal fun trouble(app: ProtectedApp, guardRunning: Boolean): String? {
+    // An app Bastion has no feed rules for, asked to block only its feed.
+    //
+    // Says the real reason rather than the nearest one. Chrome and Messenger
+    // were guarded back when browsers had rule groups of their own; those moved
+    // to the sites they belong to, and what is left is an entry that cannot do
+    // anything in this mode and never will. "Nothing is switched on inside
+    // this" sent a man looking for a switch that does not exist.
+    if (app.level == ProtectionLevel.FEED && app.rules.isEmpty()) {
+        return "Bastion has no feed to recognise in this app. Its feeds in a " +
+            "browser are covered by the site's own card."
+    }
     val state = ruleState(
         guardRunning = guardRunning,
         guardedMode = app.guarded?.mode,
