@@ -32,6 +32,28 @@ class GuardRepository(
     suspend fun upsertApp(app: GuardedAppEntity) = guardDao.upsertApp(app)
     suspend fun removeApp(packageName: String) = guardDao.removeApp(packageName)
     suspend fun upsertRule(rule: FeedRuleEntity) = guardDao.upsertRule(rule)
+
+    /**
+     * Guard an app at a level, and switch on everything that level needs.
+     *
+     * The one entry point, because two of them is how the last hole appeared.
+     * The level sheet did this correctly and the app picker did not — it wrote
+     * the mode and stopped — so adding Instagram from the picker produced a card
+     * reading "just the endless feed" above a line admitting nothing was
+     * switched on inside it. That is the same four-part assembly the whole
+     * restructure existed to delete, surviving in the most-used path of all.
+     *
+     * Feed-only is the level with a dependency: it means nothing without the
+     * rules that say which screens the feed is. Every other level is complete on
+     * its own — a fully blocked app needs no rule to describe what to close.
+     */
+    suspend fun guardAt(app: GuardedAppEntity) {
+        guardDao.upsertApp(app)
+        if (app.mode != BlockMode.FEED_ONLY) return
+        guardDao.feedRules().first()
+            .filter { it.packageName == app.packageName && !it.enabled }
+            .forEach { guardDao.upsertRule(it.copy(enabled = true)) }
+    }
     suspend fun deleteRule(id: String) = guardDao.deleteRule(id)
 
     suspend fun addUserDomain(domain: String) {

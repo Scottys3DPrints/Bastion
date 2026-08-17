@@ -61,6 +61,7 @@ enum class GuardLayer(val label: String, val blurb: String) {
     SCREEN_LOCK("Screen lock", "Lets a panic lockdown lock your screen"),
     GRAYSCALE("Dimming", "Drains the colour out of guarded apps"),
     NOTIFICATIONS("Alerts", "Tells you when a protection drops"),
+    STAY_AWAKE("Keep Bastion awake", "Stops Android putting the guard to sleep"),
 }
 
 /** What a layer's state is right now, and what to say when it is not on. */
@@ -116,6 +117,14 @@ private fun readLayers(context: Context, settings: Settings): List<LayerState> =
     // veil is the whole feature, so the switch alone decides.
     LayerState(GuardLayer.GRAYSCALE, settings.grayscaleEnabled),
     LayerState(GuardLayer.NOTIFICATIONS, notificationsAllowed(context)),
+    // Belongs here rather than in a battery setting. Android revokes an
+    // accessibility service when its app is force-stopped, and the system
+    // force-stops apps it thinks are idle — so without this, the guard can be
+    // gone by morning with nothing said. See BatteryExemption.
+    LayerState(
+        GuardLayer.STAY_AWAKE,
+        com.bastion.app.guard.BatteryExemption.isExempt(context),
+    ),
 )
 
 

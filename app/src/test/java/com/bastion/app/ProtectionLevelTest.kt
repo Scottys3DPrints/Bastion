@@ -101,4 +101,41 @@ class ProtectionLevelTest {
         assertTrue("the feed level does not mention a browser: $said", "browser" in said)
         assertNotNull(ProtectionLevel.FEED.toMode())
     }
+
+    /**
+     * Feed-only is the one level with a dependency, and both ways in must honour
+     * it.
+     *
+     * The level sheet switched the rules on; the app picker wrote the mode and
+     * stopped. So adding Instagram the obvious way produced a card reading "just
+     * the endless feed" directly above a line admitting nothing inside it was
+     * switched on — the four-part assembly the whole restructure existed to
+     * delete, alive in the most-used path of all.
+     *
+     * Found by driving the app on a phone, which is the only place it was
+     * visible: both paths compiled, both wrote a row, and only one of them
+     * blocked anything.
+     *
+     * The repository owns it now. This test states the property that made two
+     * implementations wrong — the rules a level depends on are part of the
+     * level, not a step after it.
+     */
+    @Test
+    fun `only the feed level depends on rules being switched on`() {
+        assertEquals(
+            "feed-only is the level whose meaning lives in its rules",
+            BlockMode.FEED_ONLY,
+            ProtectionLevel.FEED.toMode(),
+        )
+        // Every other level describes something complete on its own: a fully
+        // blocked app needs no rule to say what to close, and an hours or limit
+        // block is about the clock rather than the screen.
+        listOf(ProtectionLevel.HOURS, ProtectionLevel.LIMIT, ProtectionLevel.EVERYTHING)
+            .forEach {
+                assertTrue(
+                    "${it.name} should not need rules to mean anything",
+                    it.toMode() != BlockMode.FEED_ONLY,
+                )
+            }
+    }
 }

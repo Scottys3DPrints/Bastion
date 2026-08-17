@@ -392,6 +392,12 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 onArm = { layer ->
                     when (layer) {
                         GuardLayer.FEED_GUARD -> BastionAccessibilityService.openSettings(context)
+                        // Opens Android's own request. Arming it is one dialog,
+                        // and it is the difference between a guard that lasts
+                        // the night and one the phone can switch off while
+                        // nobody is looking.
+                        GuardLayer.STAY_AWAKE ->
+                            com.bastion.app.guard.BatteryExemption.request(context)
                         GuardLayer.CONTENT_FILTER -> {
                             val consent = BastionVpnService.prepareIntent(context)
                             if (consent != null) {
@@ -867,23 +873,15 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                             current == null -> Unit
                             mode.isWeakerThan(current.mode) -> confirmRelax = current to mode
                             else -> scope.launch {
-                                // The whole point of the restructure, in four
-                                // lines: choosing a level sets everything that
-                                // level needs. Feed-only used to mean "the mode
-                                // is set and now go and find the other list",
-                                // and a man who did not know about the other
-                                // list had a switch wired to nothing.
-                                graph.guard.upsertApp(
+                                // The whole point of the restructure: choosing a
+                                // level sets everything that level needs. Shared
+                                // with the picker so the two cannot drift again.
+                                graph.guard.guardAt(
                                     current.copy(
                                         mode = mode,
                                         updatedAt = System.currentTimeMillis(),
                                     )
                                 )
-                                if (mode == BlockMode.FEED_ONLY) {
-                                    app.rules.filterNot { it.enabled }.forEach {
-                                        graph.guard.upsertRule(it.copy(enabled = true))
-                                    }
-                                }
                             }
                         }
                     },
@@ -917,7 +915,11 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
                 alreadyGuarded = guardedApps.map { it.packageName }.toSet(),
                 onPick = { pkg, label, mode ->
                     scope.launch {
-                        graph.guard.upsertApp(
+                        // guardAt, not upsertApp: picking "feeds close" here has
+                        // to mean the same thing as picking it on the card, and
+                        // it did not — the app arrived guarded with every rule
+                        // inside it switched off.
+                        graph.guard.guardAt(
                             GuardedAppEntity(packageName = pkg, label = label, mode = mode)
                         )
                         showAppPicker = false

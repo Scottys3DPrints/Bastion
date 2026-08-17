@@ -10,6 +10,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!--
+      Not about battery. Android revokes an accessibility service the instant its
+      app is force-stopped — measured, not assumed — and the system force-stops
+      apps it has decided are idle. Without this, the phone can put the whole
+      guard to sleep overnight and say nothing.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!--
         The only sanctioned way to raise a screen from the background. Used for
         exactly one thing: putting the "Guard is off" wall in front of a user
         who asked to be locked in. Android 14 reserves full-screen delivery for
