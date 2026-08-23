@@ -154,36 +154,27 @@ class GuardRepository(
         val added = builtInFeedRules().filterNot { it.id in existing }
         if (added.isNotEmpty()) guardDao.upsertRules(added)
 
-        // Generation 11 deletes rather than disables, and that is the point.
+        // Any built-in rule this app no longer ships is deleted.
         //
-        // Everything before it tried to answer "which app or window is this?" —
-        // a row per browser, then a row for any unlisted app, then a row for the
-        // window a link opens in. Five groups on the Guard screen for one
-        // decision, and the browser that mattered was always the one not on the
-        // list. Those rows are gone: a built-in rule that belongs to no service
-        // has nothing left to mean, and leaving them switched off would leave
-        // the confusion behind while removing the function.
+        // Generation 11 deleted rules whose *package* was no longer a service,
+        // which cleared out the per-browser groups and missed the worse half.
+        // Instagram is a service, so it survived that sweep carrying every rule
+        // it had been given back when it was treated as an in-app browser — a
+        // card headed "Instagram" listing "All of Facebook", "All of TikTok",
+        // "YouTube Shorts". Not cosmetic: address rules apply wherever they are
+        // filed, so a row under Instagram was closing Facebook.
         //
-        // Only built-in rows are touched. Anything captured with Learn Mode
-        // belongs to the man who captured it and is never swept up here.
-        if (current.builtInRulesVersion < 11) {
-            val services = builtInFeedRules().map { it.packageName }.toSet()
+        // Keyed on the id, which is package plus match value, so the question is
+        // simply "does the shipped set still contain this row". That is the
+        // general form of what generation 11 did by hand, and it cannot miss the
+        // next variant of the same mistake.
+        //
+        // Built-in rows only. Anything captured with Learn Mode belongs to the
+        // man who captured it and is never swept up.
+        if (current.builtInRulesVersion < 12) {
+            val shipped = builtInFeedRules().map { it.id }.toSet()
             guardDao.feedRules().first()
-                .filter { it.builtIn }
-                .filter { it.packageName !in services }
-                .forEach { guardDao.deleteRule(it.id) }
-
-            // And the story rule, which was never a reels rule.
-            //
-            // Instagram named stories "reels" years before Reels existed, and
-            // named Reels "clips" when it shipped. So `reel_viewer` is the
-            // story viewer, and a rule labelled "Instagram Reels (viewer)" was
-            // throwing a man out of the app every time he opened a friend's
-            // story — feed-only guarding doing the exact thing it exists to
-            // prevent, under the name of the thing it was meant to catch.
-            guardDao.feedRules().first()
-                .filter { it.builtIn && it.matchType == MatchType.VIEW_ID }
-                .filter { it.packageName == "com.instagram.android" && it.matchValue == "reel_viewer" }
+                .filter { it.builtIn && it.id !in shipped }
                 .forEach { guardDao.deleteRule(it.id) }
         }
 
@@ -461,6 +452,22 @@ class GuardRepository(
             //
             // Removed rather than renamed. There is no story rule to want here.
             rule(INSTAGRAM, "Reels, in the app", MatchType.VIEW_ID, "clips_viewer"),
+            // The reels opened from Search, which the Reels-tab rule never saw.
+            //
+            // Captured with Learn Mode on the phone rather than guessed, after a
+            // week of guessing at Instagram's naming and being wrong. The
+            // Explore reels viewer is built from `root_clips_layout` and
+            // `clips_linear_layout_container`; `clips_viewer` is the Reels tab
+            // and matches neither, so tapping a reel from Search scrolled freely
+            // while the tab three inches away was closed.
+            //
+            // The same capture offered `swipeable_nav_view_pager_inner_recycler_view`
+            // and `layout_container_swipeable`, both marked as would-block. Both
+            // are the main tab pager — they are on screen for the home feed and
+            // the profile too, so either would have closed the whole app. Naming
+            // the destination, not the container it happens to sit in.
+            rule(INSTAGRAM, "Reels from Search, in the app", MatchType.VIEW_ID, "root_clips_layout"),
+            rule(INSTAGRAM, "Reels from Search, in the app (list)", MatchType.VIEW_ID, "clips_linear_layout_container"),
             rule(INSTAGRAM, "Reels, in a browser", MatchType.URL, "instagram.com/reel"),
             rule(INSTAGRAM, "All of Instagram, in a browser", MatchType.URL, "instagram.com", enabled = false),
 
@@ -529,6 +536,10 @@ class GuardRepository(
          * Messenger, 8 added a rule set for any app at all, 9 added the Google
          * app, 10 added the custom-tab window.
          *
+         * 12 deletes any built-in row the app no longer ships, which is the
+         * general form of what 11 did by hand — and catches what 11 missed,
+         * a service still carrying another service's rules.
+         *
          * 11 throws most of that away. Eight generations of this were spent
          * answering "which app or window is this?", and every one of them was
          * beaten by a window nobody had listed. Rules now belong to the service
@@ -536,7 +547,7 @@ class GuardRepository(
          * left to enumerate — and the two sentinel groups that came out of the
          * old shape are deleted rather than left switched off.
          */
-        const val BUILT_IN_RULES_VERSION = 11
+        const val BUILT_IN_RULES_VERSION = 12
 
         /**
          * The browsers whose address bar genuinely spans the screen.

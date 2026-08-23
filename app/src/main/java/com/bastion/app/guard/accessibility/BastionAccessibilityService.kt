@@ -77,6 +77,22 @@ class BastionAccessibilityService : AccessibilityService() {
     @Volatile private var webCapableApps: Set<String> = emptySet()
 
     /**
+     * Every app the *system* considers a browser, asked rather than listed.
+     *
+     * This decides whether the width test is allowed to guess at an address bar
+     * — see FeedSurface.addressBarWidthCounts — and it used to be a hardcoded
+     * set of twenty package names. Which meant a browser downloaded tomorrow
+     * was not one: its omnibox spans the screen exactly like Chrome's, and
+     * Bastion refused to read it because nobody had typed its name into a list.
+     *
+     * An app that registers to open http and https with CATEGORY_BROWSABLE is a
+     * browser. That is not a heuristic, it is the definition Android itself uses
+     * to decide what goes in the "open with" list, and an ad-blocking browser
+     * off the store satisfies it on the day it is installed.
+     */
+    @Volatile private var browserApps: Set<String> = emptySet()
+
+    /**
      * The last settings seen, mirrored so [evaluate] stays synchronous.
      *
      * The whole object rather than a copied-out field: it used to keep only
@@ -177,7 +193,19 @@ class BastionAccessibilityService : AccessibilityService() {
         scope.launch {
             watchWords = runCatching { graph.guard.filterData().onScreen }.getOrDefault(emptyList())
         }
-        webCapableApps = findWebCapableApps()
+        refreshBrowsers()
+        // A browser installed after this point has to count immediately.
+        runCatching {
+            registerReceiver(
+                packagesChanged,
+                android.content.IntentFilter().apply {
+                    addAction(Intent.ACTION_PACKAGE_ADDED)
+                    addAction(Intent.ACTION_PACKAGE_REPLACED)
+                    addAction(Intent.ACTION_PACKAGE_REMOVED)
+                    addDataScheme("package")
+                },
+            )
+        }
     }
 
     /**
@@ -189,17 +217,39 @@ class BastionAccessibilityService : AccessibilityService() {
      * because the package manager will not name them, and they are the ones a
      * link most often arrives in.
      */
-    private fun findWebCapableApps(): Set<String> {
-        val known = GuardRepository.REAL_BROWSERS
-        val resolved: Set<String> = runCatching {
-            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("http://example.com"))
-                .addCategory(Intent.CATEGORY_BROWSABLE)
-            packageManager
-                .queryIntentActivities(intent, PackageManager.MATCH_ALL)
-                .mapNotNull { info -> info.activityInfo?.packageName }
-                .toSet()
-        }.getOrDefault(emptySet())
-        return known + resolved + IN_APP_WEB_VIEWS
+    private fun findBrowsers(): Set<String> {
+        val resolved = listOf("http://example.com", "https://example.com").flatMap { url ->
+            runCatching {
+                val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                    .addCategory(Intent.CATEGORY_BROWSABLE)
+                packageManager
+                    .queryIntentActivities(intent, PackageManager.MATCH_ALL)
+                    .mapNotNull { info -> info.activityInfo?.packageName }
+            }.getOrDefault(emptyList())
+        }.toSet()
+        // The shipped names stay as a floor, so a query that comes back empty on
+        // some OEM build cannot silently take every browser rule with it.
+        return resolved + GuardRepository.REAL_BROWSERS
+    }
+
+    /**
+     * Recomputed whenever the phone gains or loses an app.
+     *
+     * Computed once at connect, this went stale the moment a browser was
+     * installed: the new one was not a browser as far as Bastion was concerned
+     * until Guard was switched off and on again, which nobody does and nobody
+     * should have to. Installing a browser is exactly when a man is most likely
+     * to be looking for a way around this.
+     */
+    private fun refreshBrowsers() {
+        browserApps = findBrowsers()
+        webCapableApps = browserApps + IN_APP_WEB_VIEWS
+    }
+
+    private val packagesChanged = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context?, intent: Intent?) {
+            refreshBrowsers()
+        }
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -740,7 +790,7 @@ class BastionAccessibilityService : AccessibilityService() {
         val window = windowBoundsOf(root)
         val webViewTop = webViewTopIn(root)
         val widthCounts = FeedSurface.addressBarWidthCounts(
-            realBrowser = root.packageName?.toString() in GuardRepository.REAL_BROWSERS,
+            realBrowser = root.packageName?.toString() in browserApps,
             webViewFound = webViewTop > 0,
         )
         val queue = ArrayDeque<AccessibilityNodeInfo>()
@@ -954,7 +1004,7 @@ class BastionAccessibilityService : AccessibilityService() {
         // See FeedSurface.addressBarWidthCounts. Outside a real browser the
         // width guess would fire on a link somebody sent.
         val widthCounts = FeedSurface.addressBarWidthCounts(
-            realBrowser = root.packageName?.toString() in GuardRepository.REAL_BROWSERS,
+            realBrowser = root.packageName?.toString() in browserApps,
             webViewFound = webViewTop > 0,
         )
         val queue = ArrayDeque<AccessibilityNodeInfo>()
@@ -1410,6 +1460,9 @@ class BastionAccessibilityService : AccessibilityService() {
     override fun onDestroy() {
         running.value = false
         currentApp.value = null
+        // Registered in onServiceConnected; leaking it would log a warning on
+        // every rebind and hold a reference to a dead service.
+        runCatching { unregisterReceiver(packagesChanged) }
         // Announced before the scope dies, because the most likely reason this
         // service is going away is that someone just switched it off in system
         // settings — and a guard that disappears silently is worse than no guard
