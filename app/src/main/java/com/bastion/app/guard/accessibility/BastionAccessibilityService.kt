@@ -95,6 +95,9 @@ class BastionAccessibilityService : AccessibilityService() {
     /** When [findBrowsers] last ran, so a miss can decide whether to ask again. */
     @Volatile private var lastBrowserScan = 0L
 
+    /** When Learn Mode was armed, so it can disarm itself. 0 when it is off. */
+    @Volatile private var learnArmedAt = 0L
+
     /**
      * The last settings seen, mirrored so [evaluate] stays synchronous.
      *
@@ -637,9 +640,37 @@ class BastionAccessibilityService : AccessibilityService() {
         if (!force && now - lastScanAt < SCAN_THROTTLE_MS) return
         lastScanAt = now
 
+        // Learn Mode watches. It does not stand in for the guard.
+        //
+        // Two things were wrong with this, and both were found by using it.
+        //
+        // It used to `return` here, so arming Learn Mode switched off every
+        // block on the phone until the service was restarted. Nothing said so.
+        // A man who opened it to report a feed slipping through, and then put
+        // his phone down, was left with no guard at all -- and anyone who
+        // noticed had a one-tap bypass with no cooling-off attached to it.
+        // There is no conflict to trade away here: Learn Mode is for a screen
+        // that is *not* being blocked, so on the screen it exists for there is
+        // nothing to suppress, and on any other screen blocking is right.
+        //
+        // And it captured every screen, Bastion's own included. The
+        // instruction reads "open that feed, come back here, and pick it from
+        // the list" -- so coming back overwrote the capture with the sheet that
+        // was about to display it, and the answer was always about Bastion or
+        // about the launcher passed through on the way. Skipping our own
+        // package makes the instruction true.
         if (learnMode.value) {
-            captureViewIds()
-            return
+            if (learnArmedAt == 0L) learnArmedAt = now
+            if (now - learnArmedAt > LEARN_MODE_MAX_MS) {
+                // Disarmed on its own. It costs a tree walk per scan in every
+                // app, which is worth paying for a minute and not for a week.
+                learnMode.value = false
+                learnArmedAt = 0L
+            } else if (pkg != packageName) {
+                captureViewIds()
+            }
+        } else if (learnArmedAt != 0L) {
+            learnArmedAt = 0L
         }
 
         val guarded = guardedApps[pkg]
@@ -1684,6 +1715,9 @@ class BastionAccessibilityService : AccessibilityService() {
 
         /** How stale the browser list may get before a miss pays to refresh it. */
         private const val BROWSER_RESCAN_MS = 10 * 60 * 1000L
+
+        /** How long Learn Mode stays armed. Capturing a screen takes seconds. */
+        private const val LEARN_MODE_MAX_MS = 10 * 60 * 1000L
 
         private const val NOTIFICATION_GUARD_DOWN = 4401
         private const val HALF_HOUR = 30 * 60 * 1000L
