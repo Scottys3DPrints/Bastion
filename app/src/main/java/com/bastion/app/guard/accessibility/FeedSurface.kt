@@ -251,22 +251,40 @@ internal object FeedSurface {
      */
     fun isAddressBar(
         top: Int,
+        bottom: Int,
         width: Int,
         windowTop: Int,
         windowHeight: Int,
         windowWidth: Int,
     ): Boolean {
         if (windowHeight <= 0 || windowWidth <= 0) return false
-        return top <= windowTop + windowHeight * ADDRESS_BAR_BAND &&
-            width >= windowWidth * ADDRESS_BAR_WIDTH
+        if (width < windowWidth * ADDRESS_BAR_WIDTH) return false
+        // Either end of the window, not just the top.
+        //
+        // "The address bar is at the top" is true of Chrome and false of most
+        // of the browsers a man installs when he is looking for a way around
+        // this one. Every Firefox build — Focus, Mull, Fennec, IronFox — puts
+        // its toolbar at the bottom by default, and Brave, Opera and Samsung
+        // Internet all offer it as a setting. On any of them a wide omnibox
+        // full of the address failed this test for no reason except which edge
+        // it was drawn against, and every site rule went quiet.
+        //
+        // The width test is what carries the safety here, and it is unchanged:
+        // this is only ever consulted for a node already holding something that
+        // parses as a URL, already spanning half the window, and only in an app
+        // the phone calls a browser or one with a page open — see
+        // [addressBarWidthCounts]. A toolbar is a toolbar at either end.
+        val topBand = windowTop + windowHeight * ADDRESS_BAR_BAND
+        val bottomBand = windowTop + windowHeight * (1 - ADDRESS_BAR_BAND)
+        return top <= topBand || bottom >= bottomBand
     }
 
     /**
      * Whether a node sits in the browser's chrome rather than on the page.
      *
-     * The web view is the page. Everything drawn above its top edge is the
-     * toolbar the host app built around it, and an address shown there is the
-     * address of what is loaded — whatever size the app chose to draw it.
+     * The page is the engine view. Everything drawn outside it is the frame the
+     * host app built around it, and an address shown there is the address of
+     * what is loaded — whatever size the app chose to draw it.
      *
      * This is what the width test could not do. A real browser's omnibox spans
      * the screen, so half-width was a fair proxy for it; Messenger's in-app
@@ -276,11 +294,26 @@ internal object FeedSurface {
      * unblocked. Measuring against the web view instead asks the question that
      * actually matters — chrome or content — rather than guessing from size.
      *
-     * A link inside the page is below the web view's top edge and still fails,
-     * which keeps the protection the width test was there for.
+     * A link inside the page is between the two edges and still fails, which
+     * keeps the protection the width test was there for.
+     *
+     * Both edges, because this asked only about the top one and so could only
+     * ever see a toolbar drawn above the page. A browser with its toolbar at
+     * the bottom — which is most of the privacy and adblock builds, and an
+     * option in the rest — has its address in exactly the same relationship to
+     * the page, on the other side of it. Chrome or content is the question;
+     * which edge the chrome is against was never part of it.
      */
-    fun isBrowserChrome(nodeBottom: Int, webViewTop: Int): Boolean =
-        webViewTop > 0 && nodeBottom <= webViewTop
+    fun isBrowserChrome(
+        nodeTop: Int,
+        nodeBottom: Int,
+        pageTop: Int,
+        pageBottom: Int,
+    ): Boolean {
+        // Nothing found, or nothing with a size: the test cannot speak.
+        if (pageBottom <= pageTop) return false
+        return nodeBottom <= pageTop || nodeTop >= pageBottom
+    }
 
     /**
      * Whether the width test is allowed to stand in for an address bar here.
@@ -307,7 +340,10 @@ internal object FeedSurface {
     fun addressBarWidthCounts(realBrowser: Boolean, webViewFound: Boolean): Boolean =
         realBrowser || webViewFound
 
-    /** The top fifth of the window. Enough for a toolbar under a status bar. */
+    /**
+     * A fifth of the window at either end. Enough for a toolbar under a status
+     * bar, or one above a gesture bar.
+     */
     const val ADDRESS_BAR_BAND = 0.20
 
     /** Half the width. A link in a paragraph is rarely this wide, a bar always is. */

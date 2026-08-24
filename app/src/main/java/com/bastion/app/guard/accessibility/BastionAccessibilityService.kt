@@ -92,6 +92,9 @@ class BastionAccessibilityService : AccessibilityService() {
      */
     @Volatile private var browserApps: Set<String> = emptySet()
 
+    /** When [findBrowsers] last ran, so a miss can decide whether to ask again. */
+    @Volatile private var lastBrowserScan = 0L
+
     /**
      * The last settings seen, mirrored so [evaluate] stays synchronous.
      *
@@ -195,15 +198,25 @@ class BastionAccessibilityService : AccessibilityService() {
         }
         refreshBrowsers()
         // A browser installed after this point has to count immediately.
+        val filter = android.content.IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REPLACED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addDataScheme("package")
+        }
+        // Declared private rather than left to the default. From API 34 a
+        // receiver registered without saying which it is throws unless every
+        // action is a protected system broadcast, and "these three happen to be
+        // protected today" is a thing to state rather than to rely on. Wrapped
+        // anyway, because a throw here would take the whole service down at
+        // connect — and a stale browser list is a gap, while no guard at all is
+        // a hole.
         runCatching {
-            registerReceiver(
+            androidx.core.content.ContextCompat.registerReceiver(
+                this,
                 packagesChanged,
-                android.content.IntentFilter().apply {
-                    addAction(Intent.ACTION_PACKAGE_ADDED)
-                    addAction(Intent.ACTION_PACKAGE_REPLACED)
-                    addAction(Intent.ACTION_PACKAGE_REMOVED)
-                    addDataScheme("package")
-                },
+                filter,
+                androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
             )
         }
     }
@@ -244,6 +257,27 @@ class BastionAccessibilityService : AccessibilityService() {
     private fun refreshBrowsers() {
         browserApps = findBrowsers()
         webCapableApps = browserApps + IN_APP_WEB_VIEWS
+        lastBrowserScan = System.currentTimeMillis()
+    }
+
+    /**
+     * Whether this app can show a page, asking again if the answer is old.
+     *
+     * The broadcast is the fast path and this is the floor under it. Registering
+     * a receiver can fail, an OEM can decline to deliver it, and either way the
+     * failure is silent and permanent: a browser installed afterwards is not a
+     * browser as far as Bastion is concerned until Guard is switched off and on
+     * again, which nobody does. Recomputing on a miss, at most once every ten
+     * minutes, means the worst case is a short window rather than forever.
+     *
+     * Only on the miss path, so the ordinary case — a known browser, or an app
+     * that is obviously not one — costs a set lookup and nothing else.
+     */
+    private fun canShowPage(pkg: String): Boolean {
+        if (pkg in webCapableApps) return true
+        if (System.currentTimeMillis() - lastBrowserScan < BROWSER_RESCAN_MS) return false
+        refreshBrowsers()
+        return pkg in webCapableApps
     }
 
     private val packagesChanged = object : android.content.BroadcastReceiver() {
@@ -788,10 +822,10 @@ class BastionAccessibilityService : AccessibilityService() {
      */
     private fun showsYouTube(root: AccessibilityNodeInfo): Boolean {
         val window = windowBoundsOf(root)
-        val webViewTop = webViewTopIn(root)
+        val page = pageBoundsIn(root)
         val widthCounts = FeedSurface.addressBarWidthCounts(
             realBrowser = root.packageName?.toString() in browserApps,
-            webViewFound = webViewTop > 0,
+            webViewFound = page.height() > 0,
         )
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
@@ -802,7 +836,7 @@ class BastionAccessibilityService : AccessibilityService() {
                 val node = queue.removeFirst()
                 visited++
                 val id = node.viewIdResourceName?.substringAfterLast('/')
-                if (isAddressBarNode(node, id, window, webViewTop, widthCounts)) {
+                if (isAddressBarNode(node, id, window, page, widthCounts)) {
                     val text = node.text?.toString()
                     if (text != null && FeedSurface.urlMatches(text, "youtube.com")) return true
                 }
@@ -893,7 +927,7 @@ class BastionAccessibilityService : AccessibilityService() {
      * because a false positive here costs exactly what it costs there.
      */
     private fun checkUniversalFeed(pkg: String) {
-        if (pkg !in webCapableApps) return
+        if (!canShowPage(pkg)) return
         // Addresses only, and this is the line that was crossed.
         //
         // This runs for apps that are *not* guarded, so it is how a browser
@@ -999,13 +1033,14 @@ class BastionAccessibilityService : AccessibilityService() {
         val window = windowBoundsOf(root)
         // Only when a URL rule could fire. An ordinary app with view-id rules
         // has no web view and should not pay for a walk looking for one.
-        val webViewTop =
-            if (rules.any { it.matchType == MatchType.URL }) webViewTopIn(root) else 0
+        val page =
+            if (rules.any { it.matchType == MatchType.URL }) pageBoundsIn(root)
+            else android.graphics.Rect()
         // See FeedSurface.addressBarWidthCounts. Outside a real browser the
         // width guess would fire on a link somebody sent.
         val widthCounts = FeedSurface.addressBarWidthCounts(
             realBrowser = root.packageName?.toString() in browserApps,
-            webViewFound = webViewTop > 0,
+            webViewFound = page.height() > 0,
         )
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
@@ -1078,7 +1113,7 @@ class BastionAccessibilityService : AccessibilityService() {
                         // guarded app into one that reads its own text.
                         MatchType.TITLE -> false
                         MatchType.URL ->
-                            isAddressBarNode(node, idSegment, window, webViewTop, widthCounts) &&
+                            isAddressBarNode(node, idSegment, window, page, widthCounts) &&
                                 node.text?.toString()
                                     ?.let { FeedSurface.urlMatches(it, rule.matchValue) } == true
                     }
@@ -1186,7 +1221,7 @@ class BastionAccessibilityService : AccessibilityService() {
         node: AccessibilityNodeInfo,
         idSegment: String?,
         window: android.graphics.Rect,
-        webViewTop: Int,
+        page: android.graphics.Rect,
         widthCounts: Boolean,
     ): Boolean {
         val text = node.text?.toString() ?: return false
@@ -1194,14 +1229,17 @@ class BastionAccessibilityService : AccessibilityService() {
         if (idSegment != null && idSegment in ADDRESS_BAR_IDS) return true
 
         val bounds = android.graphics.Rect().also { node.getBoundsInScreen(it) }
-        // Above the web view is the toolbar the host app drew, whatever it named
+        // Outside the page is the frame the host app drew, whatever it named
         // the label or however small it made it. This is the one that catches
         // the in-app browsers; the width test below only ever caught real ones.
-        if (FeedSurface.isBrowserChrome(bounds.bottom, webViewTop)) return true
+        if (FeedSurface.isBrowserChrome(bounds.top, bounds.bottom, page.top, page.bottom)) {
+            return true
+        }
         if (!widthCounts) return false
 
         return FeedSurface.isAddressBar(
             top = bounds.top,
+            bottom = bounds.bottom,
             width = bounds.width(),
             windowTop = window.top,
             windowHeight = window.height(),
@@ -1220,7 +1258,7 @@ class BastionAccessibilityService : AccessibilityService() {
     private fun seenAddresses(
         root: AccessibilityNodeInfo,
         window: android.graphics.Rect,
-        webViewTop: Int,
+        page: android.graphics.Rect,
     ): List<SeenAddress> {
         val out = LinkedHashMap<String, SeenAddress>()
         val queue = ArrayDeque<AccessibilityNodeInfo>()
@@ -1236,9 +1274,12 @@ class BastionAccessibilityService : AccessibilityService() {
                     val id = node.viewIdResourceName?.substringAfterLast('/')
                     val bounds = android.graphics.Rect().also { node.getBoundsInScreen(it) }
                     val byId = id != null && id in ADDRESS_BAR_IDS
-                    val byChrome = FeedSurface.isBrowserChrome(bounds.bottom, webViewTop)
+                    val byChrome = FeedSurface.isBrowserChrome(
+                        bounds.top, bounds.bottom, page.top, page.bottom,
+                    )
                     val byWidth = FeedSurface.isAddressBar(
                         top = bounds.top,
+                        bottom = bounds.bottom,
                         width = bounds.width(),
                         windowTop = window.top,
                         windowHeight = window.height(),
@@ -1249,8 +1290,8 @@ class BastionAccessibilityService : AccessibilityService() {
                         isAddressBar = byId || byChrome || byWidth,
                         reason = when {
                             byId -> "named as the address bar"
-                            byChrome -> "above the page"
-                            byWidth -> "a wide bar at the top"
+                            byChrome -> "outside the page"
+                            byWidth -> "a wide bar at one end"
                             else -> "on the page, treated as a link"
                         },
                     )
@@ -1266,12 +1307,27 @@ class BastionAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * The top edge of the page, so the toolbar above it can be told apart.
+     * Where the page is drawn, so the frame around it can be told apart.
+     *
+     * A rectangle rather than an edge, because a toolbar can be above the page
+     * or below it and both are the frame. Empty when nothing was found, which
+     * every caller reads as "cannot say".
      *
      * Its own bounded walk, run only when a URL rule is actually in play, so
      * the common case of a feed rule in an ordinary app pays nothing for it.
+     *
+     * ## Not only android.webkit.WebView
+     *
+     * Matching on the class name containing "WebView" covers Chrome and every
+     * Chromium fork, and misses every Firefox one - Focus, Mull, Fennec and
+     * IronFox all render through GeckoView, which has no WebView anywhere in
+     * its name. In those browsers no page was ever found, so the chrome test
+     * could not speak and an address had to be recognised by width and
+     * position alone. Naming the engines as well as the class keeps this from
+     * being one more list of specific apps: an engine view announces itself,
+     * whoever wrapped it.
      */
-    private fun webViewTopIn(root: AccessibilityNodeInfo): Int {
+    private fun pageBoundsIn(root: AccessibilityNodeInfo): android.graphics.Rect {
         val queue = ArrayDeque<AccessibilityNodeInfo>()
         queue.add(root)
         val borrowed = mutableListOf<AccessibilityNodeInfo>()
@@ -1281,14 +1337,18 @@ class BastionAccessibilityService : AccessibilityService() {
                 val node = queue.removeFirst()
                 visited++
                 val cls = node.className?.toString().orEmpty()
-                if (cls.contains("WebView", ignoreCase = true)) {
-                    return android.graphics.Rect().also { node.getBoundsInScreen(it) }.top
+                val id = node.viewIdResourceName?.substringAfterLast('/')
+                val isPage = cls.contains("WebView", ignoreCase = true) ||
+                    cls.contains("GeckoView", ignoreCase = true) ||
+                    (id != null && id in ENGINE_VIEW_IDS)
+                if (isPage) {
+                    return android.graphics.Rect().also { node.getBoundsInScreen(it) }
                 }
                 for (i in 0 until node.childCount) {
                     node.getChild(i)?.let { queue.add(it); borrowed.add(it) }
                 }
             }
-            return 0
+            return android.graphics.Rect()
         } finally {
             recycleAll(borrowed)
         }
@@ -1392,9 +1452,9 @@ class BastionAccessibilityService : AccessibilityService() {
         // actually had in front of it. Guessing from a laptop is how a fix ships
         // that cannot work; this turns "still not working" into a sentence
         // naming the link that is broken.
-        val webViewTop = webViewTopIn(root)
+        val page = pageBoundsIn(root)
         val addresses = if (rules.any { it.matchType == MatchType.URL }) {
-            seenAddresses(root, windowBoundsOf(root), webViewTop)
+            seenAddresses(root, windowBoundsOf(root), page)
         } else emptyList()
 
         learnedIds.value = LearnCapture(
@@ -1411,7 +1471,7 @@ class BastionAccessibilityService : AccessibilityService() {
             guardedAs = guardedApps[pkg]?.mode?.name,
             ruleCount = rules.size,
             urlRuleCount = rules.count { it.matchType == MatchType.URL },
-            webViewFound = webViewTop > 0,
+            webViewFound = page.height() > 0,
             addresses = addresses,
         )
     }
@@ -1599,7 +1659,31 @@ class BastionAccessibilityService : AccessibilityService() {
             "omnibarTextInput",
             "search_bar",
             "sanitized_url_text",
+            // Firefox Focus, Opera, and the Chromium forks that renamed it.
+            // Consulted only for a node whose text already parses as a URL, so
+            // a broad name here cannot claim something that is not an address.
+            "display_url",
+            "url_field",
+            "urlbar",
+            "address_bar",
         )
+
+        /**
+         * A page, by the name its renderer gives itself.
+         *
+         * Class name catches WebView and GeckoView; these catch the wrappers
+         * that expose the engine under an identifier of their own.
+         */
+        private val ENGINE_VIEW_IDS = setOf(
+            "engineView",
+            "mozac_browser_engineView",
+            "webview",
+            "web_view",
+            "browser_view",
+        )
+
+        /** How stale the browser list may get before a miss pays to refresh it. */
+        private const val BROWSER_RESCAN_MS = 10 * 60 * 1000L
 
         private const val NOTIFICATION_GUARD_DOWN = 4401
         private const val HALF_HOUR = 30 * 60 * 1000L

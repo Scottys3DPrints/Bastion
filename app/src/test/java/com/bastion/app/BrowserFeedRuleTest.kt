@@ -174,7 +174,28 @@ class BrowserFeedRuleTest {
     fun `a bar at the top spanning the width is an address bar`() {
         assertTrue(
             FeedSurface.isAddressBar(
-                top = 120, width = 900, windowTop = 0, windowHeight = 2400, windowWidth = 1080,
+                top = 120, bottom = 260, width = 900,
+                windowTop = 0, windowHeight = 2400, windowWidth = 1080,
+            )
+        )
+    }
+
+    /**
+     * The other end of the window, which is where most of the browsers a man
+     * downloads keep it.
+     *
+     * Every Firefox build puts its toolbar at the bottom by default and Brave,
+     * Opera and Samsung Internet all offer it. Before this, a full-width
+     * omnibox holding the address failed for no reason except which edge it
+     * was drawn against, so every site rule went quiet in exactly the browser
+     * somebody installs to get around the one in Chrome.
+     */
+    @Test
+    fun `a bar at the bottom spanning the width is an address bar`() {
+        assertTrue(
+            FeedSurface.isAddressBar(
+                top = 2180, bottom = 2320, width = 900,
+                windowTop = 0, windowHeight = 2400, windowWidth = 1080,
             )
         )
     }
@@ -188,20 +209,30 @@ class BrowserFeedRuleTest {
     fun `a link in the middle of a page is not an address bar`() {
         assertFalse(
             FeedSurface.isAddressBar(
-                top = 1400, width = 900, windowTop = 0, windowHeight = 2400, windowWidth = 1080,
+                top = 1400, bottom = 1460, width = 900,
+                windowTop = 0, windowHeight = 2400, windowWidth = 1080,
             )
         )
         // Nor a narrow one at the top, which is a chip or a tab rather than a bar.
         assertFalse(
             FeedSurface.isAddressBar(
-                top = 120, width = 300, windowTop = 0, windowHeight = 2400, windowWidth = 1080,
+                top = 120, bottom = 260, width = 300,
+                windowTop = 0, windowHeight = 2400, windowWidth = 1080,
+            )
+        )
+        // Nor a narrow one at the bottom. Opening the second band must not cost
+        // the width test, which is the whole of the safety here.
+        assertFalse(
+            FeedSurface.isAddressBar(
+                top = 2180, bottom = 2320, width = 300,
+                windowTop = 0, windowHeight = 2400, windowWidth = 1080,
             )
         )
     }
 
     @Test
     fun `a window with no size never matches`() {
-        assertFalse(FeedSurface.isAddressBar(0, 900, 0, 0, 0))
+        assertFalse(FeedSurface.isAddressBar(0, 40, 900, 0, 0, 0))
     }
 
     /**
@@ -217,11 +248,44 @@ class BrowserFeedRuleTest {
     @Test
     fun `a narrow label above the web view is still the address`() {
         // A 300px-wide domain label at y=150, with the page starting at y=300.
-        assertTrue(FeedSurface.isBrowserChrome(nodeBottom = 220, webViewTop = 300))
+        assertTrue(
+            FeedSurface.isBrowserChrome(
+                nodeTop = 150, nodeBottom = 220, pageTop = 300, pageBottom = 2400,
+            )
+        )
         // And the width test alone would have rejected exactly that node.
         assertFalse(
             FeedSurface.isAddressBar(
-                top = 150, width = 300, windowTop = 0, windowHeight = 2400, windowWidth = 1080,
+                top = 150, bottom = 220, width = 300,
+                windowTop = 0, windowHeight = 2400, windowWidth = 1080,
+            )
+        )
+    }
+
+    /**
+     * A toolbar drawn under the page is the frame just as much as one drawn
+     * over it.
+     *
+     * This test used to ask only about the top edge, so a browser with its
+     * toolbar at the bottom had its address counted as page content - a link
+     * somebody put on the page - and no site rule could ever fire there.
+     */
+    @Test
+    fun `a label below the page is still the address`() {
+        assertTrue(
+            FeedSurface.isBrowserChrome(
+                nodeTop = 2200, nodeBottom = 2300, pageTop = 200, pageBottom = 2150,
+            )
+        )
+        // Exactly at the boundary counts as chrome; one pixel above does not.
+        assertTrue(
+            FeedSurface.isBrowserChrome(
+                nodeTop = 2150, nodeBottom = 2300, pageTop = 200, pageBottom = 2150,
+            )
+        )
+        assertFalse(
+            FeedSurface.isBrowserChrome(
+                nodeTop = 2149, nodeBottom = 2300, pageTop = 200, pageBottom = 2150,
             )
         )
     }
@@ -232,17 +296,33 @@ class BrowserFeedRuleTest {
      */
     @Test
     fun `a link on the page is not the address`() {
-        assertFalse(FeedSurface.isBrowserChrome(nodeBottom = 900, webViewTop = 300))
+        assertFalse(
+            FeedSurface.isBrowserChrome(
+                nodeTop = 850, nodeBottom = 900, pageTop = 300, pageBottom = 2400,
+            )
+        )
         // Exactly at the boundary counts as chrome; one pixel below does not.
-        assertTrue(FeedSurface.isBrowserChrome(nodeBottom = 300, webViewTop = 300))
-        assertFalse(FeedSurface.isBrowserChrome(nodeBottom = 301, webViewTop = 300))
+        assertTrue(
+            FeedSurface.isBrowserChrome(
+                nodeTop = 250, nodeBottom = 300, pageTop = 300, pageBottom = 2400,
+            )
+        )
+        assertFalse(
+            FeedSurface.isBrowserChrome(
+                nodeTop = 251, nodeBottom = 301, pageTop = 300, pageBottom = 2400,
+            )
+        )
     }
 
-    /** No web view found means the test cannot speak, and says nothing. */
+    /** No page found means the test cannot speak, and says nothing. */
     @Test
-    fun `without a web view the chrome test never matches`() {
-        assertFalse(FeedSurface.isBrowserChrome(nodeBottom = 10, webViewTop = 0))
-        assertFalse(FeedSurface.isBrowserChrome(nodeBottom = 0, webViewTop = 0))
+    fun `without a page the chrome test never matches`() {
+        assertFalse(
+            FeedSurface.isBrowserChrome(nodeTop = 0, nodeBottom = 10, pageTop = 0, pageBottom = 0)
+        )
+        assertFalse(
+            FeedSurface.isBrowserChrome(nodeTop = 0, nodeBottom = 0, pageTop = 0, pageBottom = 0)
+        )
     }
 
     // --- the width guess, withdrawn where it is unsafe ------------------------
