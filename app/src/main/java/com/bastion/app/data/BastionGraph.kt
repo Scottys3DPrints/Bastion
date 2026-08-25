@@ -7,6 +7,7 @@ import com.bastion.app.data.prefs.SettingsStore
 import com.bastion.app.data.repo.GuardRepository
 import com.bastion.app.data.repo.GrowthRepository
 import com.bastion.app.data.repo.JourneyRepository
+import com.bastion.app.data.repo.PolicyRepository
 import com.bastion.app.data.repo.SocialRepository
 
 /**
@@ -44,11 +45,16 @@ class BastionGraph(context: Context) {
         )
     }
 
+    val policy: PolicyRepository by lazy {
+        PolicyRepository(database.policyDao())
+    }
+
     val guard: GuardRepository by lazy {
         GuardRepository(
             guardDao = database.guardDao(),
             content = content,
             settings = settings,
+            policy = policy,
         )
     }
 
@@ -67,6 +73,7 @@ class BastionGraph(context: Context) {
             covenantDao = database.covenantDao(),
             socialDao = database.socialDao(),
             settings = settings,
+            policy = policy,
         )
     }
 

@@ -292,7 +292,24 @@ data class GuardedAppEntity(
  *
  * Stored by name (BastionConverters), so adding a value needs no migration.
  */
-enum class MatchType { VIEW_ID, TEXT, CONTENT_DESC, URL, TITLE }
+enum class MatchType {
+    VIEW_ID,
+    TEXT,
+    CONTENT_DESC,
+    URL,
+    TITLE,
+
+    /**
+     * The app itself is the destination.
+     *
+     * A dating app has no feed screen worth naming — being in it is the whole
+     * of the evidence. v1 expressed that with a separate table (`guarded_app` at
+     * `FULL`), which is why "block this app" and "block this screen" could never
+     * be weighed against each other. As a signal it is just the coarsest kind of
+     * evidence there is, and the same engine ranks it with the rest.
+     */
+    PACKAGE,
+}
 
 /**
  * A rule that identifies one specific screen inside another app — the Reels

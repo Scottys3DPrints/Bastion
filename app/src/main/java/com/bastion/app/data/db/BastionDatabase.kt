@@ -45,6 +45,25 @@ class BastionConverters {
     @TypeConverter fun logStatusTo(value: LogStatus): String = value.name
     @TypeConverter fun logStatusFrom(value: String): LogStatus =
         runCatching { LogStatus.valueOf(value) }.getOrDefault(LogStatus.DONE)
+
+    // Protection Model v2. Each reads tolerantly and fails to the safe side,
+    // which for a guard means the *stricter* side: an unreadable target or
+    // condition must never widen what a policy covers or make it always-live.
+    @TypeConverter fun targetTypeTo(value: TargetType): String = value.name
+    @TypeConverter fun targetTypeFrom(value: String): TargetType =
+        runCatching { TargetType.valueOf(value) }.getOrDefault(TargetType.APP)
+
+    @TypeConverter fun conditionTypeTo(value: ConditionType): String = value.name
+    @TypeConverter fun conditionTypeFrom(value: String): ConditionType =
+        runCatching { ConditionType.valueOf(value) }.getOrDefault(ConditionType.ALWAYS)
+
+    @TypeConverter fun policySourceTo(value: PolicySource): String = value.name
+    @TypeConverter fun policySourceFrom(value: String): PolicySource =
+        runCatching { PolicySource.valueOf(value) }.getOrDefault(PolicySource.DEFAULT)
+
+    @TypeConverter fun outcomeTo(value: Outcome): String = value.name
+    @TypeConverter fun outcomeFrom(value: String): Outcome =
+        runCatching { Outcome.valueOf(value) }.getOrDefault(Outcome.ARRIVED)
 }
 
 @Database(
@@ -68,8 +87,13 @@ class BastionConverters {
         GuardChangeRequestEntity::class,
         AppUsageEntity::class,
         FeedSeenEntity::class,
+        CategoryEntity::class,
+        SurfaceEntity::class,
+        SignalEntity::class,
+        PolicyEntity::class,
+        PolicyEventEntity::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = true,
 )
 @TypeConverters(BastionConverters::class)
@@ -83,6 +107,7 @@ abstract class BastionDatabase : RoomDatabase() {
     abstract fun socialDao(): SocialDao
     abstract fun backupDao(): BackupDao
     abstract fun feedDao(): FeedDao
+    abstract fun policyDao(): PolicyDao
 
     companion object {
         /**

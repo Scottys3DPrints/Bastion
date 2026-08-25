@@ -10,10 +10,21 @@ import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import com.bastion.app.data.BastionGraph
 import com.bastion.app.data.db.BlockMode
-import com.bastion.app.data.db.FeedRuleEntity
 import com.bastion.app.data.db.GuardedAppEntity
+import com.bastion.app.data.db.CategoryEntity
+import com.bastion.app.data.db.Confidence
 import com.bastion.app.data.db.MatchType
+import com.bastion.app.data.db.Outcome
+import com.bastion.app.data.db.PolicyEntity
+import com.bastion.app.data.db.Response
+import com.bastion.app.data.db.SignalEntity
+import com.bastion.app.data.db.SurfaceEntity
+import com.bastion.app.data.db.TargetType
 import com.bastion.app.data.repo.GuardRepository
+import com.bastion.app.guard.policy.Decision
+import com.bastion.app.guard.policy.PolicyContext
+import com.bastion.app.guard.policy.PolicyEngine
+import com.bastion.app.guard.policy.ResolvedSurface
 import com.bastion.app.feature.panic.PanicActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -51,7 +62,6 @@ class BastionAccessibilityService : AccessibilityService() {
     private lateinit var shield: ShieldOverlay
 
     @Volatile private var guardedApps: Map<String, GuardedAppEntity> = emptyMap()
-    @Volatile private var rulesByPackage: Map<String, List<FeedRuleEntity>> = emptyMap()
 
     /**
      * The words that mark a video title as one to close, mirrored so the scan
@@ -98,6 +108,30 @@ class BastionAccessibilityService : AccessibilityService() {
     /** When Learn Mode was armed, so it can disarm itself. 0 when it is off. */
     @Volatile private var learnArmedAt = 0L
 
+    // --- Protection Model v2 ---------------------------------------------
+    //
+    // The decision used to be made here, inline, tangled with lockdown state,
+    // learn mode, the veil and grayscale. It is now four pieces of data and one
+    // call to a pure function, which is the whole point: the same decision can
+    // be argued with on a laptop, and every hard bug this file has produced was
+    // one nobody could reproduce without a phone in a hand.
+
+    @Volatile private var signals: List<SignalEntity> = emptyList()
+    @Volatile private var policies: List<PolicyEntity> = emptyList()
+    @Volatile private var surfacesById: Map<String, SurfaceEntity> = emptyMap()
+    @Volatile private var categoriesByKey: Map<String, CategoryEntity> = emptyMap()
+
+    /**
+     * Today's foreground time per package, so a budget can be judged without a
+     * database read in the middle of a decision.
+     *
+     * Loaded once when the guard connects and kept current as time is recorded.
+     * Reading it during the decision would either make the engine impure or make
+     * the block asynchronous, and an asynchronous block is one that arrives
+     * after the scroll.
+     */
+    @Volatile private var usageToday: Map<String, Long> = emptyMap()
+
     /**
      * The last settings seen, mirrored so [evaluate] stays synchronous.
      *
@@ -142,27 +176,13 @@ class BastionAccessibilityService : AccessibilityService() {
     private var foregroundClassName: String? = null
 
     /**
-     * Whether the window in front is a browser custom tab.
+     * Whether reading titles is switched on at all; see [checkWatchTitles].
      *
-     * Kept beside the class it is derived from because it has to survive
-     * content-changed events, which carry the class of the view that changed
-     * rather than of the window it changed in. See the window-state branch above.
+     * Derived from the signals rather than kept as a flag of its own, so there
+     * is one answer to "is this on" and not two that can disagree.
      */
-    /**
-     * Every enabled address rule, from every service, kept flat.
-     *
-     * Address rules are not scoped to an app and never should have been. A URL
-     * is the same URL in Chrome, in the Google app's tab, in the window a link
-     * opens inside another app — and eight generations of rules were spent
-     * discovering that the browser which matters is always the one nobody
-     * listed. So there is no list any more: these apply wherever an address bar
-     * is found, and what keeps that safe is what an address bar has to look
-     * like rather than whose app it is in.
-     */
-    @Volatile private var urlRules: List<FeedRuleEntity> = emptyList()
-
-    /** Whether a title rule is switched on; see [checkWatchTitles]. */
-    @Volatile private var titleRuleOn = false
+    private val titleRuleOn: Boolean
+        get() = signals.any { it.matchType == MatchType.TITLE }
 
     /** Asked before every re-raise, so the wall never races the lock screen. */
     private val keyguard: android.app.KeyguardManager? by lazy {
@@ -186,12 +206,24 @@ class BastionAccessibilityService : AccessibilityService() {
             }
         }
         scope.launch {
-            graph.guard.feedRules.collect { rules ->
-                val on = rules.filter { it.enabled }
-                rulesByPackage = on.groupBy { it.packageName }
-                urlRules = on.filter { it.matchType == MatchType.URL }
-                titleRuleOn = on.any { it.matchType == MatchType.TITLE }
+            graph.policy.signals.collect { rows -> signals = rows.filter { it.enabled } }
+        }
+        scope.launch {
+            graph.policy.policies.collect { rows -> policies = rows.filter { it.enabled } }
+        }
+        scope.launch {
+            graph.policy.surfaces.collect { rows -> surfacesById = rows.associateBy { it.id } }
+        }
+        scope.launch {
+            graph.policy.categories.collect { rows ->
+                categoriesByKey = rows.associateBy { it.key }
             }
+        }
+        scope.launch {
+            usageToday = runCatching {
+                graph.database.guardDao().usageOn(LocalDate.now().toEpochDay())
+                    .associate { it.packageName to it.foregroundMillis }
+            }.getOrDefault(emptyMap())
         }
         scope.launch {
             graph.settings.settings.collect { settings = it }
@@ -625,6 +657,9 @@ class BastionAccessibilityService : AccessibilityService() {
             val day = LocalDate.now().toEpochDay()
             val dao = graph.database.guardDao()
             val existing = dao.usage(pkg, day)
+            // Mirrored in memory as it is written, so a budget policy sees the
+            // same number the database holds without waiting for a read.
+            usageToday = usageToday + (pkg to (existing?.foregroundMillis ?: 0L) + elapsed)
             dao.upsertUsage(
                 com.bastion.app.data.db.AppUsageEntity(
                     packageName = pkg,
@@ -674,42 +709,19 @@ class BastionAccessibilityService : AccessibilityService() {
         }
 
         val guarded = guardedApps[pkg]
-        if (guarded == null) {
-            // Leaving a guarded app has to take the veil with it. This branch
-            // was a bare `?: return`, which was harmless only for as long as the
-            // veil was never shown at all; the moment it works, an unguarded
-            // return would leave a translucent sheet over the home screen and
-            // every other app, with no way to clear it but killing the service.
-            shield.hideDimVeil()
-
-            // A browser does not have to be guarded for the feed rules to apply
-            // to it, and requiring that was the hidden condition that made
-            // "every browser is covered" untrue.
-            //
-            // Guarding an app is a statement about the app — close Instagram's
-            // feed, leave its messages — and nobody thinks of the Google app
-            // that way. He is not trying to limit the Google app. He is trying
-            // to stop reels, and reels reached it through a web view he never
-            // thought to name. Making him name it is the same enumeration
-            // problem one layer up, just better hidden.
-            //
-            // So the universal address rules run here on their own. They are
-            // safe to point at an app nobody chose because of what they require:
-            // a string that is an address rather than a sentence, sitting where
-            // an address bar sits, matching a path a man asked to have closed.
-            checkUniversalFeed(pkg)
-            // Unguarded too, because a browser is where a man watches YouTube
-            // without ever having guarded anything.
-            checkWatchTitles(pkg, "this page")
-            return
-        }
+        // Leaving a guarded app has to take the veil with it. This was a bare
+        // `?: return`, harmless only for as long as the veil was never shown at
+        // all; the moment it works, an unguarded return leaves a translucent
+        // sheet over the home screen and every other app with no way to clear it
+        // but killing the service.
+        if (guarded == null) shield.hideDimVeil()
 
         // During a lockdown every guarded app is fully closed, whatever its own
-        // mode says. A break-glass plan that still let the feed-only apps open
-        // would not be worth pressing.
-        if (com.bastion.app.guard.lockdown.Lockdown.isActive(settings)) {
-            // Seconds below a minute, so a short rehearsal does not tell the
-            // user "0m left" for its entire duration.
+        // policies say. A break-glass plan that still let the feed-only apps
+        // open would not be worth pressing.
+        if (guarded != null && com.bastion.app.guard.lockdown.Lockdown.isActive(settings)) {
+            // Seconds below a minute, so a short lockdown does not report "0m
+            // left" for its entire duration.
             val left = com.bastion.app.guard.lockdown.Lockdown.remainingSeconds(settings)
             val remaining = when {
                 left >= 3600 -> "${left / 3600}h ${(left % 3600) / 60}m"
@@ -720,21 +732,23 @@ class BastionAccessibilityService : AccessibilityService() {
             return
         }
 
-        when (guarded.mode) {
-            BlockMode.FULL -> blockApp(guarded, "Closed for now.")
-            BlockMode.SCHEDULE -> if (withinWindow(guarded.scheduleStart, guarded.scheduleEnd)) {
-                blockApp(guarded, "Protected time.")
-            }
-            BlockMode.TIME_LIMIT -> checkTimeLimit(guarded)
-            BlockMode.FEED_ONLY -> checkFeed(pkg, guarded)
-        }
+        // The whole decision, for every app on the phone.
+        //
+        // There is no longer a branch here on whether the app is guarded, and
+        // that is the point. Guarding an app was doing two unrelated jobs: it
+        // said what a man wanted closed, and it decided whether Bastion looked
+        // at the screen at all. The second was never something he was choosing —
+        // nobody thinks of the Google app as an app to limit; he was trying to
+        // stop reels, and reels reached him through a web view he never thought
+        // to name. What applies where is now a property of the evidence, and
+        // whether it fires is a property of a policy.
+        checkPolicies(pkg, guarded)
 
-        // Whatever the mode says. Feed-only closes Shorts and leaves the watch
-        // page alone, which is the right shape for a feed rule and the wrong
-        // shape for this: a full-length video is not a feed, and it is where
-        // the thing a man is actually avoiding sits. The other modes close the
-        // app outright and never reach here anyway.
-        checkWatchTitles(pkg, guarded.label)
+        // Whatever else was decided. Feed policies close Shorts and leave the
+        // watch page alone, which is the right shape for a feed and the wrong
+        // shape for this: a full-length video is not a feed, and it is where the
+        // thing a man is actually avoiding sits.
+        checkWatchTitles(pkg, guarded?.label ?: "this page")
 
         // Reads the global setting, which is the one the UI actually writes.
         //
@@ -743,17 +757,8 @@ class BastionAccessibilityService : AccessibilityService() {
         // the veil had never once been shown. Meanwhile the "Temptation
         // dampening" switch, and the grayscale step of the break-glass plan,
         // both wrote a global preference that nothing read.
-        if (settings.grayscaleEnabled) shield.showDimVeil() else shield.hideDimVeil()
-    }
-
-    private fun checkTimeLimit(app: GuardedAppEntity) {
-        scope.launch {
-            val used = graph.database.guardDao()
-                .usage(app.packageName, LocalDate.now().toEpochDay())?.foregroundMillis ?: 0L
-            if (used >= app.timeLimitMinutes * 60_000L) {
-                blockApp(app, "${app.timeLimitMinutes} minutes used today.")
-            }
-        }
+        if (guarded != null && settings.grayscaleEnabled) shield.showDimVeil()
+        else if (guarded != null) shield.hideDimVeil()
     }
 
     private fun blockApp(app: GuardedAppEntity, reason: String) {
@@ -915,78 +920,145 @@ class BastionAccessibilityService : AccessibilityService() {
     }
 
     /**
-     * The rules that apply to an app: its own, or the universal set.
+     * The evidence that could possibly apply in this app.
      *
-     * A fallback rather than a union, and that is the part worth stating. If an
-     * app has rules of its own then its switches on the Guard screen are the
-     * whole truth about it — turning one off turns it off, with no second copy
-     * of the same rule quietly still on under another name. An app nobody wrote
-     * rules for gets the universal set instead, which is what makes "every
-     * browser" true rather than "every browser I happened to list".
+     * Two kinds, and the difference between them is the whole reason the old
+     * model kept losing. A signal scoped to a package is a fact about that
+     * app's layout and applies only there. A signal with no scope is a fact
+     * about a destination — an address — and applies wherever an address can be
+     * read. There is no list of browsers here, and no question about which
+     * window this is, because neither was ever the right question.
+     *
+     * Being in scope is not the same as being live: whether anything happens is
+     * decided afterwards, by the policies, in [PolicyEngine].
      */
-    private fun rulesFor(pkg: String): List<FeedRuleEntity> =
-        rulesByPackage[pkg].orEmpty().filter { it.matchType == MatchType.VIEW_ID } + activeUrlRules()
+    private fun signalsFor(pkg: String): List<SignalEntity> =
+        signals.filter { it.scopePackage == null || it.scopePackage == pkg }
 
     /**
-     * Address rules for the services a man has actually guarded.
+     * One decision, for every app, guarded or not.
      *
-     * The one question that decides whether Bastion touches something at all,
-     * and it had drifted into being asked in three places with three answers.
-     * Instagram's reels were being closed while Instagram was not in the
-     * guarded list — because address rules were applied to everyone and the
-     * app's own view-id rules leaked in alongside them, so opening Instagram
-     * was enough on its own.
+     * This replaces two nearly identical methods that existed only because the
+     * old model could not say what it meant. `checkFeed` ran the rules an app
+     * owned; `checkUniversalFeed` ran the address rules in apps nobody had
+     * guarded, because addresses had escaped their packages and there was
+     * nowhere honest to file them. Both walked the same tree, kept the same
+     * streak and drew the same shield, and the difference between them was a
+     * schema apology.
      *
-     * A rule belongs to a service. If the service is not guarded, the rule does
-     * nothing, anywhere: not in its app, not in a browser, not in a link opened
-     * inside another app. Guarded apps is the list of what Bastion is allowed
-     * to touch, and it is now the only thing that decides.
-     *
-     * Any mode counts, not just feed-only. A man who blocked Instagram outright
-     * has said more about instagram.com than one who asked for feeds to close,
-     * not less.
+     * Now scope is a property of the evidence and liveness is a property of a
+     * policy, so there is one path: gather what could apply here, see what is
+     * on screen, and ask the engine.
      */
-    private fun activeUrlRules(): List<FeedRuleEntity> =
-        urlRules.filter { it.packageName in guardedApps }
+    private fun checkPolicies(pkg: String, guarded: GuardedAppEntity?) {
+        val inScope = signalsFor(pkg)
+        val hasScoped = inScope.any { it.scopePackage == pkg }
+        val hasAppPolicy = policies.any {
+            it.targetType == TargetType.APP && it.targetKey == pkg
+        }
 
-    /**
-     * The address rules, in an app nobody guarded.
-     *
-     * Only for apps the phone says can open a web page, which keeps the tree
-     * walk off every app a man opens all day. Everything else is the same
-     * machinery as [checkFeed] — the same two-scan streak, the same cooldown —
-     * because a false positive here costs exactly what it costs there.
-     */
-    private fun checkUniversalFeed(pkg: String) {
-        if (!canShowPage(pkg)) return
-        // Addresses only, and this is the line that was crossed.
-        //
-        // This runs for apps that are *not* guarded, so it is how a browser
-        // gets covered without being in the guarded list. It used to call
-        // rulesFor, which also hands back the foreground app's own view-id
-        // rules — and Instagram is in the web-capable set, because it opens
-        // links in a web view. So opening Instagram unguarded matched
-        // `clips_viewer` and closed the reels, on a phone where Instagram had
-        // never been added to anything.
-        val rules = activeUrlRules()
-        if (rules.isEmpty()) return
-        val root = rootInActiveWindow ?: return
+        // The cost gate, and the only reason it exists: an unscoped signal
+        // applies anywhere, and "anywhere" includes every app a man opens all
+        // day. Walking all of their trees to look for an address bar would be a
+        // battery complaint. So an app with nothing of its own is walked only
+        // when the phone says it can show a page.
+        val worthWalking = hasScoped || hasAppPolicy ||
+            (inScope.isNotEmpty() && canShowPage(pkg))
 
-        if (findMatch(root, rules) == null) {
+        val root = if (worthWalking) rootInActiveWindow else null
+        val present = if (root == null) emptyList() else findSurfaces(root, inScope)
+
+        val decision = PolicyEngine.decide(
+            present = present,
+            policies = policies,
+            surfaces = surfacesById,
+            categories = categoriesByKey,
+            ctx = contextFor(pkg),
+        )
+
+        if (decision == null || !decision.blocks) {
             feedHitStreak = 0
+            // Watch takes nothing away and still has something to say: it is
+            // the honest way to learn what a man's evenings look like before
+            // anything is taken from him.
+            if (decision != null) record(pkg, decision, Outcome.ARRIVED)
             return
         }
+
+        if (decision.surfaceId == null) {
+            // A whole-app decision. Immediate, as it has always been: there is
+            // no frame of a closed app to arrive by accident.
+            enforceWholeApp(pkg, decision, guarded)
+            return
+        }
+
+        // Two consecutive scans before acting, ~350ms apart.
+        //
+        // A reel unit flying past during a fling on the home feed can put a
+        // matching node in the tree for a single frame. One scan is enough to
+        // catch that and throw a man out of a feed he was allowed to be in;
+        // requiring the evidence to still be there on the next scan costs a
+        // third of a second on a true positive and removes the whole class of
+        // false ones. The streak resets the instant a scan comes back negative.
         feedHitStreak++
         if (feedHitStreak < REQUIRED_FEED_HITS) return
+        enforceSurface(pkg, decision, guarded)
+    }
+
+    /**
+     * Everything the engine is allowed to know, gathered before it is asked.
+     *
+     * Risk is zero until the risk model ships. It is passed rather than omitted
+     * so that the day it becomes real, nothing here has to change shape.
+     */
+    private fun contextFor(pkg: String) = PolicyContext(
+        packageName = pkg,
+        minuteOfDay = LocalTime.now().let { it.hour * 60 + it.minute },
+        isoDayOfWeek = LocalDate.now().dayOfWeek.value,
+        usedMillis = usageToday,
+        risk = 0,
+    )
+
+    /** Home, then the reason. The app is closed; there is no part of it left. */
+    private fun enforceWholeApp(pkg: String, decision: Decision, guarded: GuardedAppEntity?) {
+        if (System.currentTimeMillis() - lastInterruptAt < INTERRUPT_COOLDOWN_MS) return
+        lastInterruptAt = System.currentTimeMillis()
+        record(pkg, decision, Outcome.CLOSED)
+
+        performGlobalAction(GLOBAL_ACTION_HOME)
+        shield.show(
+            title = guarded?.label ?: "Closed",
+            message = decision.reason,
+            primaryLabel = "Back to solid ground",
+            onPrimary = { shield.hide() },
+            secondaryLabel = "I'm having an urge",
+            onSecondary = {
+                shield.hide()
+                openPanic()
+            },
+        )
+    }
+
+    /**
+     * Back out of the destination, then explain. Order matters: he should
+     * already be out before he reads anything.
+     */
+    private fun enforceSurface(pkg: String, decision: Decision, guarded: GuardedAppEntity?) {
         if (System.currentTimeMillis() - lastInterruptAt < INTERRUPT_COOLDOWN_MS) return
         lastInterruptAt = System.currentTimeMillis()
         feedHitStreak = 0
+        record(pkg, decision, Outcome.CLOSED)
 
         performGlobalAction(GLOBAL_ACTION_BACK)
+        // The best loop in the app: it catches the scroll impulse and hands it
+        // somewhere good in the same gesture, rather than only saying no and
+        // leaving a man holding the urge with nowhere to put it. Taking a feed
+        // away and offering nothing back is most of why blockers get deleted.
         shield.show(
             title = "Not this.",
-            message = "That feed is closed wherever you open it. " +
-                "The rest of the page is still yours.",
+            message = guarded?.let {
+                "The rest of ${it.label} is still yours — or scroll something that builds you."
+            } ?: "That feed is closed wherever you open it. The rest of the page is still yours.",
             primaryLabel = "Scroll something good",
             onPrimary = {
                 shield.hide()
@@ -1001,66 +1073,52 @@ class BastionAccessibilityService : AccessibilityService() {
         )
     }
 
-    /** The feed surgery: let the app run, close only the screen that hurts. */
-    private fun checkFeed(pkg: String, app: GuardedAppEntity) {
-        val rules = rulesFor(pkg)
-        if (rules.isEmpty()) return
-        val root = rootInActiveWindow ?: return
-
-        val matched = findMatch(root, rules)
-
-        // Two consecutive scans before acting, ~350ms apart.
-        //
-        // A reel unit flying past during a fling on the home feed can put a
-        // matching node in the tree for a single frame. One scan is enough to
-        // catch that and throw the user out of a feed he was allowed to be in;
-        // requiring the signal to still be there on the next scan costs a third
-        // of a second on a true positive and removes the whole class of
-        // false ones. The streak resets the instant a scan comes back negative.
-        if (matched == null) {
-            feedHitStreak = 0
-            return
-        }
-        feedHitStreak++
-        if (feedHitStreak < REQUIRED_FEED_HITS) return
-
-        run {
-            if (System.currentTimeMillis() - lastInterruptAt < INTERRUPT_COOLDOWN_MS) return
-            lastInterruptAt = System.currentTimeMillis()
-
-            // Step back out of the feed first, then explain. Order matters: the
-            // user should already be out before he reads anything.
-            performGlobalAction(GLOBAL_ACTION_BACK)
-            // The best loop in the app: it catches the scroll impulse and
-            // hands it somewhere good in the same gesture, rather than only
-            // saying no and leaving the man holding the urge with nowhere to
-            // put it. Taking a feed away and offering nothing back is most of
-            // why blockers get uninstalled.
-            shield.show(
-                title = "Not this.",
-                message = "The rest of ${app.label} is still yours — " +
-                    "or scroll something that builds you.",
-                primaryLabel = "Scroll something good",
-                onPrimary = {
-                    shield.hide()
-                    openFeed()
-                },
-                secondaryLabel = "I'm having an urge",
-                onSecondary = {
-                    shield.hide()
-                    openPanic()
-                },
-                autoDismissMillis = 8_000,
-            )
-            feedHitStreak = 0
+    /**
+     * The receipt, and the drift clock.
+     *
+     * Two writes on a path that already runs at human speed rather than scroll
+     * speed. The event is what lets a shield answer "why did this close?"; the
+     * timestamp on the signal is what lets Bastion notice, weeks later, that
+     * this piece of evidence has stopped firing while the app it watches is
+     * opened every day.
+     */
+    private fun record(pkg: String, decision: Decision, outcome: Outcome) {
+        scope.launch {
+            runCatching {
+                graph.policy.record(
+                    packageName = pkg,
+                    outcome = outcome,
+                    response = decision.response,
+                    policyId = decision.policyId,
+                    surfaceId = decision.surfaceId,
+                    signalId = decision.signalId,
+                )
+                decision.signalId?.let { graph.policy.markMatched(it) }
+            }
         }
     }
 
     /**
+     * Every surface recognised on this screen, and the evidence for each.
+     *
      * Bounded breadth-first walk. Bounded on purpose: an unbounded tree walk on
-     * every content-changed event is how a guard app becomes a battery complaint.
+     * every content-changed event is how a guard app becomes a battery
+     * complaint.
+     *
+     * It collects rather than returning on the first hit, because the engine
+     * above it is allowed to see more than one destination at a time and
+     * choose. One surface per id: a second piece of evidence for something
+     * already recognised adds nothing to a decision.
+     *
+     * Every geometry gate below is untouched — `coversWindow`, the vertical
+     * pager test, the address-bar tests. Those were won one false positive at a
+     * time and they are inputs to the new pipeline, not casualties of it.
      */
-    private fun findMatch(root: AccessibilityNodeInfo, rules: List<FeedRuleEntity>): FeedRuleEntity? {
+    private fun findSurfaces(
+        root: AccessibilityNodeInfo,
+        rules: List<SignalEntity>,
+    ): List<ResolvedSurface> {
+        val found = LinkedHashMap<String, ResolvedSurface>()
         val window = windowBoundsOf(root)
         // Only when a URL rule could fire. An ordinary app with view-id rules
         // has no web view and should not pay for a walk looking for one.
@@ -1143,12 +1201,25 @@ class BastionAccessibilityService : AccessibilityService() {
                         // do. Matching it in the general walk would turn every
                         // guarded app into one that reads its own text.
                         MatchType.TITLE -> false
+                        // Never here either, and for the opposite reason to
+                        // TITLE: a package is not something a node can be. The
+                        // app itself being the destination is settled before
+                        // any tree is walked, so a walk that tried to answer it
+                        // would either always say no or match every node on the
+                        // screen at once.
+                        MatchType.PACKAGE -> false
                         MatchType.URL ->
                             isAddressBarNode(node, idSegment, window, page, widthCounts) &&
                                 node.text?.toString()
                                     ?.let { FeedSurface.urlMatches(it, rule.matchValue) } == true
                     }
-                    if (hit) return rule
+                    if (hit && !found.containsKey(rule.surfaceId)) {
+                        found[rule.surfaceId] = ResolvedSurface(
+                            surfaceId = rule.surfaceId,
+                            signalId = rule.id,
+                            confidence = Confidence.ofOrdinal(rule.confidence),
+                        )
+                    }
                 }
 
                 for (i in 0 until node.childCount) {
@@ -1158,7 +1229,7 @@ class BastionAccessibilityService : AccessibilityService() {
                     }
                 }
             }
-            return null
+            return found.values.toList()
         } finally {
             recycleAll(borrowed)
         }
@@ -1476,7 +1547,11 @@ class BastionAccessibilityService : AccessibilityService() {
         recycleAll(borrowed)
 
         val pkg = root.packageName?.toString().orEmpty()
-        val rules = rulesFor(pkg)
+        // The evidence that could apply here, and — separately — whether
+        // anything would actually happen. Learn Mode used to answer only the
+        // first, which is how a captured rule could look right and silently
+        // never fire.
+        val inScope = signalsFor(pkg)
 
         // The browser diagnosis, which exists because four attempts at the
         // in-app-browser path were made without ever seeing what the service
@@ -1484,7 +1559,7 @@ class BastionAccessibilityService : AccessibilityService() {
         // that cannot work; this turns "still not working" into a sentence
         // naming the link that is broken.
         val page = pageBoundsIn(root)
-        val addresses = if (rules.any { it.matchType == MatchType.URL }) {
+        val addresses = if (inScope.any { it.matchType == MatchType.URL }) {
             seenAddresses(root, windowBoundsOf(root), page)
         } else emptyList()
 
@@ -1495,13 +1570,22 @@ class BastionAccessibilityService : AccessibilityService() {
             viewIds = found.entries
                 .map { LearnedId(it.key, it.value) }
                 .sortedByDescending { it.wouldBlock },
-            // The live verdict: does this screen match a rule that already
-            // exists? Answers "is what I am looking at right now covered?"
-            // without having to leave the app and find out the hard way.
-            blockedNow = findMatch(root, rules) != null,
+            // The live verdict, and it now asks the engine rather than the
+            // matcher. "Does a rule match this screen" and "would anything
+            // happen" are different questions, and the gap between them is
+            // exactly where a man loses an evening: evidence that matches
+            // perfectly, under a policy that is switched off or out of hours,
+            // looks identical to protection until it is needed.
+            blockedNow = PolicyEngine.decide(
+                present = findSurfaces(root, inScope),
+                policies = policies,
+                surfaces = surfacesById,
+                categories = categoriesByKey,
+                ctx = contextFor(pkg),
+            )?.blocks == true,
             guardedAs = guardedApps[pkg]?.mode?.name,
-            ruleCount = rules.size,
-            urlRuleCount = rules.count { it.matchType == MatchType.URL },
+            ruleCount = inScope.size,
+            urlRuleCount = inScope.count { it.matchType == MatchType.URL },
             webViewFound = page.height() > 0,
             addresses = addresses,
         )

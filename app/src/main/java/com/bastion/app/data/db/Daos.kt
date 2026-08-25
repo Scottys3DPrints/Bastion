@@ -253,6 +253,16 @@ interface GuardDao {
     @Query("SELECT * FROM app_usage WHERE packageName = :packageName AND epochDay = :epochDay")
     suspend fun usage(packageName: String, epochDay: Long): AppUsageEntity?
 
+    /**
+     * Everything used today, in one read.
+     *
+     * The decision engine is pure and takes the day's usage as an input, so it
+     * has to arrive before the decision rather than being fetched during it.
+     * Read once when the guard connects and kept current from there.
+     */
+    @Query("SELECT * FROM app_usage WHERE epochDay = :epochDay")
+    suspend fun usageOn(epochDay: Long): List<AppUsageEntity>
+
     @Upsert
     suspend fun upsertChangeRequest(request: GuardChangeRequestEntity)
 

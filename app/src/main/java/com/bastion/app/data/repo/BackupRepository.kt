@@ -45,6 +45,14 @@ class BackupRepository(
     private val covenantDao: CovenantDao,
     private val socialDao: SocialDao,
     private val settings: com.bastion.app.data.prefs.SettingsStore,
+    /**
+     * The model the guard actually enforces.
+     *
+     * A restore writes the v1 tables, and those are no longer what stops
+     * anything. Without rebuilding from them, a restored phone shows every app
+     * exactly as it was left and guards none of them.
+     */
+    private val policy: PolicyRepository,
 ) {
 
     @Serializable
@@ -145,6 +153,13 @@ class BackupRepository(
                 else restored.copy(lockPasscodeHash = socialDao.partnerOnce()?.lockPasscodeHash)
             },
         )
+
+        // Rebuilt from what was just written, and skipped entirely while locked
+        // in — where the guards were not restored, there is nothing to rebuild
+        // and rebuilding anyway would be a way of restoring them after all.
+        if (!locked) {
+            policy.restoreFrom(backup.guardedApps, backup.learnedRules)
+        }
         backup.days.size
     }
 

@@ -19,6 +19,15 @@ class GuardRepository(
     private val guardDao: GuardDao,
     private val content: ContentRepository,
     private val settings: SettingsStore,
+    /**
+     * Protection Model v2, kept in step with everything written here.
+     *
+     * The v1 tables below are no longer what the guard reads; they are what a
+     * backup contains and what a rollback lands on. So every write that changes
+     * protection is mirrored, in both directions of the same fact, for one
+     * release. See [PolicyRepository].
+     */
+    private val policy: PolicyRepository,
 ) {
 
     val guardedApps: Flow<List<GuardedAppEntity>> = guardDao.guardedApps()
@@ -29,9 +38,19 @@ class GuardRepository(
     suspend fun enabledGuardedApps() = guardDao.enabledGuardedApps()
     suspend fun enabledFeedRules() = guardDao.enabledFeedRules()
 
-    suspend fun upsertApp(app: GuardedAppEntity) = guardDao.upsertApp(app)
-    suspend fun removeApp(packageName: String) = guardDao.removeApp(packageName)
-    suspend fun upsertRule(rule: FeedRuleEntity) = guardDao.upsertRule(rule)
+    suspend fun upsertApp(app: GuardedAppEntity) {
+        guardDao.upsertApp(app)
+        policy.applyGuardedApp(app)
+    }
+    suspend fun removeApp(packageName: String) {
+        guardDao.removeApp(packageName)
+        policy.clearPoliciesFor(packageName)
+    }
+
+    suspend fun upsertRule(rule: FeedRuleEntity) {
+        guardDao.upsertRule(rule)
+        policy.mirrorRuleState(rule.id, rule.enabled)
+    }
 
     /**
      * Guard an app at a level, and switch on everything that level needs.
@@ -49,12 +68,20 @@ class GuardRepository(
      */
     suspend fun guardAt(app: GuardedAppEntity) {
         guardDao.upsertApp(app)
+        policy.applyGuardedApp(app)
         if (app.mode != BlockMode.FEED_ONLY) return
         guardDao.feedRules().first()
             .filter { it.packageName == app.packageName && !it.enabled }
-            .forEach { guardDao.upsertRule(it.copy(enabled = true)) }
+            .forEach { rule ->
+                guardDao.upsertRule(rule.copy(enabled = true))
+                policy.mirrorRuleState(rule.id, enabled = true)
+            }
     }
-    suspend fun deleteRule(id: String) = guardDao.deleteRule(id)
+
+    suspend fun deleteRule(id: String) {
+        guardDao.deleteRule(id)
+        policy.deleteSignal(id)
+    }
 
     suspend fun addUserDomain(domain: String) {
         guardDao.upsertDomain(BlockedDomainEntity(domain.normaliseDomain(), userAdded = true))
@@ -123,7 +150,12 @@ class GuardRepository(
         if (guardDao.feedRuleCount() == 0) {
             guardDao.upsertRules(builtInFeedRules())
         }
+        // A fresh install runs no migration, so the v2 catalogue has to arrive
+        // here or it would exist only on phones that upgraded.
+        policy.seedCatalogue()
         settings.setGuardSeeded(true)
+        // The same delivery, for the model that replaced these rows.
+        policy.syncCatalogue()
         settings.setBuiltInRulesVersion(BUILT_IN_RULES_VERSION)
     }
 
