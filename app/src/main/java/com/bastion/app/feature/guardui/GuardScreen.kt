@@ -206,6 +206,7 @@ fun GuardScreen(onOpenProfile: () -> Unit) {
     LaunchedEffect(Unit) {
         graph.guard.seedIfEmpty()
         graph.guard.syncBuiltInRules()
+        graph.guard.refreshPolicies()
         // Noted after the wall has had its chance to read the old value, so an
         // update is only ever reported once.
         graph.settings.setLastSeenVersionCode(com.bastion.app.BuildConfig.VERSION_CODE)

@@ -256,12 +256,35 @@ fun AppPickerSheet(
             .sortedBy { it.second.lowercase() }
     }
 
-    val matching = apps
+    val installedPkgs = apps.map { it.first }.toSet()
+
+    /**
+     * The sites whose app is not on this phone.
+     *
+     * The picker lists installed apps, which is the right list for "limit this
+     * app" and the wrong one for "close this site". Facebook is the case that
+     * proved it: every facebook.com rule was filed under the Facebook app, and
+     * on a phone with only Messenger the app could never be guarded, so the
+     * rules could never fire — reels played in Chrome, in Messenger's web view
+     * and in the Google app, and nothing in the interface could be switched on
+     * to stop them.
+     *
+     * A site does not need its app. Its evidence is an address, and an address
+     * works wherever an address bar does.
+     */
+    val sites = com.bastion.app.guard.policy.Catalogue.SITES
+        .filterNot { (_, pkg, _) -> pkg in installedPkgs }
+        .map { (_, pkg, label) -> pkg to label }
+
+    val matching = (apps + sites)
+        .distinctBy { it.first }
         .filter { it.second.contains(query, ignoreCase = true) }
         .filterNot { it.first in alreadyGuarded }
+    val sitePkgs = sites.map { it.first }.toSet()
     val suggestedPkgs = GuardRepository.SUGGESTED_PACKAGES.map { it.first }.toSet()
-    val suggested = matching.filter { it.first in suggestedPkgs }
-    val rest = matching.filterNot { it.first in suggestedPkgs }
+    val suggested = matching.filter { it.first in suggestedPkgs && it.first !in sitePkgs }
+    val siteRows = matching.filter { it.first in sitePkgs }
+    val rest = matching.filterNot { it.first in suggestedPkgs || it.first in sitePkgs }
 
     Column(
         Modifier
@@ -299,14 +322,27 @@ fun AppPickerSheet(
                 suggested.forEach { (pkg, label) -> PickerRow(pkg, label, onPick) }
                 Spacer(Modifier.height(Space.md))
             }
+            if (siteRows.isNotEmpty()) {
+                PickerHeading("Sites, without the app")
+                Text(
+                    "You don't have these installed. Guarding one closes the site " +
+                        "in any browser — including the little one that opens inside " +
+                        "another app.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextTertiary,
+                )
+                Spacer(Modifier.height(Space.sm))
+                siteRows.forEach { (pkg, label) -> PickerRow(pkg, label, onPick) }
+                Spacer(Modifier.height(Space.md))
+            }
             if (rest.isNotEmpty()) {
-                if (suggested.isNotEmpty()) PickerHeading("Everything else")
+                if (suggested.isNotEmpty() || siteRows.isNotEmpty()) PickerHeading("Everything else")
                 rest.forEach { (pkg, label) -> PickerRow(pkg, label, onPick) }
             }
             if (matching.isEmpty()) {
                 Text(
-                    if (query.isBlank()) "Every app you have is already guarded."
-                    else "No app matches \"$query\".",
+                    if (query.isBlank()) "Every app and site is already guarded."
+                    else "Nothing matches \"$query\".",
                     style = MaterialTheme.typography.bodyMedium,
                     color = BastionColors.TextTertiary,
                 )

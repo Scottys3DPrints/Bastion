@@ -52,6 +52,7 @@ object Catalogue {
     const val PKG_TIKTOK = "com.zhiliaoapp.musically"
     const val PKG_TIKTOK_LITE = "com.ss.android.ugc.trill"
     const val PKG_FACEBOOK = "com.facebook.katana"
+    const val PKG_MESSENGER = "com.facebook.orca"
     const val PKG_SNAPCHAT = "com.snapchat.android"
     const val PKG_X = "com.twitter.android"
     const val PKG_REDDIT = "com.reddit.frontpage"
@@ -61,7 +62,16 @@ object Catalogue {
         INSTAGRAM to listOf(PKG_INSTAGRAM),
         YOUTUBE to listOf(PKG_YOUTUBE),
         TIKTOK to listOf(PKG_TIKTOK, PKG_TIKTOK_LITE),
-        FACEBOOK to listOf(PKG_FACEBOOK),
+        // Messenger is Facebook.
+        //
+        // Not a convenience mapping — a correction. Every facebook.com rule was
+        // filed under the Facebook app, and the Facebook app is not installed on
+        // plenty of phones that still reach Facebook constantly: through
+        // Messenger's web view, through a link in a chat, through the Google
+        // app's tab. On those phones the rules could never fire, because the
+        // package that owned them could never be guarded, and the man saw reels
+        // playing in a browser while the app told him Facebook was covered.
+        FACEBOOK to listOf(PKG_FACEBOOK, PKG_MESSENGER),
         SNAPCHAT to listOf(PKG_SNAPCHAT),
         X to listOf(PKG_X),
         REDDIT to listOf(PKG_REDDIT),
@@ -227,6 +237,51 @@ object Catalogue {
             "video_container_view_pager", PKG_REDDIT,
         ),
         signal("reddit_video", PKG_REDDIT, MatchType.URL, "reddit.com/r/popular", null),
+    )
+
+    /**
+     * The services a man can guard without having the app, derived rather than
+     * listed.
+     *
+     * The picker offers what is installed, which is the right list for "limit
+     * this app" and exactly the wrong one for "close this site". Facebook is the
+     * case that proved it: every facebook.com rule was filed under the Facebook
+     * app, and on a phone with only Messenger that package could never be
+     * guarded — it was not installed, so the picker never showed it — and so
+     * every Facebook rule was dead. Reels played in Chrome, in Messenger's web
+     * view and in the Google app, and nothing in the interface could be switched
+     * on to stop them. The app said Facebook was covered. Nothing was.
+     *
+     * A site needs no app: its evidence is an address, and an address works
+     * wherever an address bar does.
+     *
+     * Computed, because the first version of this was a hand-written list and it
+     * was wrong on its first run — it offered X, whose only evidence is a view id
+     * inside the X app, so guarding it would have switched on precisely nothing
+     * while reading as protection. A service earns a place here by actually
+     * shipping an address that fires with the app absent, and it earns it from
+     * the same table the guard reads.
+     */
+    val SITES: List<Triple<String, String, String>> by lazy {
+        val reachable = signals()
+            .filter { it.enabled && it.scopePackage == null && it.matchType == MatchType.URL }
+            .map { it.surfaceId }
+            .toSet()
+        val bySurface = surfaces().associateBy { it.id }
+        SITE_LABELS.filter { (service, _, _) ->
+            surfaces().any { it.serviceKey == service && it.id in reachable && bySurface.containsKey(it.id) }
+        }
+    }
+
+    /** The name and the door, for the services that qualify above. */
+    private val SITE_LABELS: List<Triple<String, String, String>> = listOf(
+        Triple(FACEBOOK, PKG_FACEBOOK, "Facebook"),
+        Triple(INSTAGRAM, PKG_INSTAGRAM, "Instagram"),
+        Triple(TIKTOK, PKG_TIKTOK, "TikTok"),
+        Triple(YOUTUBE, PKG_YOUTUBE, "YouTube"),
+        Triple(SNAPCHAT, PKG_SNAPCHAT, "Snapchat"),
+        Triple(X, PKG_X, "X"),
+        Triple(REDDIT, PKG_REDDIT, "Reddit"),
     )
 
     /** Every surface belonging to a service, for the FEED_ONLY migration. */

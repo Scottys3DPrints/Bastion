@@ -40,11 +40,11 @@ class GuardRepository(
 
     suspend fun upsertApp(app: GuardedAppEntity) {
         guardDao.upsertApp(app)
-        policy.applyGuardedApp(app)
+        rebuildPolicies()
     }
     suspend fun removeApp(packageName: String) {
         guardDao.removeApp(packageName)
-        policy.clearPoliciesFor(packageName)
+        rebuildPolicies()
     }
 
     suspend fun upsertRule(rule: FeedRuleEntity) {
@@ -68,7 +68,7 @@ class GuardRepository(
      */
     suspend fun guardAt(app: GuardedAppEntity) {
         guardDao.upsertApp(app)
-        policy.applyGuardedApp(app)
+        rebuildPolicies()
         if (app.mode != BlockMode.FEED_ONLY) return
         guardDao.feedRules().first()
             .filter { it.packageName == app.packageName && !it.enabled }
@@ -76,6 +76,40 @@ class GuardRepository(
                 guardDao.upsertRule(rule.copy(enabled = true))
                 policy.mirrorRuleState(rule.id, enabled = true)
             }
+    }
+
+    /**
+     * Derived from every guarded app at once, never one at a time.
+     *
+     * Two packages can be the same service — Messenger and Facebook, TikTok and
+     * TikTok Lite — so a per-app rewrite let unguarding one take the other's
+     * protection down with it. Rebuilding the set has no order to get wrong.
+     */
+    private suspend fun rebuildPolicies() {
+        policy.rebuildFrom(guardDao.guardedApps().first())
+    }
+
+    /**
+     * Re-derive the policies from the guarded apps, every launch.
+     *
+     * Policies are derived state in this phase: they say what the v1 screens
+     * already say, in the vocabulary the engine reads. Derived state that is
+     * only computed once drifts the moment the derivation changes, and it did —
+     * teaching Bastion that Messenger is a door to Facebook fixed nothing on any
+     * phone that had already migrated, because those phones had written their
+     * policies under the old mapping and nothing ever looked again.
+     *
+     * A version gate would have worked and would have needed remembering. This
+     * needs nothing remembered: whatever the catalogue says today is what is on
+     * the phone today. It costs one query and a handful of rows.
+     *
+     * When a later phase lets a man write a policy of his own, that policy must
+     * not be USER-sourced derived state — it needs its own source, or this will
+     * erase it.
+     */
+    suspend fun refreshPolicies() {
+        if (!settings.current().guardSeeded) return
+        rebuildPolicies()
     }
 
     suspend fun deleteRule(id: String) {

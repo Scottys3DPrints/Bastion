@@ -13,6 +13,7 @@ import com.bastion.app.data.db.TargetType
 import com.bastion.app.guard.policy.Catalogue
 import com.bastion.app.guard.policy.ConditionParams
 import com.bastion.app.guard.policy.Conditions
+import com.bastion.app.guard.policy.PolicyPlan
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -117,85 +118,26 @@ class PolicyRepository(private val dao: PolicyDao) {
     // --- Mirroring the v1 UI onto policies --------------------------------
 
     /**
-     * One guarded app, expressed as policies.
+     * Every policy, derived from every guarded app at once.
      *
-     * Replaces rather than merges: the policies for an app are derived entirely
-     * from its row, so leaving an older shape behind would mean a man who moved
-     * Instagram from "after 23:00" to "feeds only" still had the curfew running.
-     * That is the class of bug the old model produced constantly, and it comes
-     * from adding without removing.
-     */
-    suspend fun applyGuardedApp(app: GuardedAppEntity) {
-        clearPoliciesFor(app.packageName)
-
-        val close = Response.CLOSE.level
-        val enabled = app.enabled
-
-        suspend fun appPolicy(
-            condition: ConditionType,
-            params: ConditionParams = ConditionParams(),
-        ) {
-            dao.upsertPolicy(
-                PolicyEntity(
-                    id = "app_${app.packageName}_${condition.name.lowercase()}",
-                    targetType = TargetType.APP,
-                    targetKey = app.packageName,
-                    conditionType = condition,
-                    conditionParams = if (condition == ConditionType.ALWAYS) ""
-                    else Conditions.encode(params),
-                    response = close,
-                    enabled = enabled,
-                    source = PolicySource.USER,
-                ),
-            )
-        }
-
-        when (app.mode) {
-            BlockMode.FULL -> appPolicy(ConditionType.ALWAYS)
-
-            BlockMode.SCHEDULE -> appPolicy(
-                ConditionType.CURFEW,
-                ConditionParams(startMinute = app.scheduleStart, endMinute = app.scheduleEnd),
-            )
-
-            BlockMode.TIME_LIMIT -> appPolicy(
-                ConditionType.DAILY_BUDGET,
-                ConditionParams(minutes = app.timeLimitMinutes),
-            )
-
-            BlockMode.FEED_ONLY -> {
-                val service = Catalogue.SERVICE_BY_PACKAGE[app.packageName] ?: return
-                Catalogue.surfacesOfService(service).forEach { surface ->
-                    dao.upsertPolicy(
-                        PolicyEntity(
-                            id = "surface_${surface.id}",
-                            targetType = TargetType.SURFACE,
-                            targetKey = surface.id,
-                            conditionType = ConditionType.ALWAYS,
-                            response = close,
-                            enabled = enabled,
-                            source = PolicySource.USER,
-                        ),
-                    )
-                }
-            }
-        }
-    }
-
-    /**
-     * Everything an app was carrying, removed.
+     * Not one app at a time, and that is the fix for a bug the per-app version
+     * had built in. Surfaces belong to a *service*, and a service can be reached
+     * by more than one package — Messenger and Facebook are both Facebook, TikTok
+     * and TikTok Lite are both TikTok. Applying one app meant clearing its
+     * service's surface policies and rewriting them, so unguarding Messenger
+     * silently took Facebook's policies down with it even though Facebook was
+     * still guarded. Order of operations decided what was protected.
      *
-     * Both its own policies and the surface policies that only existed because
-     * its service was guarded. Unguarding an app has to leave nothing behind —
-     * a leftover surface policy is a block with no visible owner, which is the
-     * worst kind there is: it cannot be found by looking at the app it closes.
+     * Deriving the whole set from the whole list has no such order. It costs a
+     * handful of rows on a change a man makes by hand, perhaps twice a month.
+     *
+     * Only USER policies are rebuilt; anything else is left alone.
      */
-    suspend fun clearPoliciesFor(packageName: String) {
-        dao.deletePoliciesFor(TargetType.APP, packageName)
-        val service = Catalogue.SERVICE_BY_PACKAGE[packageName] ?: return
-        Catalogue.surfacesOfService(service).forEach {
-            dao.deletePoliciesFor(TargetType.SURFACE, it.id)
-        }
+    suspend fun rebuildFrom(apps: List<GuardedAppEntity>) {
+        dao.allPolicies()
+            .filter { it.source == PolicySource.USER }
+            .forEach { dao.deletePolicy(it.id) }
+        dao.upsertPolicies(PolicyPlan.forApps(apps))
     }
 
     /**
@@ -230,7 +172,7 @@ class PolicyRepository(private val dao: PolicyDao) {
         apps: List<GuardedAppEntity>,
         rules: List<com.bastion.app.data.db.FeedRuleEntity>,
     ) {
-        apps.forEach { applyGuardedApp(it) }
+        rebuildFrom(apps)
 
         rules.forEach { rule ->
             if (rule.builtIn) {
