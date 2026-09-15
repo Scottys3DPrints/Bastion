@@ -119,6 +119,15 @@ object Catalogue {
 
     fun surfaces(): List<SurfaceEntity> = listOf(
         surface("ig_reels", INSTAGRAM, SHORT_FEED, "Instagram Reels"),
+        // Two destinations, not one.
+        //
+        // The Reels tab and a reel opened from Search are different places a
+        // man goes for different reasons, and he should be able to close one
+        // and keep the other. Their signals were already switchable one by one,
+        // but they shared a surface -- so a block could only ever say "Instagram
+        // Reels", and the receipt could not tell him which of the two had
+        // fired. Separate destinations, separately named, separately policed.
+        surface("ig_reels_search", INSTAGRAM, SHORT_FEED, "Reels opened from Search"),
         surface("ig_site", INSTAGRAM, SHORT_FEED, "All of Instagram"),
 
         surface("yt_shorts", YOUTUBE, SHORT_FEED, "YouTube Shorts"),
@@ -167,9 +176,16 @@ object Catalogue {
         // traps: they are the main tab pager, on screen for the home feed and
         // the profile too, so either would have closed the whole app. Name the
         // destination, never the container it happens to sit in.
-        signal("ig_reels", PKG_INSTAGRAM, MatchType.VIEW_ID, "root_clips_layout", PKG_INSTAGRAM),
+        //
+        // Filed under the Search surface rather than the tab. The signal ids are
+        // unchanged -- they are the old rule ids -- so a switch a man has already
+        // set keeps its position; only which destination they belong to moves.
         signal(
-            "ig_reels", PKG_INSTAGRAM, MatchType.VIEW_ID,
+            "ig_reels_search", PKG_INSTAGRAM, MatchType.VIEW_ID,
+            "root_clips_layout", PKG_INSTAGRAM,
+        ),
+        signal(
+            "ig_reels_search", PKG_INSTAGRAM, MatchType.VIEW_ID,
             "clips_linear_layout_container", PKG_INSTAGRAM,
         ),
         signal("ig_reels", PKG_INSTAGRAM, MatchType.URL, "instagram.com/reel", null),
