@@ -119,8 +119,11 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
     }
     // The effective start, not the install date: backfilled history moves it,
     // and the calendar has to grey the same days the counts ignore.
-    val marks = remember(month, slipDays, state.startEpochDay) {
-        buildMarks(month, slipDays, state.startEpochDay)
+    val cleanDays = remember(days) {
+        days.filter { it.status == DayStatus.CLEAN }.map { it.epochDay }.toSet()
+    }
+    val marks = remember(month, slipDays, cleanDays, state.startEpochDay) {
+        buildMarks(month, slipDays, cleanDays, state.startEpochDay)
     }
     val nextMilestone = remember(state.currentStreak) {
         MILESTONES.firstOrNull { it > state.currentStreak }
@@ -676,6 +679,7 @@ private fun BecomingSection(graph: BastionGraph) {
 private fun buildMarks(
     month: YearMonth,
     slipDays: Set<Long>,
+    cleanDays: Set<Long>,
     journeyStart: Long,
 ): Map<Int, DayMark> {
     val today = LocalDate.now()
@@ -693,7 +697,11 @@ private fun buildMarks(
             // nothing: every reason to believe the app dropped it.
             epoch in slipDays -> DayMark.SLIP
             journeyStart > 0 && epoch < journeyStart -> DayMark.NONE
-            else -> DayMark.CLEAN
+            epoch in cleanDays -> DayMark.CLEAN
+            // Nobody has answered for this day. It used to fall through to
+            // CLEAN, which painted every untouched square green and told a man
+            // he had held days he was never asked about.
+            else -> DayMark.UNREPORTED
         }
     }
 }

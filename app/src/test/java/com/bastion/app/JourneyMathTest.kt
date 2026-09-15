@@ -114,6 +114,32 @@ class JourneyMathTest {
         assertEquals(4, state.totalCleanDays)
     }
 
+    /**
+     * The rule stated in the user's own words: many unreported days are allowed,
+     * and reporting again simply starts a new streak from there. The gap is not
+     * a punishment that follows him — it is just days he did not speak about.
+     */
+    @Test
+    fun `a long silence costs nothing once he reports again`() {
+        val state = derive(
+            installed = daysAgo(40),
+            cleanLogs = listOf(daysAgo(39), daysAgo(38), today),
+        )
+        assertEquals("the new run starts at the day he reported", 1, state.currentStreak)
+        assertEquals("nothing earlier was lost", 3, state.totalCleanDays)
+        assertEquals("and his best run still stands", 2, state.longestStreak)
+    }
+
+    @Test
+    fun `reporting after a silence builds a fresh run`() {
+        val state = derive(
+            installed = daysAgo(40),
+            cleanLogs = listOf(daysAgo(30), daysAgo(2), daysAgo(1), today),
+        )
+        assertEquals(3, state.currentStreak)
+        assertEquals(4, state.totalCleanDays)
+    }
+
     @Test
     fun `a slip ends the run even with clean days before it`() {
         val state = derive(

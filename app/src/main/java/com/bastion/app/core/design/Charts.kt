@@ -144,7 +144,18 @@ fun BarChart(
 }
 
 /** One day in the calendar. */
-enum class DayMark { CLEAN, SLIP, NONE, FUTURE }
+/**
+ * What a square on the calendar knows.
+ *
+ * [UNREPORTED] is the one that was missing, and its absence was the same bug the
+ * arithmetic had: every day that was not a slip fell through to [CLEAN], so a
+ * month a man had never opened the app in was painted a solid wall of green. The
+ * calendar told him he had held seventeen days he had never been asked about.
+ *
+ * [NONE] is not the same thing and must stay separate: it means the day was
+ * before he started, so there was never a question to answer.
+ */
+enum class DayMark { CLEAN, SLIP, UNREPORTED, NONE, FUTURE }
 
 /**
  * A month at a glance — the single most useful view in a tracker, because it
@@ -239,6 +250,9 @@ fun CalendarMonth(
                 val fill = when (mark) {
                     DayMark.CLEAN -> ChartColors.Clean
                     DayMark.SLIP -> ChartColors.Slip
+                    // Unreported is drawn hollow rather than tinted, so an
+                    // unanswered day reads as a question rather than a result.
+                    DayMark.UNREPORTED -> ChartColors.Empty
                     DayMark.NONE -> ChartColors.Empty
                     DayMark.FUTURE -> ChartColors.Empty.copy(alpha = 0.45f)
                 }
@@ -255,8 +269,23 @@ fun CalendarMonth(
                 val cellHeight = side.coerceAtMost(size.height / rows - gap)
                 val ink = when (mark) {
                     DayMark.CLEAN, DayMark.SLIP -> BastionColors.MidnightDeep
+                    DayMark.UNREPORTED -> BastionColors.TextSecondary
                     DayMark.NONE -> BastionColors.TextMuted
                     DayMark.FUTURE -> BastionColors.TextMuted.copy(alpha = 0.4f)
+                }
+
+                // An outline, so the state is carried by shape and not by hue
+                // alone — the same rule the slip notch below follows. It also
+                // keeps "waiting to be answered" visibly apart from "before you
+                // started", which is drawn flat.
+                if (mark == DayMark.UNREPORTED) {
+                    drawRoundRect(
+                        color = BastionColors.OutlineStrong,
+                        topLeft = Offset(left, top),
+                        size = Size(side, side.coerceAtMost(size.height / rows - gap)),
+                        cornerRadius = radius,
+                        style = Stroke(width = 1.4.dp.toPx()),
+                    )
                 }
                 val laid = measurer.measure(
                     text = androidx.compose.ui.text.AnnotatedString("$day"),
