@@ -1,5 +1,6 @@
 package com.bastion.app.data.repo
 
+import com.bastion.app.data.db.DayStatus
 import com.bastion.app.domain.Rank
 import com.bastion.app.domain.RankPoints
 
@@ -16,13 +17,27 @@ object JourneyMath {
 
     /**
      * [installedEpochDay] is when he signed the covenant; 0 before onboarding.
-     * [dayLogs] is every logged day as `epochDay to isSlip`.
+     * [dayLogs] is every day he has actually said something about.
      * [earliestUrgeDay] is the oldest urge of any kind, or null if none.
+     *
+     * ## A day he has not spoken about is not a day he won
+     *
+     * This took `epochDay to isSlip`, and every day absent from the list counted
+     * as clean: the streak was `today - lastSlip`, clean days were
+     * `totalDays - slipCount`, and points came off the same subtraction. Install
+     * the app, never open it again, and the rank climbs on its own — seventeen
+     * days clean, three hundred points, for a man who has not told it a single
+     * thing. A number that goes up whether or not he shows up is not a record of
+     * anything, and it is the one number he checks daily.
+     *
+     * Absence is now absence. A clean day is a day he marked clean, and
+     * [DayStatus.UNLOGGED] is a real answer the arithmetic respects rather than
+     * a gap it fills in for him.
      */
     fun derive(
         today: Long,
         installedEpochDay: Long,
-        dayLogs: List<Pair<Long, Boolean>>,
+        dayLogs: List<Pair<Long, DayStatus>>,
         earliestUrgeDay: Long?,
         habitCompletions: Int = 0,
         checkIns: Int = 0,
@@ -46,9 +61,16 @@ object JourneyMath {
         // Clamped to today: a slip dated in the future would otherwise inflate
         // the count and skew points, and no one can relapse tomorrow.
         val slipDays = dayLogs
-            .filter { (day, isSlip) -> isSlip && day <= today }
+            .filter { (day, status) -> status == DayStatus.SLIP && day <= today }
             .map { it.first }
             .sorted()
+
+        // Marked clean, by him, on purpose.
+        val cleanDays = dayLogs
+            .filter { (day, status) -> status == DayStatus.CLEAN && day <= today }
+            .map { it.first }
+            .sorted()
+        val cleanSet = cleanDays.toSet()
 
         // The journey starts at the oldest thing he has told the app about.
         //
@@ -67,10 +89,9 @@ object JourneyMath {
 
         val totalDays = ((today - start).toInt() + 1).coerceAtLeast(1)
         val slipCount = slipDays.count { it >= start }
-        val totalCleanDays = (totalDays - slipCount).coerceAtLeast(0)
+        val totalCleanDays = cleanDays.count { it >= start }
 
-        val lastSlip = slipDays.lastOrNull()
-        val currentStreak = if (lastSlip == null) totalDays else (today - lastSlip).toInt()
+        val currentStreak = currentStreak(today, cleanSet)
 
         // Rank counts only the days he has actually walked with the app.
         //
@@ -79,9 +100,7 @@ object JourneyMath {
         // at once. History is history and rank is earned; keeping them on
         // separate clocks is what lets the first be generous without making the
         // second meaningless.
-        val daysSinceInstalled = ((today - installed).toInt() + 1).coerceAtLeast(1)
-        val cleanDaysEarned =
-            (daysSinceInstalled - slipDays.count { it >= installed }).coerceAtLeast(0)
+        val cleanDaysEarned = cleanDays.count { it >= installed }
 
         val points = cleanDaysEarned * RankPoints.CLEAN_DAY +
             habitCompletions * RankPoints.HABIT_COMPLETED +
@@ -94,7 +113,7 @@ object JourneyMath {
 
         return JourneyState(
             currentStreak = currentStreak,
-            longestStreak = longestStreak(start, today, slipDays),
+            longestStreak = longestStreak(cleanDays),
             totalCleanDays = totalCleanDays,
             totalDays = totalDays,
             slipCount = slipCount,
@@ -108,15 +127,37 @@ object JourneyMath {
         )
     }
 
-    /** Longest run of consecutive days that contained no slip. */
-    fun longestStreak(start: Long, today: Long, slipDays: List<Long>): Int {
-        val relevant = slipDays.filter { it in start..today }.sorted()
-        var best = 0
-        var cursor = start
-        for (slip in relevant) {
-            best = maxOf(best, (slip - cursor).toInt())
-            cursor = slip + 1
+    /**
+     * The run of marked-clean days ending now.
+     *
+     * Today is optional, deliberately, and it is the one softness left in here.
+     * A streak that breaks at midnight because the day is not over yet would
+     * punish a man for not having finished his day, so an unmarked *today* leaves
+     * yesterday's streak standing. An unmarked day in the past is a different
+     * thing: it is a day he never spoke about, and nothing about it says it was
+     * clean.
+     */
+    fun currentStreak(today: Long, cleanDays: Set<Long>): Int {
+        var day = if (today in cleanDays) today else today - 1
+        var streak = 0
+        while (day in cleanDays) {
+            streak++
+            day--
         }
-        return maxOf(best, (today - cursor + 1).toInt()).coerceAtLeast(0)
+        return streak
+    }
+
+    /** The longest run of consecutive marked-clean days. */
+    fun longestStreak(cleanDays: List<Long>): Int {
+        val sorted = cleanDays.distinct().sorted()
+        var best = 0
+        var run = 0
+        var previous: Long? = null
+        for (day in sorted) {
+            run = if (previous != null && day == previous + 1) run + 1 else 1
+            best = maxOf(best, run)
+            previous = day
+        }
+        return best
     }
 }

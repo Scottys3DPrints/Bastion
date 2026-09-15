@@ -1,5 +1,6 @@
 package com.bastion.app
 
+import com.bastion.app.data.db.DayStatus
 import com.bastion.app.data.repo.JourneyMath
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -11,6 +12,17 @@ import org.junit.Test
  * Worth testing directly because the rules are not obvious and the failures are
  * quiet: the app does not crash when it tells someone he has been clean for one
  * day instead of eleven, it just stops being worth believing.
+ *
+ * ## What changed here, and why these assertions moved
+ *
+ * This file used to pin the opposite rule. Every day absent from the log counted
+ * as clean, so `a fresh install with nothing logged` asserted a streak of one on
+ * a day nobody had said anything about, and an install left alone for a fortnight
+ * read seventeen days clean and three hundred points. The tests were not wrong
+ * about the code; they were faithful to a model that was wrong, which is the
+ * more expensive kind of green.
+ *
+ * Absence is now absence.
  */
 class JourneyMathTest {
 
@@ -21,51 +33,132 @@ class JourneyMathTest {
         installed: Long,
         slips: List<Long> = emptyList(),
         cleanLogs: List<Long> = emptyList(),
+        unlogged: List<Long> = emptyList(),
         earliestUrge: Long? = null,
     ) = JourneyMath.derive(
         today = today,
         installedEpochDay = installed,
-        dayLogs = slips.map { it to true } + cleanLogs.map { it to false },
+        dayLogs = slips.map { it to DayStatus.SLIP } +
+            cleanLogs.map { it to DayStatus.CLEAN } +
+            unlogged.map { it to DayStatus.UNLOGGED },
         earliestUrgeDay = earliestUrge,
     )
 
+    // --- absence is absence ----------------------------------------------
+
     @Test
-    fun `a fresh install with nothing logged is day one`() {
+    fun `a fresh install with nothing logged has nothing to show`() {
         val state = derive(installed = today)
-        assertEquals(1, state.currentStreak)
-        assertEquals(1, state.totalDays)
-        assertEquals(1, state.totalCleanDays)
+        assertEquals("he has not marked today", 0, state.currentStreak)
+        assertEquals("and has claimed no clean days", 0, state.totalCleanDays)
+        assertEquals("but the journey has begun", 1, state.totalDays)
         assertEquals(today, state.startEpochDay)
     }
 
     /**
-     * The case this whole thing exists for. Installed today, logs a slip from
-     * three days ago: the streak, the totals and the calendar must all agree
-     * that the journey began three days ago.
+     * The report that started this: an app left alone for a fortnight said
+     * seventeen days clean and three hundred and thirty-six points, for a man
+     * who had not opened it once.
      */
     @Test
-    fun `a slip logged before the install date moves the start back`() {
-        val state = derive(installed = today, slips = listOf(daysAgo(3)))
-
-        assertEquals("streak runs from the slip", 3, state.currentStreak)
-        assertEquals("the journey covers the backfilled day", 4, state.totalDays)
-        assertEquals("the backfilled slip is counted", 1, state.slipCount)
-        assertEquals("three clean days sit after it", 3, state.totalCleanDays)
-        assertEquals(daysAgo(3), state.startEpochDay)
+    fun `an app left alone earns nothing`() {
+        val state = derive(installed = daysAgo(16))
+        assertEquals("seventeen days passed; none were claimed", 0, state.currentStreak)
+        assertEquals(0, state.totalCleanDays)
+        assertEquals(0, state.points)
+        assertEquals("the days still happened", 17, state.totalDays)
     }
 
-    /** Before the fix these disagreed: streak said 3, best and clean said 1. */
     @Test
-    fun `backfilled totals never contradict the streak`() {
-        val state = derive(installed = today, slips = listOf(daysAgo(5)))
+    fun `only marked days count`() {
+        val state = derive(installed = daysAgo(5), cleanLogs = listOf(daysAgo(1), today))
+        assertEquals(2, state.currentStreak)
+        assertEquals(2, state.totalCleanDays)
+    }
+
+    /** UNLOGGED is a real answer, not a gap the arithmetic fills in. */
+    @Test
+    fun `an explicitly unlogged day is not a clean day`() {
+        val state = derive(
+            installed = daysAgo(3),
+            cleanLogs = listOf(daysAgo(3)),
+            unlogged = listOf(daysAgo(2), daysAgo(1), today),
+        )
+        assertEquals(0, state.currentStreak)
+        assertEquals(1, state.totalCleanDays)
+    }
+
+    // --- the streak -------------------------------------------------------
+
+    /**
+     * The one softness kept on purpose: an unmarked *today* leaves yesterday's
+     * streak standing, because the day is not over yet. A gap in the past is a
+     * different thing.
+     */
+    @Test
+    fun `today being unmarked does not break the streak`() {
+        val state = derive(
+            installed = daysAgo(5),
+            cleanLogs = listOf(daysAgo(3), daysAgo(2), daysAgo(1)),
+        )
+        assertEquals(3, state.currentStreak)
+    }
+
+    @Test
+    fun `a gap in the past does break it`() {
+        val state = derive(
+            installed = daysAgo(5),
+            cleanLogs = listOf(daysAgo(5), daysAgo(4), daysAgo(1), today),
+        )
+        assertEquals("only the run ending today counts", 2, state.currentStreak)
+        assertEquals(4, state.totalCleanDays)
+    }
+
+    @Test
+    fun `a slip ends the run even with clean days before it`() {
+        val state = derive(
+            installed = daysAgo(5),
+            slips = listOf(daysAgo(1)),
+            cleanLogs = listOf(daysAgo(3), daysAgo(2)),
+        )
+        assertEquals(0, state.currentStreak)
+        assertEquals(1, state.slipCount)
+    }
+
+    @Test
+    fun `longest streak is the longest marked run`() {
+        val state = derive(
+            installed = daysAgo(10),
+            cleanLogs = listOf(daysAgo(10), daysAgo(9), daysAgo(8), daysAgo(3), daysAgo(2)),
+        )
+        assertEquals(3, state.longestStreak)
+    }
+
+    @Test
+    fun `totals never contradict the streak`() {
+        val state = derive(
+            installed = daysAgo(9),
+            cleanLogs = (0..5).map { daysAgo(it) },
+        )
         assertTrue(
             "streak ${state.currentStreak} cannot exceed the ${state.totalDays} days counted",
             state.currentStreak <= state.totalDays,
         )
         assertTrue(
-            "longest ${state.longestStreak} cannot be shorter than the current ${state.currentStreak}",
+            "longest ${state.longestStreak} cannot be shorter than the current " +
+                "${state.currentStreak}",
             state.longestStreak >= state.currentStreak,
         )
+    }
+
+    // --- the journey's start, which is unchanged --------------------------
+
+    @Test
+    fun `a slip logged before the install date moves the start back`() {
+        val state = derive(installed = today, slips = listOf(daysAgo(3)))
+        assertEquals("the journey covers the backfilled day", 4, state.totalDays)
+        assertEquals("the backfilled slip is counted", 1, state.slipCount)
+        assertEquals(daysAgo(3), state.startEpochDay)
     }
 
     @Test
@@ -76,9 +169,8 @@ class JourneyMathTest {
     }
 
     /**
-     * The guard on the generosity. Backfilling is meant to make the history
-     * honest, not to sell rank — one tap on a date two years back would
-     * otherwise be worth several ranks instantly.
+     * The guard on the generosity, now stronger than it was. Backfilling makes
+     * the history honest; it was never meant to sell rank.
      */
     @Test
     fun `backfilled history cannot buy rank`() {
@@ -87,7 +179,6 @@ class JourneyMathTest {
 
         assertTrue(
             "700 days of inferred history added ${backfilled.points - fresh.points} points",
-            // Only the honesty bonus for the slip itself may differ.
             backfilled.points <= fresh.points + com.bastion.app.domain.RankPoints.SLIP_LOGGED_HONESTLY,
         )
         assertEquals("but the history itself is real", 701, backfilled.totalDays)
@@ -95,18 +186,22 @@ class JourneyMathTest {
 
     @Test
     fun `a future-dated log is ignored`() {
-        val state = derive(installed = today, slips = listOf(today + 5))
+        val state = derive(installed = today, slips = listOf(today + 5), cleanLogs = listOf(today + 2))
         assertEquals(0, state.slipCount)
+        assertEquals(0, state.totalCleanDays)
         assertEquals(today, state.startEpochDay)
-        assertEquals(1, state.currentStreak)
     }
 
     @Test
-    fun `an established user is unaffected by the inferred start`() {
-        val state = derive(installed = daysAgo(30), slips = listOf(daysAgo(10)))
+    fun `an established user counts the days he marked`() {
+        val state = derive(
+            installed = daysAgo(30),
+            slips = listOf(daysAgo(10)),
+            cleanLogs = (0..9).map { daysAgo(it) },
+        )
         assertEquals(daysAgo(30), state.startEpochDay)
         assertEquals(31, state.totalDays)
         assertEquals(10, state.currentStreak)
-        assertEquals("longest run is the 19 days before the slip", 20, state.longestStreak)
+        assertEquals(10, state.totalCleanDays)
     }
 }

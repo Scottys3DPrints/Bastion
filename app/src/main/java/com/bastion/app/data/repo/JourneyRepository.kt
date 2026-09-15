@@ -109,7 +109,7 @@ class JourneyRepository(
         JourneyMath.derive(
             today = today,
             installedEpochDay = s.journeyStartEpochDay,
-            dayLogs = days.map { it.epochDay to (it.status == DayStatus.SLIP) },
+            dayLogs = days.map { it.epochDay to it.status },
             earliestUrgeDay = earliestUrge,
             habitCompletions = habitCompletions,
             checkIns = checkIns,
@@ -133,9 +133,9 @@ class JourneyRepository(
         val challengeDays: Int,
     )
 
-    /** Longest run of consecutive days that contained no slip. */
-    private fun longestStreak(start: Long, today: Long, slipDays: List<Long>): Int =
-        JourneyMath.longestStreak(start, today, slipDays)
+    /** The longest run of days he marked clean. */
+    private fun longestStreak(cleanDays: List<Long>): Int =
+        JourneyMath.longestStreak(cleanDays)
 
     suspend fun logSlip(epochDay: Long = LocalDate.now().toEpochDay(), note: String? = null) {
         // Never in the future, whatever the caller passes.
@@ -143,9 +143,33 @@ class JourneyRepository(
         journeyDao.upsertDay(DayLogEntity(epochDay = day, status = DayStatus.SLIP, note = note))
     }
 
-    /** Undo, for the man who tapped the wrong thing. No interrogation. */
+    /**
+     * Undo, for the man who tapped the wrong thing. No interrogation.
+     *
+     * Writes UNLOGGED, which is what "clear" has always meant everywhere except
+     * here. It wrote CLEAN — so undoing a mistaken entry did not remove it, it
+     * replaced it with a win he had not claimed, and the one button labelled as
+     * a way out of a wrong tap was itself logging a success.
+     */
     suspend fun clearDay(epochDay: Long) {
-        journeyDao.upsertDay(DayLogEntity(epochDay = epochDay, status = DayStatus.CLEAN))
+        journeyDao.upsertDay(DayLogEntity(epochDay = epochDay, status = DayStatus.UNLOGGED))
+    }
+
+    /** He marked today — or some past day — as one he kept. */
+    suspend fun logCleanDay(epochDay: Long = LocalDate.now().toEpochDay()) {
+        val day = epochDay.coerceAtMost(LocalDate.now().toEpochDay())
+        journeyDao.upsertDay(DayLogEntity(epochDay = day, status = DayStatus.CLEAN))
+    }
+
+    /**
+     * Unmark a stretch of days, back to nothing said about them.
+     *
+     * For undoing a record the app wrote on his behalf rather than one he made.
+     */
+    suspend fun clearDays(fromEpochDay: Long, toEpochDay: Long) {
+        (fromEpochDay..toEpochDay).forEach { day ->
+            journeyDao.upsertDay(DayLogEntity(epochDay = day, status = DayStatus.UNLOGGED))
+        }
     }
 
     /**

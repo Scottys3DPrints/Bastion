@@ -381,8 +381,21 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
                 // interrogation.
                 CleanDaySheet(
                     date = date,
+                    marked = existing?.status == DayStatus.CLEAN,
                     beforeStart = state.startEpochDay > 0 &&
                         date.toEpochDay() < state.startEpochDay,
+                    onMarkClean = {
+                        scope.launch {
+                            graph.journey.logCleanDay(date.toEpochDay())
+                            editingDay = null
+                        }
+                    },
+                    onUnmark = {
+                        scope.launch {
+                            graph.journey.clearDay(date.toEpochDay())
+                            editingDay = null
+                        }
+                    },
                     onLogSlip = { loggingSlip = true },
                     onClose = { editingDay = null },
                 )
@@ -398,7 +411,11 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
                     },
                     onClean = {
                         scope.launch {
-                            graph.journey.clearDay(date.toEpochDay())
+                            // Marks it clean, which is what this button says.
+                            // It called clearDay, and clearDay wrote CLEAN — so
+                            // the two meanings were the same function and only
+                            // stayed correct by accident. They are separate now.
+                            graph.journey.logCleanDay(date.toEpochDay())
                             editingDay = null
                         }
                     },
@@ -446,7 +463,10 @@ fun TrackScreen(faithMode: Boolean, onOpenProfile: () -> Unit) {
 @Composable
 private fun CleanDaySheet(
     date: LocalDate,
+    marked: Boolean,
     beforeStart: Boolean,
+    onMarkClean: () -> Unit,
+    onUnmark: () -> Unit,
     onLogSlip: () -> Unit,
     onClose: () -> Unit,
 ) {
@@ -463,17 +483,48 @@ private fun CleanDaySheet(
         )
         Spacer(Modifier.height(Space.sm))
         Text(
-            if (beforeStart) "Before you started. Nothing is counted for this day."
-            else "Held. Nothing was logged against this day.",
+            when {
+                beforeStart -> "Before you started. Nothing is counted for this day."
+                marked -> "You marked this one kept."
+                // The honest sentence for a day nobody has spoken about.
+                //
+                // It read "Held. Nothing was logged against this day." — which
+                // said the day was won *because* nothing was said about it. That
+                // was the whole bug in one line: an app left alone counted every
+                // silent day as a victory and paid rank for it.
+                else -> "Not marked yet. Only you can say how this one went."
+            },
             style = MaterialTheme.typography.bodySmall,
-            color = if (beforeStart) BastionColors.TextMuted else BastionColors.SageBright,
+            color = when {
+                beforeStart -> BastionColors.TextMuted
+                marked -> BastionColors.SageBright
+                else -> BastionColors.TextTertiary
+            },
         )
 
         Spacer(Modifier.height(Space.lg))
-        PrimaryButton("Close", onClose, Modifier.fillMaxWidth())
-        Spacer(Modifier.height(Space.sm))
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            LinkButton("Record a slip for this day", BastionColors.Amber, onLogSlip)
+        if (!beforeStart && !marked) {
+            PrimaryButton("I kept this day", onMarkClean, Modifier.fillMaxWidth())
+            Spacer(Modifier.height(Space.sm))
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                LinkButton("Record a slip for this day", BastionColors.Amber, onLogSlip)
+            }
+            Spacer(Modifier.height(Space.sm))
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                LinkButton("Not now", BastionColors.TextTertiary, onClose)
+            }
+        } else {
+            PrimaryButton("Close", onClose, Modifier.fillMaxWidth())
+            Spacer(Modifier.height(Space.sm))
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                LinkButton("Record a slip for this day", BastionColors.Amber, onLogSlip)
+            }
+            if (marked) {
+                Spacer(Modifier.height(Space.sm))
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    LinkButton("Unmark this day", BastionColors.TextTertiary, onUnmark)
+                }
+            }
         }
     }
 }
