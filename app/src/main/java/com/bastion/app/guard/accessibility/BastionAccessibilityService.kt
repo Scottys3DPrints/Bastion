@@ -1606,7 +1606,12 @@ class BastionAccessibilityService : AccessibilityService() {
             // perfectly, under a policy that is switched off or out of hours,
             // looks identical to protection until it is needed.
             blockedNow = PolicyEngine.decide(
-                present = findSurfaces(root, inScope),
+                // The same resolution the real decision uses, suppression
+                // included. A diagnostic that answers a different question than
+                // the guard is worse than none: it was the thing I trusted while
+                // the phone did something else.
+                present = findSurfaces(root, allSignalsFor(pkg))
+                    .let { m -> Suppression.apply(m.filter { it.enabled }, m.map { it.surfaceId }.toSet()) },
                 policies = policies,
                 surfaces = surfacesById,
                 categories = categoriesByKey,

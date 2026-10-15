@@ -109,6 +109,24 @@ class GuardRepository(
      */
     suspend fun refreshPolicies() {
         if (!settings.current().guardSeeded) return
+        // The catalogue first, and unconditionally.
+        //
+        // This used to run only inside syncBuiltInRules, behind
+        // `builtInRulesVersion >= BUILT_IN_RULES_VERSION` -- so shipped
+        // knowledge reached the phone only if whoever changed it also
+        // remembered to bump a constant in another file. Twice now it was not
+        // bumped, and twice the result was a change that was real in the source,
+        // green in the tests, and absent from the database: the Reels tab and
+        // the Search reel were split into two destinations in 0.88 and the
+        // phone went on holding them as one, so the switch for one kept closing
+        // the other and nothing in the app could say why.
+        //
+        // syncCatalogue was built to be safe to repeat -- `enabled` always
+        // comes from disk, never from the shipped definition, so it can rename,
+        // re-home and retire without ever switching something on or off. A
+        // thing that is safe to repeat should not be guarded by a number
+        // somebody has to remember.
+        policy.syncCatalogue()
         rebuildPolicies()
     }
 
