@@ -127,6 +127,21 @@ class GuardRepository(
         // thing that is safe to repeat should not be guarded by a number
         // somebody has to remember.
         policy.syncCatalogue()
+        // Reconcile the switches with the engine.
+        //
+        // The rows a man sees on the Protection screen are v1 feed rules; the
+        // guard reads v2 signals; `upsertRule` keeps the two in step. Anything
+        // that wrote a rule without going through it left the pair disagreeing,
+        // and a disagreement here is invisible -- the screen says off, the guard
+        // blocks on, and no screen in the app shows both numbers.
+        //
+        // applyMaturedChanges did exactly that for a month. It is fixed at the
+        // source now, but a phone that already diverged would stay diverged
+        // forever, so the switch a man can see is treated as the truth and the
+        // signal is brought to it. Cheap, idempotent, and it means this class of
+        // mistake repairs itself at the next launch rather than needing to be
+        // noticed.
+        guardDao.feedRules().first().forEach { policy.mirrorRuleState(it.id, it.enabled) }
         rebuildPolicies()
     }
 
@@ -403,6 +418,23 @@ class GuardRepository(
      * @return true if the content filter should now be stopped, which needs a
      * Context the repository deliberately does not hold.
      */
+    /**
+     * ## Every write here goes through this class, never through the DAO
+     *
+     * They used to go straight to `guardDao`, and the DAO is the v1 tables
+     * only. The engine reads signals and policies, which `upsertRule`,
+     * `upsertApp` and `removeApp` keep in step -- so a matured change updated
+     * every screen in the app and never reached the guard.
+     *
+     * That is the worst shape a bug in this app can take. A man asks for a
+     * protection to come off, waits the twelve hours he set himself, sees the
+     * switch move, and the guard carries on as before; or the reverse, and he
+     * believes he is covered. Both were possible, and the first is what
+     * happened: "Reels, in the app" read off for a month while the Reels tab
+     * went on closing, with nothing anywhere able to explain the contradiction.
+     *
+     * The DAO is still used to *read*. Nothing here may use it to write.
+     */
     suspend fun applyMaturedChanges(): Boolean {
         var stopFilter = false
 
@@ -414,16 +446,16 @@ class GuardRepository(
                     val mode = parts.getOrNull(2)?.let { runCatching { BlockMode.valueOf(it) }.getOrNull() }
                     if (pkg != null && mode != null) {
                         guardDao.guardedApps().first().firstOrNull { it.packageName == pkg }?.let {
-                            guardDao.upsertApp(it.copy(mode = mode, updatedAt = System.currentTimeMillis()))
+                            upsertApp(it.copy(mode = mode, updatedAt = System.currentTimeMillis()))
                         }
                     }
                 }
-                "remove" -> parts.getOrNull(1)?.let { guardDao.removeApp(it) }
+                "remove" -> parts.getOrNull(1)?.let { removeApp(it) }
                 "rule" -> {
                     val id = parts.getOrNull(1)
                     if (id != null) {
                         guardDao.feedRules().first().firstOrNull { it.id == id }?.let {
-                            guardDao.upsertRule(it.copy(enabled = false, updatedAt = System.currentTimeMillis()))
+                            upsertRule(it.copy(enabled = false, updatedAt = System.currentTimeMillis()))
                         }
                     }
                 }
@@ -441,7 +473,7 @@ class GuardRepository(
                         guardDao.feedRules().first()
                             .filter { it.packageName == pkg && it.enabled }
                             .forEach {
-                                guardDao.upsertRule(
+                                upsertRule(
                                     it.copy(enabled = false, updatedAt = System.currentTimeMillis())
                                 )
                             }
