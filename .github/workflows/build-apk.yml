@@ -32,7 +32,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # `packages: ''` is load-bearing. The action's default is
+      # `tools platform-tools`, and Google retired the `tools` package from the
+      # SDK repository, so sdkmanager now exits 1 on "Failed to find package
+      # 'tools'" and every build since has died before compiling a line. The
+      # runner image already ships the SDK and build-tools; nothing here needs
+      # the action to install anything, only to put it on PATH.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
 
       - uses: gradle/actions/setup-gradle@v4
 
@@ -63,7 +71,15 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # `packages: ''` is load-bearing. The action's default is
+      # `tools platform-tools`, and Google retired the `tools` package from the
+      # SDK repository, so sdkmanager now exits 1 on "Failed to find package
+      # 'tools'" and every build since has died before compiling a line. The
+      # runner image already ships the SDK and build-tools; nothing here needs
+      # the action to install anything, only to put it on PATH.
       - uses: android-actions/setup-android@v3
+        with:
+          packages: ''
 
       - uses: gradle/actions/setup-gradle@v4
 

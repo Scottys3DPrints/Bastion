@@ -1513,6 +1513,16 @@ class BastionAccessibilityService : AccessibilityService() {
      */
     private fun captureViewIds() {
         val root = rootInActiveWindow ?: return
+        // The window, not the event.
+        //
+        // evaluate() already skips events whose package is ours, and that was
+        // not enough. An event from the launcher or a system window passes that
+        // gate while the active window is already Bastion -- so the capture
+        // reported on the very sheet that was about to display it, and the
+        // answer to "what is on the Reels tab" came back as two identifiers
+        // belonging to this app. The gate has to be where the window is read,
+        // because that is the only place that knows which window it is.
+        if (root.packageName?.toString() == packageName) return
         val window = windowBoundsOf(root)
         // Keyed by id so the same identifier seen twice does not appear twice,
         // and so a node that qualifies wins over one that does not.
