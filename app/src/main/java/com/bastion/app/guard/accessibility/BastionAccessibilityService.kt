@@ -25,6 +25,7 @@ import com.bastion.app.guard.policy.Decision
 import com.bastion.app.guard.policy.PolicyContext
 import com.bastion.app.guard.policy.PolicyEngine
 import com.bastion.app.guard.policy.ResolvedSurface
+import com.bastion.app.guard.policy.Suppression
 import com.bastion.app.feature.panic.PanicActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -100,6 +101,8 @@ class BastionAccessibilityService : AccessibilityService() {
      * to decide what goes in the "open with" list, and an ad-blocking browser
      * off the store satisfies it on the day it is installed.
      */
+    @Volatile private var allSignals: List<SignalEntity> = emptyList()
+
     @Volatile private var browserApps: Set<String> = emptySet()
 
     /** When [findBrowsers] last ran, so a miss can decide whether to ask again. */
@@ -206,7 +209,13 @@ class BastionAccessibilityService : AccessibilityService() {
             }
         }
         scope.launch {
-            graph.policy.signals.collect { rows -> signals = rows.filter { it.enabled } }
+            graph.policy.signals.collect { rows ->
+                signals = rows.filter { it.enabled }
+                // Kept unfiltered as well. Presence is a question about the
+                // screen and has to be answerable for a destination a man has
+                // switched off -- see Suppression.
+                allSignals = rows
+            }
         }
         scope.launch {
             graph.policy.policies.collect { rows -> policies = rows.filter { it.enabled } }
@@ -935,6 +944,10 @@ class BastionAccessibilityService : AccessibilityService() {
     private fun signalsFor(pkg: String): List<SignalEntity> =
         signals.filter { it.scopePackage == null || it.scopePackage == pkg }
 
+    /** The same, including evidence that is switched off, for recognition only. */
+    private fun allSignalsFor(pkg: String): List<SignalEntity> =
+        allSignals.filter { it.scopePackage == null || it.scopePackage == pkg }
+
     /**
      * One decision, for every app, guarded or not.
      *
@@ -966,7 +979,12 @@ class BastionAccessibilityService : AccessibilityService() {
             (inScope.isNotEmpty() && canShowPage(pkg))
 
         val root = if (worthWalking) rootInActiveWindow else null
-        val present = if (root == null) emptyList() else findSurfaces(root, inScope)
+        // Walked with every signal, including the switched-off ones. Whether a
+        // screen *is* the Reels tab cannot depend on whether a man is blocking
+        // it, and the cost gate above has already decided it is worth looking.
+        val matched = if (root == null) emptyList() else findSurfaces(root, allSignalsFor(pkg))
+        val visible = matched.map { it.surfaceId }.toSet()
+        val present = Suppression.apply(matched.filter { it.enabled }, visible)
 
         val decision = PolicyEngine.decide(
             present = present,
@@ -1218,6 +1236,7 @@ class BastionAccessibilityService : AccessibilityService() {
                             surfaceId = rule.surfaceId,
                             signalId = rule.id,
                             confidence = Confidence.ofOrdinal(rule.confidence),
+                            enabled = rule.enabled,
                         )
                     }
                 }

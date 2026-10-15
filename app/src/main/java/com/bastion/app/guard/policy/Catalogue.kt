@@ -77,6 +77,32 @@ object Catalogue {
         REDDIT to listOf(PKG_REDDIT),
     )
 
+    /**
+     * A destination that is only itself when another one is absent.
+     *
+     * Instagram draws the Reels tab and a reel opened from Search out of the
+     * same components: `root_clips_layout` and `clips_linear_layout_container`
+     * cover the window on both, measured with Learn Mode on the phone. So the
+     * Search signals matched the tab too, and switching the tab's own signal off
+     * changed nothing -- the tab stayed closed, because the *other* destination
+     * was recognising it. Two switches, one outcome, and no way to tell a man
+     * why.
+     *
+     * The tab does carry something the Search reel does not:
+     * `clips_viewer_view_pager`, which the tab signal `clips_viewer` already
+     * matches at a name boundary. That is the tab announcing itself.
+     *
+     * So: Reels-from-Search counts only where the tab's own marker is absent.
+     * Read the direction carefully -- this asks whether the *screen* is the
+     * Reels tab, which is a fact about the screen and not about what a man has
+     * chosen to block. Presence is settled before any policy is consulted, so
+     * this keeps working with the tab's own signal switched off, which is
+     * exactly the case it exists for.
+     */
+    val SUPPRESSED_BY: Map<String, String> = mapOf(
+        "ig_reels_search" to "ig_reels",
+    )
+
     /** The reverse, for the migration and for the per-app inspector. */
     val SERVICE_BY_PACKAGE: Map<String, String> =
         PACKAGES_BY_SERVICE.flatMap { (service, pkgs) -> pkgs.map { it to service } }.toMap()

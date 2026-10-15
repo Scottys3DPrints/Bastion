@@ -42,6 +42,18 @@ data class ResolvedSurface(
     val surfaceId: String,
     val signalId: String,
     val confidence: Confidence,
+    /**
+     * Whether the evidence that matched is switched on.
+     *
+     * Recognising a screen and acting on it are different questions, and they
+     * had been the same one because only enabled signals were ever tested. That
+     * is fine until two destinations overlap: telling the Reels tab apart from
+     * a reel opened from Search needs the tab to be recognisable *after* a man
+     * has stopped blocking it. So presence is now established from all the
+     * evidence, and this flag is what keeps a switched-off destination from
+     * closing anything.
+     */
+    val enabled: Boolean = true,
 )
 
 /**
