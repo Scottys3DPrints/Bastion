@@ -1523,6 +1523,34 @@ private fun LearnModeSheet(onClose: () -> Unit) {
             )
             Spacer(Modifier.height(Space.md))
 
+            // Which destination decided, which is the question the rest of
+            // this sheet never answered. A screen can carry two of them -- the
+            // Reels tab and a reel opened from Search are built from the same
+            // parts -- and when one closes a screen the other was meant to
+            // allow, nothing here could say so.
+            if (current.visibleSurfaces.isNotEmpty()) {
+                Text(
+                    "Recognised here",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = BastionColors.TextPrimary,
+                )
+                Spacer(Modifier.height(Space.xs))
+                Text(
+                    current.visibleSurfaces.joinToString(", "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BastionColors.TextSecondary,
+                )
+                if (current.suppressedSurfaces.isNotEmpty()) {
+                    Spacer(Modifier.height(Space.xs))
+                    Text(
+                        "Set aside: " + current.suppressedSurfaces.joinToString(", "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = BastionColors.SageBright,
+                    )
+                }
+                Spacer(Modifier.height(Space.md))
+            }
+
             // Why a browser rule is or is not firing, in the place a man is
             // already standing when he notices it did not.
             //

@@ -1581,6 +1581,11 @@ class BastionAccessibilityService : AccessibilityService() {
         // first, which is how a captured rule could look right and silently
         // never fire.
         val inScope = signalsFor(pkg)
+        val matchedHere = findSurfaces(root, allSignalsFor(pkg))
+        val acting = Suppression.apply(
+            matchedHere.filter { it.enabled },
+            matchedHere.map { it.surfaceId }.toSet(),
+        )
 
         // The browser diagnosis, which exists because four attempts at the
         // in-app-browser path were made without ever seeing what the service
@@ -1610,8 +1615,7 @@ class BastionAccessibilityService : AccessibilityService() {
                 // included. A diagnostic that answers a different question than
                 // the guard is worse than none: it was the thing I trusted while
                 // the phone did something else.
-                present = findSurfaces(root, allSignalsFor(pkg))
-                    .let { m -> Suppression.apply(m.filter { it.enabled }, m.map { it.surfaceId }.toSet()) },
+                present = acting,
                 policies = policies,
                 surfaces = surfacesById,
                 categories = categoriesByKey,
@@ -1622,6 +1626,13 @@ class BastionAccessibilityService : AccessibilityService() {
             urlRuleCount = inScope.count { it.matchType == MatchType.URL },
             webViewFound = page.height() > 0,
             addresses = addresses,
+            visibleSurfaces = matchedHere.map {
+                "${it.surfaceId}${if (it.enabled) "" else " (off)"}"
+            }.distinct(),
+            suppressedSurfaces = matchedHere.filter { it.enabled }
+                .map { it.surfaceId }
+                .filterNot { id -> acting.any { a -> a.surfaceId == id } }
+                .distinct(),
         )
     }
 
@@ -1750,6 +1761,17 @@ class BastionAccessibilityService : AccessibilityService() {
         /** Whether a web view was found, which is how browser chrome is located. */
         val webViewFound: Boolean = false,
         val addresses: List<SeenAddress> = emptyList(),
+        /**
+         * Which destinations were recognised here, and which were set aside
+         * because a more specific one was also on screen.
+         *
+         * Added after three rounds of reasoning about why a screen still closed
+         * when every switch said it should not. The identifier list says what is
+         * on the screen and the verdict says what happens; neither says *which
+         * destination decided*, which was the only thing worth knowing.
+         */
+        val visibleSurfaces: List<String> = emptyList(),
+        val suppressedSurfaces: List<String> = emptyList(),
     )
 
     companion object {
